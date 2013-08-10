@@ -29,4 +29,4 @@ CFLAGS += -D NDEBUG
 endif
 
 
-INSTALL_PREFIX = /home/randyliu/2
+INSTALL_PREFIX = _INSTALL_PREFIX
