@@ -1,13 +1,13 @@
 include ../tdserver.mk
 
-TDATAD_CFILE=$(wildcard *.c)
-TDATAD_OBJ=$(TDATAD_CFILE:.c=.o)
-TDATAD_APP=tdatad
+WORLDD_CFILE=$(wildcard *.c)
+WORLDD_OBJ=$(WORLDD_CFILE:.c=.o)
+WORLDD_APP=worldd
 
 
 .PHONY: all clean
 
-all: $(TDATAD_APP)
+all: $(WORLDD_APP)
 
 %.d: %.c
 	$(CC) -MM $(CFLAGS) $< -o $@
@@ -15,15 +15,15 @@ all: $(TDATAD_APP)
 %.o: %.c %.d
 	$(CC) -c $(CFLAGS) $<
 
-$(TDATAD_APP): $(TDATAD_OBJ)
+$(WORLDD_APP): $(WORLDD_OBJ)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
-install:$(TDATAD_APP)
+install:$(WORLDD_APP)
 	mkdir -p $(INSTALL_PREFIX)/bin/
-	cp $(TDATAD_APP) $(INSTALL_PREFIX)/bin/
+	cp $(WORLDD_APP) $(INSTALL_PREFIX)/bin/
 
 clean:
 	$(RM) *.o  *.d
-	$(RM) ${TDATAD_APP}
+	$(RM) ${WORLDD_APP}
 
 

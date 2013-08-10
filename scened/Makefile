@@ -13,10 +13,10 @@ all: $(SCENED_APP)
 	$(CC) -MM $(CFLAGS) $< -o $@
 
 %.o: %.c %.d
-	$(CC) -c $(CFLAGS) $(DEBUG) $<
+	$(CC) -c $(CFLAGS) $<
 
 $(SCENED_APP): $(SCENED_OBJ)
-	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
+	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(SCENED_APP)
 	mkdir -p $(INSTALL_PREFIX)/bin/

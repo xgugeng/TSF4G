@@ -13,10 +13,10 @@ all: $(TCONND_APP)
 	$(CC) -MM $(CFLAGS) $< -o $@
 
 %.o: %.c %.d
-	$(CC) -c $(CFLAGS) $(DEBUG) $<
+	$(CC) -c $(CFLAGS) $<
 
 $(TCONND_APP): $(TCONND_OBJ)
-	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
+	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(TCONND_APP)
 	mkdir -p $(INSTALL_PREFIX)/bin/

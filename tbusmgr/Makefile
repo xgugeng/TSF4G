@@ -15,10 +15,10 @@ all: $(TBUS_MGR)
 	$(CC) -MM $(CFLAGS) $< -o $@
 
 %.o: %.c %.d
-	$(CC) -c $(CFLAGS) $(DEBUG) $<
+	$(CC) -c $(CFLAGS) $<
 
 $(TBUS_MGR): $(TBUS_MGR_OBJ)
-	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
+	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(TBUS_MGR)
 	mkdir -p $(INSTALL_PREFIX)/bin/

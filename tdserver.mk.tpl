@@ -12,21 +12,14 @@ CINC = -I$(TDSHOME)/
 
 #----------------libraris --------------------------
 LDPATH += -L/usr/lib/ -L/usr/local/lib   
-    
-
-LIBS = -ldl
 
 #C compiler flags
-CFLAGS = -g  
-CFLAGS += -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC
-CFLAGS += $(CINC)
-
 
 ifdef _RELEASE
-CFLAGS += -D __DISABLE_DEBUG_PRINT__
-CFLAGS += -D __DISABLE_STAT_DETAIL_PRINT__
-CFLAGS += -D NDEBUG
+CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror -D NDEBUG -O2
+else
+CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror
 endif
 
 
-INSTALL_PREFIX = _INSTALL_PREFIX
+INSTALL_PREFIX = _INSTALL_PREFIX_INSTALL_PREFIX
