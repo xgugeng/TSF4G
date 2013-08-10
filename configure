@@ -1,0 +1,38 @@
+#!/bin/bash
+
+INSTALL_PATH=/usr/local
+
+usage()
+{
+	echo "-p install path"
+	echo "-c clean"
+	echo "-h help"
+}
+
+while getopts "p:ch" option 
+do
+	case "$option" in
+	p)
+		INSTALL_PATH=$OPTARG
+		set_install_path
+		;;
+	c)
+		rm Makefile
+		exit 0;
+		;;
+	h)
+		Usage;
+		exit 0;
+		;;
+	:|\?) 
+		usage;
+		exit 1;
+		;;
+	esac
+done
+
+
+sed 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' Makefile.tpl > Makefile
+
+echo "succeed"
+exit 0;

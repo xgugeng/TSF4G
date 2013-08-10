@@ -20,6 +20,8 @@ all: $(TBUS_MGR)
 $(TBUS_MGR): $(TBUS_MGR_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
+install:$(TBUS_MGR)
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${TBUS_MGR}

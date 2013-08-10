@@ -18,6 +18,8 @@ all: $(SCENED_APP)
 $(SCENED_APP): $(SCENED_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
+install:$(SCENED_APP)
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${SCENED_APP}

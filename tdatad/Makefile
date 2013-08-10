@@ -18,6 +18,8 @@ all: $(TDATAD_APP)
 $(TDATAD_APP): $(TDATAD_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
+install:$(TDATAD_APP)
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${TDATAD_APP}

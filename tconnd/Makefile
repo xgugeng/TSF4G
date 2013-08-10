@@ -18,6 +18,8 @@ all: $(TCONND_APP)
 $(TCONND_APP): $(TCONND_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
+install:$(TCONND_APP)
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${TCONND_APP}

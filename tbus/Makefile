@@ -26,6 +26,8 @@ all: $(TBUS_LIB)
 $(TBUS_LIB): $(TBUS_OBJ)
 	ar r $(TBUS_LIB) $^
 
+install:$(TBUS_LIB)
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) $(TBUS_LIB)
