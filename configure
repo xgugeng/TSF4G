@@ -16,7 +16,9 @@ do
 		INSTALL_PATH=$OPTARG
 		;;
 	c)
-		rm *.tpl
+		if [ -f tdserver.mk ];then
+			rm tdserver.mk
+		fi
 		exit 0;
 		;;
 	h)
