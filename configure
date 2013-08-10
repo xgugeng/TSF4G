@@ -14,10 +14,9 @@ do
 	case "$option" in
 	p)
 		INSTALL_PATH=$OPTARG
-		set_install_path
 		;;
 	c)
-		rm Makefile
+		rm tdserver.mk.tpl
 		exit 0;
 		;;
 	h)
@@ -32,7 +31,8 @@ do
 done
 
 
-sed 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' Makefile.tpl > Makefile
+sed 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' tdserver.mk.tpl > tdserver.mk
 
+echo "INSTALL_PATH=${INSTALL_PATH}"
 echo "succeed"
 exit 0;

@@ -27,6 +27,8 @@ $(TBUS_LIB): $(TBUS_OBJ)
 	ar r $(TBUS_LIB) $^
 
 install:$(TBUS_LIB)
+	mkdir -p $(INSTALL_PREFIX)/lib/
+	cp $(TBUS_LIB) $(INSTALL_PREFIX)/lib/
 
 clean:
 	$(RM) *.o  *.d

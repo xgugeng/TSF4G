@@ -4,8 +4,6 @@ SUBMODS = tbus tbusmgr tconnd tdatad scened
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 
-INSTALL_PREFIX = /usr/local
-
 .PHONY: all $(CLEANTARGET) $(INSTALLTARGET) $(SUBMODS) 
 
 release:

@@ -21,6 +21,8 @@ $(TBUS_MGR): $(TBUS_MGR_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(TBUS_MGR)
+	mkdir -p $(INSTALL_PREFIX)/bin/
+	cp $(TBUS_MGR) $(INSTALL_PREFIX)/bin/
 
 clean:
 	$(RM) *.o  *.d

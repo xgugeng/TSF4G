@@ -19,6 +19,8 @@ $(TCONND_APP): $(TCONND_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(TCONND_APP)
+	mkdir -p $(INSTALL_PREFIX)/bin/
+	cp $(TCONND_APP) $(INSTALL_PREFIX)/bin/
 
 clean:
 	$(RM) *.o  *.d

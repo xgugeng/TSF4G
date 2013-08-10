@@ -19,6 +19,8 @@ $(TDATAD_APP): $(TDATAD_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(TDATAD_APP)
+	mkdir -p $(INSTALL_PREFIX)/bin/
+	cp $(TDATAD_APP) $(INSTALL_PREFIX)/bin/
 
 clean:
 	$(RM) *.o  *.d

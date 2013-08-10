@@ -19,6 +19,8 @@ $(SCENED_APP): $(SCENED_OBJ)
 	$(CC) $(STATIC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(SCENED_APP)
+	mkdir -p $(INSTALL_PREFIX)/bin/
+	cp $(SCENED_APP) $(INSTALL_PREFIX)/bin/
 
 clean:
 	$(RM) *.o  *.d
