@@ -4,6 +4,9 @@ SUBMODSCLEAN =$(patsubst %, %.$(CLEANTARGET), $(SUBMODS))
 
 .PHONY: all $(CLEANTARGET) $(SUBMODS) 
 
+release:
+	make all _RELEASE=1
+
 all: $(SUBMODS)
 $(CLEANTARGET): $(SUBMODSCLEAN)
 	
