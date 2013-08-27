@@ -1,4 +1,4 @@
-include ../tdserver.mk
+include tdserver.mk
 
 TDATAD_CFILE=$(wildcard *.c)
 TDATAD_OBJ=$(TDATAD_CFILE:.c=.o)

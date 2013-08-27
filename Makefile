@@ -3,6 +3,8 @@ INSTALLTARGET = install
 SUBMODS = tbus tbusmgr tconnd tdatad scened worldd
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
+TDSHOME=$(shell pwd)
+MAKE = make -I $(TDSHOME)
 
 .PHONY: all $(CLEANTARGET) $(INSTALLTARGET) $(SUBMODS) 
 
@@ -17,15 +19,15 @@ $(SUBMODS):
 
 $(SUBMODSCLEAN): 
 	@echo "Begin to clean sub module: '$(patsubst %.$(CLEANTARGET),%, $@)' ......"
-	cd $(patsubst %.$(CLEANTARGET),%, $@)  && make $(CLEANTARGET);
+	cd $(patsubst %.$(CLEANTARGET),%, $@)  && $(MAKE) $(CLEANTARGET);
 	@echo "Finish to clean sub module: '$(patsubst %.$(CLEANTARGET),%, $@)'" 
 
 $(SUBMODSINSTALL): 
 	@echo "Begin to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)' ......"
-	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && make $(INSTALLTARGET);
+	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(INSTALLTARGET);
 	@echo "Finish to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)'" 
 
 release:
 	@echo 'hello'
-	make all _RELEASE=1
+	$(MAKE) all _RELEASE=1
 

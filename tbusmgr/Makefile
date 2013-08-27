@@ -1,4 +1,4 @@
-include ../tdserver.mk
+include tdserver.mk
 
 TBUS_MGR_CFILE=$(wildcard *.c)
 TBUS_MGR_OBJ=$(TBUS_MGR_CFILE:.c=.o)

@@ -1,4 +1,3 @@
-TDSHOME = .
 CC = gcc
 RM = /bin/rm -f
 
