@@ -1,6 +1,6 @@
 CLEANTARGET = clean
 INSTALLTARGET = install
-SUBMODS = tbus tbusmgr tconnd tdatad tprotocold scened worldd
+SUBMODS = tbus tbusmgr tconnd tdatad tapp scened worldd
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 TDSHOME=$(shell pwd)
