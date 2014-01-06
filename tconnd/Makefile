@@ -1,4 +1,4 @@
-include tdserver.mk
+include common.mk
 
 TCONND_CFILE=$(wildcard *.c)
 TCONND_OBJ=$(TCONND_CFILE:.c=.o)

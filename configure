@@ -16,8 +16,8 @@ do
 		INSTALL_PATH=$OPTARG
 		;;
 	c)
-		if [ -f tdserver.mk ];then
-			rm tdserver.mk
+		if [ -f common.mk ];then
+			rm common.mk
 			rm Makefile
 		fi
 		exit 0;
@@ -34,7 +34,7 @@ do
 done
 
 
-sed 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' tdserver.mk.tpl > tdserver.mk
+sed 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' common.mk.tpl > common.mk
 cp Makefile.tpl Makefile
 
 echo "INSTALL_PATH=${INSTALL_PATH}"

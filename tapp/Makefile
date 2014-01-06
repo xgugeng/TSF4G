@@ -1,4 +1,4 @@
-include tdserver.mk
+include common.mk
 
 TAPP_CFILE=$(wildcard *.c)
 TAPP_OBJ=$(TAPP_CFILE:.c=.o)

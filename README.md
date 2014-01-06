@@ -1,4 +1,4 @@
-TDormServer
+TServer
 ===========
 - TBus 共享内存通信模块
 - TBusMgr 共享内存管理工具

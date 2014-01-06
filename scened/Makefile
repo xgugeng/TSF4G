@@ -1,4 +1,4 @@
-include tdserver.mk
+include common.mk
 
 SCENED_CFILE=$(wildcard *.c)
 SCENED_OBJ=$(SCENED_CFILE:.c=.o)

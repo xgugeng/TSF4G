@@ -1,4 +1,4 @@
-include tdserver.mk
+include common.mk
 
 WORLDD_CFILE=$(wildcard *.c)
 WORLDD_OBJ=$(WORLDD_CFILE:.c=.o)
