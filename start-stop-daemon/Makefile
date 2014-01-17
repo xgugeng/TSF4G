@@ -1,13 +1,15 @@
 include ../common.mk
 
-TCONND_CFILE=$(wildcard *.c)
-TCONND_OBJ=$(TCONND_CFILE:.c=.o)
-TCONND_APP=tconnd
+CFILE=$(wildcard *.c)
+OBJ=$(CFILE:.c=.o)
+APP=start-stop-daemon
+
+CINC+=-I./
 
 
 .PHONY: all clean
 
-all: $(TCONND_APP)
+all: $(APP)
 
 %.d: %.c
 	$(CC) -MM $(CFLAGS) $< -o $@
@@ -15,15 +17,15 @@ all: $(TCONND_APP)
 %.o: %.c %.d
 	$(CC) -c $(CFLAGS) $<
 
-$(TCONND_APP): $(TCONND_OBJ)
+$(APP): $(OBJ)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
-install:$(TCONND_APP)
+install:$(APP)
 	mkdir -p $(INSTALL_PREFIX)/bin/
-	cp $(TCONND_APP) $(INSTALL_PREFIX)/bin/
+	cp $(APP) $(INSTALL_PREFIX)/bin/
 
 clean:
 	$(RM) *.o  *.d
-	$(RM) ${TCONND_APP}
+	$(RM) ${APP}
 
 

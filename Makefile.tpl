@@ -1,10 +1,11 @@
+TSERVER_HOME=$(shell pwd)
+
 CLEANTARGET = clean
 INSTALLTARGET = install
-SUBMODS = tbus tbusmgr tconnd tapp
+SUBMODS = tbus tbusmgr tconnd start-stop-daemon
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
-TDSHOME=$(shell pwd)
-MAKE = make -I $(TDSHOME)
+MAKE = make -I $(TSERVER_HOME)
 
 .PHONY: all $(CLEANTARGET) $(INSTALLTARGET) $(SUBMODS) 
 
@@ -28,6 +29,6 @@ $(SUBMODSINSTALL):
 	@echo "Finish to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)'" 
 
 release:
-	@echo 'hello'
+	@echo 'release'
 	$(MAKE) all _RELEASE=1
 

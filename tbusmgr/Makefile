@@ -1,4 +1,4 @@
-include common.mk
+include ../common.mk
 
 TBUS_MGR_CFILE=$(wildcard *.c)
 TBUS_MGR_OBJ=$(TBUS_MGR_CFILE:.c=.o)

@@ -4,13 +4,13 @@ RM = /bin/rm -f
 
 # -----------include files -----------------------------------
 
-CINC = -I$(TDSHOME)/ 
+CINC = -I/usr/include
 
 
 
 
 #----------------libraris --------------------------
-LDPATH += -L/usr/lib/ -L/usr/local/lib   
+LDPATH += -L/usr/lib -L/usr/local/lib   
 
 #C compiler flags
 
@@ -21,4 +21,4 @@ CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CI
 endif
 
 
-INSTALL_PREFIX = hello
+INSTALL_PREFIX = tserver
