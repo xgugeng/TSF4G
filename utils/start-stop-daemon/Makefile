@@ -1,4 +1,4 @@
-include ../common.mk
+include ../../common.mk
 
 CFILE=$(wildcard *.c)
 OBJ=$(CFILE:.c=.o)
