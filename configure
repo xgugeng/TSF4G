@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TSERVER_INSTALL_PATH=/usr/local
+TSERVER_INSTALL_PATH=/usr/local/tserver
 TSERVER_ROOT_DIR=`pwd`
 
 usage()
