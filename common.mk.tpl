@@ -12,12 +12,15 @@ RM = /bin/rm -f
 # -----------include files -----------------------------------
 
 CINC = -I$(INCLUDE_PATH)
+CINC+= -I$(TLIBC_HOME)/include
 
 
 
 
 #----------------libraris --------------------------
-LDPATH += -L$(LIBRARY_PATH)
+LDPATH = -L$(LIBRARY_PATH)
+LDPATH+= -L$(TLIBC_HOME)/lib
+
 
 #C compiler flags
 
