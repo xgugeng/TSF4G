@@ -1,5 +1,10 @@
 #include "tserver/tbus/tbus.h"
 
+
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -11,8 +16,8 @@ const char *message = NULL;
 
 int main()
 {
-	tbus_t *tb = NULL;
-	tb = tbus_open(SHM_KEY);
+	int shm_id = shmget(SHM_KEY, 0, 0666);
+	tbus_t *tb = shmat(shm_id, NULL, 0);
 	tuint16 len;
 	TERROR_CODE ret;
 	tuint32 i;

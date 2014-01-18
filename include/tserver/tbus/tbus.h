@@ -19,8 +19,6 @@ struct _tbus_t
 
 TERROR_CODE tbus_init(tbus_t *tb, int size);
 
-tbus_t *tbus_open(int shm_key);
-
 TERROR_CODE tbus_send(tbus_t *tb, const char* buf, tuint16 len);
 
 TERROR_CODE tbus_peek(tbus_t *tb, const char** buf, tuint16 *len);

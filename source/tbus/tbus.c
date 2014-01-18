@@ -1,10 +1,5 @@
-#include "tlibc/platform/tlibc_platform.h"
-
 #include "tserver/tbus/tbus.h"
 #include "tserver/terrno.h"
-
-#include <sys/ipc.h>
-#include <sys/shm.h>
 
 
 #include <string.h>
@@ -39,11 +34,6 @@ ERROR_RET:
 	return ret;
 }
 
-tbus_t *tbus_open(int shm_key)
-{
-	int shm_id = shmget(shm_key, 0, 0666);
-	return shmat(shm_id, NULL, 0);
-}
 
 TERROR_CODE tbus_send(tbus_t *tb, const char* buf, tuint16 len)
 {
