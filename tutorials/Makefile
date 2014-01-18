@@ -1,11 +1,10 @@
-TSERVER_HOME=$(shell pwd)
+include ../common.mk
 
 CLEANTARGET = clean
 INSTALLTARGET = install
-SUBMODS = source tutorials
+SUBMODS = tbus
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
-MAKE = make -I $(TSERVER_HOME)
 
 .PHONY: all $(CLEANTARGET) $(INSTALLTARGET) $(SUBMODS) 
 

@@ -7,6 +7,8 @@ typedef enum _TERROR_CODE
 	E_TS_ERROR = 1,
 
 	E_TS_NO_MEMORY = 2,
+	E_TS_AGAIN = 3,
+	E_TS_WOULD_BLOCK = 4,
 }TERROR_CODE;
 
 #endif

@@ -3,122 +3,19 @@
 #include "tserver/tbus/tbus.h"
 #include "tserver/terrno.h"
 
-
-#define get_addr(tb, offset) (tb->buff + offset)
-
-//返回通道内有多少数据
-#define get_size(tb) \
-	(tb->head_offset < tb->tail_offset? tb->tail_offset - tb->head_offset\
-		: tb->size - tb->head_offset + tb->tail_offset)
-
-//返回通道还可以容纳多少数据
-#define get_room(tb) (tb->size - get_size(tb) - 1)
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 
+#include <string.h>
 
+#define CMD_PACKAGE 0x100
+#define CMD_IGNORE 0x200
+typedef int tbus_header_t;
+#define GET_COMMAND(cmd) (cmd & 0xff00)
+#define GET_PACKAGE_SIZE(cmd) (cmd & 0xff)
+#define BUILD_HEADER(cmd, size) (cmd | size)
 
-//返回从任意位置开始可读的大小
-int get_read_size(tbus_t* tb, int offset)
-{
-	int ret;
-	int head_offset = tb->head_offset;
-	int tail_offset = tb->tail_offset;
-
-	if(head_offset <= tail_offset)
-	{
-		if((offset >= head_offset) && (offset < tail_offset))
-		{
-			ret = tail_offset - offset;
-		}
-		else
-		{
-			ret = 0;
-		}
-	}
-	else
-	{
-		if(offset >= head_offset)
-		{
-			ret = tb->size - offset;
-		}
-		else if(offset < tail_offset)
-		{
-			ret = tail_offset - offset;
-		}
-		else
-		{
-			ret  = 0;
-		}
-	}
-	return ret;
-}
-
-//返回从任意位置开始可写的大小
-int get_write_size(tbus_t* tb, int offset)
-{
-	int ret;
-	int head_offset = tb->head_offset;
-	int tail_offset = tb->tail_offset;
-
-	if(head_offset <= tail_offset)
-	{
-		if(offset < head_offset)
-		{
-			ret = head_offset - offset - 1;
-		}
-		else if(offset >= tail_offset)
-		{
-			ret = tb->size - offset;
-			if(head_offset == 0)
-			{
-				--ret;
-			}
-		}
-		else
-		{
-			ret = 0;
-		}
-	}
-	else
-	{
-		if((offset >= tail_offset) && (offset < head_offset))
-		{
-			ret = head_offset - offset - 1;
-		}
-		else
-		{
-			ret = 0;
-		}
-	}
-	return ret;
-}
-
-
-
-
-
-
-//把指针向后移动
-int tbus_forward_pos(tbus_t* tb, int offset, int distance)
-{
-	offset += distance;
-	while(offset >= tb->size)
-	{
-		offset -= tb->size;
-	}
-	return offset;
-}
-
-//把指针向前移动
-int tbus_backward_pos(tbus_t* tb, int offset, int distance)
-{
-	offset -= distance;
-	while(offset < 0)
-	{
-		offset += tb->size;
-	}
-	return offset;
-}
 
 TERROR_CODE tbus_init(tbus_t *tb, int size)
 {
@@ -142,4 +39,128 @@ ERROR_RET:
 	return ret;
 }
 
+tbus_t *tbus_open(int shm_key)
+{
+	int shm_id = shmget(shm_key, 0, 0666);
+	return shmat(shm_id, NULL, 0);
+}
+
+TERROR_CODE tbus_send(tbus_t *tb, const char* buf, tuint16 len)
+{
+	size_t write_size;	
+
+	if(sizeof(tbus_header_t) + len + 1 > (unsigned)tb->size)
+	{
+		goto NO_MEMORY;
+	}
+	
+	if(tb->head_offset <= tb->tail_offset)
+	{
+		write_size = tb->size - tb->tail_offset - 1;
+	}
+	else		
+	{
+		write_size = tb->head_offset - tb->tail_offset - 1;
+	}
+	
+
+	if(write_size < sizeof(tbus_header_t))
+	{
+		if((tb->head_offset <= tb->tail_offset) && (tb->head_offset != 0))
+		{			
+			tb->tail_offset = 0;
+			goto AGAIN;		
+		}
+		goto WOULD_BLOCK;
+	}
+	else
+	{
+		tbus_header_t *header = (tbus_header_t*)(tb->buff + tb->tail_offset);
+		if(write_size < sizeof(tbus_header_t) + len)
+		{
+			if((tb->head_offset <= tb->tail_offset) && (tb->head_offset == 0))
+			{
+				*header = BUILD_HEADER(CMD_IGNORE, 0);
+				tb->tail_offset = 0;
+				goto AGAIN;
+			}
+			goto WOULD_BLOCK;
+		}
+		else
+		{
+			*header = BUILD_HEADER(CMD_PACKAGE, len);
+			memcpy(tb->buff + tb->tail_offset + sizeof(tbus_header_t), buf, len);
+			tb->tail_offset += sizeof(tbus_header_t) + len;
+		}
+	}
+
+	return E_TS_NOERROR;
+WOULD_BLOCK:
+	return E_TS_WOULD_BLOCK;
+AGAIN:
+	return E_TS_AGAIN;
+NO_MEMORY:
+	return E_TS_NO_MEMORY;
+}
+
+TERROR_CODE tbus_peek(tbus_t *tb, const char** buf, tuint16 *len)
+{
+	size_t read_size;
+
+	if(tb->head_offset <= tb->tail_offset)
+	{
+		read_size = tb->tail_offset - tb->head_offset;
+	}
+	else
+	{
+		read_size = tb->size - tb->head_offset;
+	}
+
+	if(read_size < sizeof(tbus_header_t))
+	{
+		if(tb->head_offset > tb->tail_offset)
+		{		
+			tb->head_offset = 0;
+			goto AGAIN;
+		}
+		goto WOULD_BLOCK;
+	}
+	else
+	{
+		tbus_header_t *header = (tbus_header_t*)(tb->buff + tb->head_offset);
+		switch(GET_COMMAND(*header))
+		{
+		case CMD_IGNORE:
+			if(tb->head_offset > tb->tail_offset)
+			{		
+				tb->head_offset = 0;
+				goto AGAIN;
+			}
+			goto WOULD_BLOCK;
+		case CMD_PACKAGE:
+			*buf = tb->buff + tb->head_offset + sizeof(tbus_header_t);
+			*len = GET_PACKAGE_SIZE(*header);
+			break;
+		default:
+			goto ERROR_RET;
+		}
+	}
+	
+	return E_TS_NOERROR;
+WOULD_BLOCK:
+	return E_TS_WOULD_BLOCK;
+AGAIN:
+	return E_TS_AGAIN;
+ERROR_RET:
+	return E_TS_ERROR;
+}
+
+void tbus_peek_over(tbus_t *tb, tuint16 len)
+{
+	tb->head_offset += sizeof(tbus_header_t) + len;
+	if(tb->head_offset >= tb->size)
+	{
+		tb->head_offset = 0;
+	}
+}
 
