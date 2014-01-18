@@ -2,7 +2,7 @@ TSERVER_HOME=$(shell pwd)
 
 CLEANTARGET = clean
 INSTALLTARGET = install
-SUBMODS = tbus tbusmgr tconnd utils/start-stop-daemon
+SUBMODS = source
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 MAKE = make -I $(TSERVER_HOME)

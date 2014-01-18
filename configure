@@ -1,26 +1,19 @@
 #!/bin/bash
 
-INSTALL_PATH=/usr/local
+TSERVER_INSTALL_PATH=/usr/local
+TSERVER_ROOT_DIR=`pwd`
 
 usage()
 {
 	echo "-p install path"
-	echo "-c clean"
 	echo "-h help"
 }
 
-while getopts "p:ch" option 
+while getopts "p:h" option 
 do
 	case "$option" in
 	p)
 		INSTALL_PATH=$OPTARG
-		;;
-	c)
-		if [ -f common.mk ];then
-			rm common.mk
-			rm Makefile
-		fi
-		exit 0;
 		;;
 	h)
 		Usage;
@@ -34,9 +27,18 @@ do
 done
 
 
-sed 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' common.mk.tpl > common.mk
-cp Makefile.tpl Makefile
+cp common.mk.tpl common.mk
+sed -i 's#_TSERVER_INSTALL_PREFIX#'${TSERVER_INSTALL_PATH}'#g' common.mk
+sed -i 's#_TSERVER_ROOT_DIR#'${TSERVER_ROOT_DIR}'#g' common.mk
+if [ ! -d bin ];then
+mkdir -p bin
+fi
 
-echo "INSTALL_PATH=${INSTALL_PATH}"
+if [ ! -d lib ];then
+mkdir -p lib/tbus
+fi
+
+echo "ROOT_DIR=${TSERVER_ROOT_DIR}"
+echo "INSTALL_PATH=${TSERVER_INSTALL_PATH}"
 echo "succeed"
 exit 0;

@@ -1,8 +1,8 @@
-include ../common.mk
+include ../../common.mk
 
 TCONND_CFILE=$(wildcard *.c)
 TCONND_OBJ=$(TCONND_CFILE:.c=.o)
-TCONND_APP=tconnd
+TCONND_APP=$(BINRARY_PATH)/tconnd
 
 
 .PHONY: all clean

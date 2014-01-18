@@ -1,8 +1,8 @@
-include ../../common.mk
+include ../../../common.mk
 
 CFILE=$(wildcard *.c)
 OBJ=$(CFILE:.c=.o)
-APP=start-stop-daemon
+APP=$(BINRARY_PATH)/start-stop-daemon
 
 CINC+=-I./
 

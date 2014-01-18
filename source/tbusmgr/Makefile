@@ -1,15 +1,16 @@
-include ../common.mk
+include ../../common.mk
 
 TBUS_MGR_CFILE=$(wildcard *.c)
 TBUS_MGR_OBJ=$(TBUS_MGR_CFILE:.c=.o)
-TBUS_MGR=tbusmgr
+TBUS_MGR=$(BINRARY_PATH)/tbusmgr
+
+DEPLIBS=-ltbus
 
 
 .PHONY: all clean
 
 all: $(TBUS_MGR)
 
--include $(TBUS_MGR_CFILE:.c=.d)
 
 %.d: %.c
 	$(CC) -MM $(CFLAGS) $< -o $@

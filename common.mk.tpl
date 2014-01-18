@@ -1,16 +1,23 @@
+ROOT_DIR=_TSERVER_ROOT_DIR
+INSTALL_PREFIX = _TSERVER_INSTALL_PREFIX
+
+BINRARY_PATH=$(ROOT_DIR)/bin
+LIBRARY_PATH=$(ROOT_DIR)/lib
+INCLUDE_PATH=$(ROOT_DIR)/include
+
 CC = gcc
 RM = /bin/rm -f
 
 
 # -----------include files -----------------------------------
 
-CINC = -I/usr/include
+CINC = -I$(INCLUDE_PATH)
 
 
 
 
 #----------------libraris --------------------------
-LDPATH += -L/usr/lib -L/usr/local/lib   
+LDPATH += -L$(LIBRARY_PATH)
 
 #C compiler flags
 
@@ -21,4 +28,3 @@ CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CI
 endif
 
 
-INSTALL_PREFIX = tserver

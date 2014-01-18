@@ -1,8 +1,8 @@
-include ../common.mk
+include ../../common.mk
 
 TBUS_CFILE=$(wildcard *.c)
 TBUS_OBJ=$(TBUS_CFILE:.c=.o)
-TBUS_LIB=libtbus.a
+TBUS_LIB=$(LIBRARY_PATH)/libtbus.a
 
 
 .PHONY: all clean
