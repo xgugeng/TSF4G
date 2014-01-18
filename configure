@@ -35,7 +35,7 @@ mkdir -p bin
 fi
 
 if [ ! -d lib ];then
-mkdir -p lib/tbus
+mkdir -p lib
 fi
 
 echo "ROOT_DIR=${TSERVER_ROOT_DIR}"
