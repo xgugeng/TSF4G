@@ -1,6 +1,8 @@
 #ifndef _H_TBUS
 #define _H_TBUS
 
+#include "tserver/terrno.h"
+
 #define TBUS_VERSION "0.0.1"
 
 typedef struct _tbus_t tbus_t;
@@ -12,7 +14,7 @@ struct _tbus_t
 	char buff[0];
 };
 
-int tbus_init(tbus_t *tb, int size);
+TERROR_CODE tbus_init(tbus_t *tb, int size);
 
 
 #endif//_H_TBUS

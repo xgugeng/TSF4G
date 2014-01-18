@@ -7,7 +7,6 @@
 #include <sys/shm.h>
 
 
-
 #include "tserver/tbus/tbus.h"
 
 void version()
@@ -31,7 +30,7 @@ int main(int argc, char**argv)
 	int shm_id;
 	void *shm_ptr = NULL;
 	tbus_t *tbus_ptr = NULL;
-	int ret;
+	TERROR_CODE ret;
 
 	if(argc < 2)
 	{
@@ -77,6 +76,11 @@ int main(int argc, char**argv)
 					fprintf(stderr, "atoi(\"%s\") returned an error[%d].\n", arg, errno);
 					exit(1);
 				}
+				if(shm_size <= 0)
+				{
+					fprintf(stderr, "invalid size[%d].\n", shm_size);
+					exit(1);
+				}
 			}
 			else if (strcmp(arg, "-w") == 0)
 			{			
@@ -112,15 +116,19 @@ int main(int argc, char**argv)
 				if(shm_ptr == NULL)
 				{
 					fprintf(stderr, "shmat(%d, NULL, 0) returned an error[%d].\n", shm_id, errno);
-					exit(1);
+					goto error_free_memory;
 				}
 				tbus_ptr = (tbus_t*)shm_ptr;
 				ret = tbus_init(tbus_ptr, shm_size);
-				if(ret != 0)
+				if(ret != E_TS_NOERROR)
 				{
 					fprintf(stderr, "tbus_init(%p) returned an error[%d].\n", tbus_ptr, ret);
-					exit(1);
+					goto error_free_memory;
 				}
+				return 0;
+			error_free_memory:
+				shmctl(shm_id, IPC_RMID, 0);
+				exit(1);
 			}
 			else
 			{

@@ -1,6 +1,7 @@
 #include "tlibc/platform/tlibc_platform.h"
 
 #include "tserver/tbus/tbus.h"
+#include "tserver/terrno.h"
 
 
 #define get_addr(tb, offset) (tb->buff + offset)
@@ -119,22 +120,26 @@ int tbus_backward_pos(tbus_t* tb, int offset, int distance)
 	return offset;
 }
 
-int tbus_init(tbus_t *tb, int size)
+TERROR_CODE tbus_init(tbus_t *tb, int size)
 {
+	TERROR_CODE ret = E_TS_NOERROR;
+
 	tb->head_offset = 0;
 	tb->tail_offset = 0;
 	if(size < 0)
 	{
+		ret = E_TS_NO_MEMORY;
 		goto ERROR_RET;
 	}
 	if((unsigned)size <= TLIBC_OFFSET_OF(tbus_t, buff))
 	{
+		ret = E_TS_NO_MEMORY;
 		goto ERROR_RET;
 	}
 	tb->size = size - TLIBC_OFFSET_OF(tbus_t, buff);
-	return 0;
+	return E_TS_NOERROR;
 ERROR_RET:
-	return -1;
+	return ret;
 }
 
 
