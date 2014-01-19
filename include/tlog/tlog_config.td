@@ -22,7 +22,7 @@ struct tlog_rolling_file_t
 	uint32							max_backup_index;
 };
 
-struct tlog_appender
+struct tlog_appender_t
 {
 	tlog_appender_type_t type;
 if(type == e_tlog_rolling_file) tlog_rolling_file_t rolling_file;
@@ -31,6 +31,6 @@ if(type == e_tlog_rolling_file) tlog_rolling_file_t rolling_file;
 struct tlog_config_t
 {
 	tlog_level_t level;
-	vector<tlog_appender, TLOG_MAX_APPENDER_NUM> appender;
+	vector<tlog_appender_t, TLOG_MAX_APPENDER_NUM> appender;
 };
 

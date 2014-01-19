@@ -5,18 +5,134 @@
 #include "tlog/tlog_config_reader.h"
 
 #include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
+
+static void rolling_file_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config)
+{
+	tuint32 i;	
+	tchar file_name[TSERVER_FILE_NAME_LENGH];
+	size_t file_name_len = strlen(config->file_name);
+	strncpy(file_name, config->file_name, file_name_len);
+	file_name[TSERVER_FILE_NAME_LENGH - 1] = 0;
+	for(i = 0; i < file_name_len; ++i)
+	{
+		if(file_name[i] == '/')
+		{
+			file_name[i] = 0;
+			mkdir(file_name, 0755);
+			file_name[i] = '/';
+		}
+	}	
+
+	self->fout = NULL;
+	self->index = 0;
+}
 
 TERROR_CODE tlog_init(tlog_t *self, const char *config_file)
 {
+	TERROR_CODE ret = E_TS_ERROR;;
 	TLIBC_XML_READER xml_reader;
+	tuint32 i;
 	
 	tlibc_xml_reader_init(&xml_reader, config_file);
 	if(tlibc_read_tlog_config_t(&xml_reader.super, &self->config) != E_TLIBC_NOERROR)
 	{
+		ret = E_TS_ERROR;
 		goto ERROR_RET;
+	}
+
+	self->instance.appender_instance_num = self->config.appender_num;
+	for(i = 0; i < self->instance.appender_instance_num; ++i)
+	{
+		switch(self->config.appender[i].type)
+		{
+		case e_tlog_rolling_file:
+			rolling_file_init(&self->instance.appender_instance[i].rolling_file, &self->config.appender[i].rolling_file);
+			break;
+		}
+	
 	}
 
 	return E_TS_NOERROR;
 ERROR_RET:
-	return E_TS_ERROR;
+	return ret;
 }
+
+
+static void rolling_file_log(tlog_rolling_file_instance_t *self, 
+		const tlog_rolling_file_t *config,
+		const char *message, size_t message_size)
+{
+	size_t file_size;
+
+	if(self->fout == NULL)
+	{
+		self->fout = fopen(config->file_name, "wb+");
+		if(self->fout == NULL)
+		{
+			goto done;
+		}
+		fseek(self->fout, 0, SEEK_END);
+	}
+	
+	file_size = ftell(self->fout);
+	if(file_size + message_size > config->max_file_size)
+	{
+		char file_name[TSERVER_FILE_NAME_LENGH];
+		snprintf(file_name, TSERVER_FILE_NAME_LENGH, "%s.%u", config->file_name, self->index);
+		++self->index;
+		if(self->index > config->max_backup_index)
+		{
+			self->index = 0;
+		}
+		
+		fclose(self->fout);
+		self->fout = NULL;
+		
+		rename(config->file_name, file_name);
+		
+		self->fout = fopen(config->file_name, "wb+");
+		if(self->fout == NULL)
+		{
+			goto done;
+		}
+		fseek(self->fout, 0, SEEK_END);		
+	}
+
+	fwrite(message, 1, message_size, self->fout);
+	fflush(self->fout);
+	
+done:
+	return;
+}
+
+void tlog_log(tlog_t *self, tlog_level_t level, const char* fmt, ...)
+{
+	tuint32 i;
+	char message[TLOG_MAX_MESSAGE_LENGTH];
+	size_t message_size;
+	va_list ap;
+	
+		
+	va_start(ap, fmt);
+	vsnprintf(message, TLOG_MAX_MESSAGE_LENGTH, fmt, ap);
+	message[TLOG_MAX_MESSAGE_LENGTH - 1] = 0;
+	message_size = strlen(message);
+	va_end(ap);
+	
+	for(i = 0; i < self->config.appender_num; ++i)	
+	{
+		if(self->config.level > level)
+		{
+			continue;
+		}
+		switch(self->config.appender[i].type)
+		{
+			case e_tlog_rolling_file:
+				rolling_file_log(&self->instance.appender_instance[i].rolling_file, &self->config.appender[i].rolling_file, message, message_size);
+				break;
+		}		
+	}
+}
+
