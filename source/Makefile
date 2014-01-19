@@ -2,7 +2,7 @@ include ../common.mk
 
 CLEANTARGET = clean
 INSTALLTARGET = install
-SUBMODS = tlog tbus tbusmgr tconnd utils/start-stop-daemon
+SUBMODS = tcommon tlog tbus tbusmgr tconnd utils/start-stop-daemon
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 
@@ -26,6 +26,7 @@ $(SUBMODSINSTALL):
 	@echo "Begin to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)' ......"
 	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(INSTALLTARGET);
 	@echo "Finish to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)'" 
+
 
 release:
 	@echo 'release'

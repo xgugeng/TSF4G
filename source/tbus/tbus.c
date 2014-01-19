@@ -1,5 +1,5 @@
-#include "tserver/tbus/tbus.h"
-#include "tserver/terrno.h"
+#include "tbus/tbus.h"
+#include "terrno.h"
 
 
 #include <string.h>

@@ -7,7 +7,7 @@
 #include <sys/shm.h>
 
 
-#include "tserver/tbus/tbus.h"
+#include "tbus/tbus.h"
 
 void version()
 {

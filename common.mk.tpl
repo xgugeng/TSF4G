@@ -4,6 +4,7 @@ INSTALL_PREFIX = _TSERVER_INSTALL_PREFIX
 BINRARY_PATH=$(ROOT_DIR)/bin
 LIBRARY_PATH=$(ROOT_DIR)/lib
 INCLUDE_PATH=$(ROOT_DIR)/include
+SOURCE_PATH=$(ROOT_DIR)/source
 
 CC = gcc
 RM = /bin/rm -f
@@ -12,6 +13,7 @@ RM = /bin/rm -f
 # -----------include files -----------------------------------
 
 CINC = -I$(INCLUDE_PATH)
+CINC+= -I$(SOURCE_PATH)
 CINC+= -I$(TLIBC_HOME)/include
 
 

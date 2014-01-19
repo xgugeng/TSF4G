@@ -2,14 +2,16 @@
 #define _H_TLOG
 
 #include "tlibc/platform/tlibc_platform.h"
-#include "tserver/terrno.h"
+#include "tlog/tlog_config_types.h"
+
+#include "terrno.h"
 
 #define TLOG_VERSION "0.0.1"
 
 typedef struct _tlog_t tlog_t;
 struct _tlog_t
 {
-	const char *config_file;
+	tlog_config_t config;
 };
 
 

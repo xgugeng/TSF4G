@@ -1,0 +1,1 @@
+const uint32 TSERVER_FILE_NAME_LENGH = 1024;

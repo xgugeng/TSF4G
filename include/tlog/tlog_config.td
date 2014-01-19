@@ -1,0 +1,36 @@
+import "tcommon/tcommon.td"
+
+const uint16 TLOG_MAX_APPENDER_NUM = 32;
+
+enum tlog_level_t
+{
+	e_tlog_error,
+	e_tlog_warn,
+	e_tlog_info,
+	e_tlog_debug,
+};
+
+enum tlog_appender_type_t
+{
+	e_tlog_rolling_file = 0,
+};
+
+struct tlog_rolling_file_t
+{
+	string<TSERVER_FILE_NAME_LENGH> file_name;
+	uint32							max_file_size;
+	uint32							max_backup_index;
+};
+
+struct tlog_appender
+{
+	tlog_appender_type_t type;
+if(type == e_tlog_rolling_file) tlog_rolling_file_t rolling_file;
+};
+
+struct tlog_config_t
+{
+	tlog_level_t level;
+	vector<tlog_appender, TLOG_MAX_APPENDER_NUM> appender;
+};
+

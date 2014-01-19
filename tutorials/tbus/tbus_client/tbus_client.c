@@ -1,4 +1,4 @@
-#include "tserver/tbus/tbus.h"
+#include "tbus/tbus.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
