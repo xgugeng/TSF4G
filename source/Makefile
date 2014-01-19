@@ -2,7 +2,7 @@ include ../common.mk
 
 CLEANTARGET = clean
 INSTALLTARGET = install
-SUBMODS = tbus tbusmgr tconnd utils/start-stop-daemon
+SUBMODS = tlog tbus tbusmgr tconnd utils/start-stop-daemon
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 
