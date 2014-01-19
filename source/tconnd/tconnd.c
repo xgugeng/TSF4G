@@ -1,15 +1,12 @@
+#include "globals.h"
+
 #include "tlibc/protocol/tlibc_xml_reader.h"
 #include "config_reader.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#define TCONND_VERSION "0.0.1"
-
 TLIBC_XML_READER xml_reader;
-
-const char *config_file = NULL;
-config_t g_config;
 
 void version()
 {
@@ -32,7 +29,8 @@ void help()
 
 int main(int argc, char **argv)
 {
-	int i, ret;
+	const char *config_file = NULL;
+	int i;
 
 	for (i = 1; i < argc; ++i)
 	{
@@ -73,8 +71,13 @@ int main(int argc, char **argv)
 			goto ERROR_RET;
 	}
 
-	tlibc_xml_reader_init(&xml_reader, config_file);
-	ret = tlibc_read_config_t(&xml_reader.super, &g_config);
+	if((tlibc_xml_reader_init(&xml_reader, config_file) != E_TLIBC_NOERROR)
+		||(tlibc_read_config_t(&xml_reader.super, &g_config) != E_TLIBC_NOERROR))
+	{
+		fprintf(stderr, "load config file [%s] failed.\n", config_file);
+		goto ERROR_RET;
+	}
+	
 
 	return 0;
 ERROR_RET:
