@@ -1,0 +1,12 @@
+<config_t>
+	<log_config>etc/tconnd_log.xml</log_config>	
+	<vector>
+		<tdtp>
+			<ip>127.0.0.1</ip>
+			<port>7001</port>
+			<tdgi_pass>
+				<shmkey>123456</shmkey>
+			</tdgi_pass>
+		</tdtp>
+	</vector>
+</config_t>

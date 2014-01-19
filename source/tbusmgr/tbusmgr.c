@@ -136,7 +136,7 @@ int main(int argc, char**argv)
 				help();
 				exit(1);
 			}
-			arg = strtok(NULL, " =");
+			arg = strtok(NULL, " ");
 		}
 	}
 	
