@@ -25,8 +25,15 @@ install:$(TBUS_MGR)
 	mkdir -p $(INSTALL_PREFIX)/bin/
 	cp $(TBUS_MGR) $(INSTALL_PREFIX)/bin/
 
+tags:
+	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
+	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	find ~/TServer/include/ . -name "*.h" | cscope -Rbq
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${TBUS_MGR}
+	$(RM) cscope.in.out  cscope.out  cscope.po.out
+	$(RM) tags
 
 
