@@ -14,7 +14,7 @@ TDOBJ=tconnd_config_reader.o
 
 CINC+=-I./config
 
-.PHONY: all clean
+.PHONY: all clean tags
 
 all: $(TCONND_APP)
 
@@ -39,9 +39,17 @@ install:$(TCONND_APP)
 	mkdir -p $(INSTALL_PREFIX)/bin/
 	cp $(TCONND_APP) $(INSTALL_PREFIX)/bin/
 
+tags:
+	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
+	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	find ~/TServer/include/ . -name "*.h" | cscope -Rbq
+
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${TCONND_APP}
 	$(RM) $(TDHFILE)
 	$(RM) $(TDCFILE)
 	$(RM) $(TDTFIE)
+	$(RM) cscope.in.out  cscope.out  cscope.po.out
+	$(RM) tags
+

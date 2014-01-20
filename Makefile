@@ -2,21 +2,32 @@ include common.mk
 
 CLEANTARGET = clean
 INSTALLTARGET = install
+TAGSTARGET = tags
+
 SUBMODS = source tutorials
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
-MAKE = make -I $(ROOT_DIR)
+SUBMODSTAGS = $(patsubst %, %.$(TAGSTARGET), $(SUBMODS))
 
-.PHONY: all $(CLEANTARGET) $(INSTALLTARGET) $(SUBMODS) 
+.PHONY: all $(CLEANTARGET) $(INSTALLTARGET) $(SUBMODS) $(TAGSTARGET)
 
 all: $(SUBMODS)
+
 $(CLEANTARGET): $(SUBMODSCLEAN)
+
 $(INSTALLTARGET): $(SUBMODSINSTALL)
+
+$(TAGSTARGET): $(SUBMODSTAGS)
 	
 $(SUBMODS):
 	@echo "Begin to make sub module: '$@' ......"
 	cd $@ && $(MAKE);
 	@echo "Finish to  make sub module: '$@'" 
+
+$(SUBMODSTAGS): 
+	@echo "Begin to tags sub module: '$(patsubst %.$(TAGSTARGET),%, $@)' ......"
+	cd $(patsubst %.$(TAGSTARGET),%, $@)  && $(MAKE) $(TAGSTARGET);
+	@echo "Finish to tags sub module: '$(patsubst %.$(TAGSTARGET),%, $@)'" 
 
 $(SUBMODSCLEAN): 
 	@echo "Begin to clean sub module: '$(patsubst %.$(CLEANTARGET),%, $@)' ......"

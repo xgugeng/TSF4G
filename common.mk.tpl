@@ -32,4 +32,4 @@ else
 CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror
 endif
 
-
+MAKE = make -I $(ROOT_DIR)
