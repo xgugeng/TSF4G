@@ -1,1 +1,2 @@
 const uint32 TSERVER_FILE_NAME_LENGH = 1024;
+const uint32 TSERVER_IP_LENGTH = 16;

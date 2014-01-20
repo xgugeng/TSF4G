@@ -5,7 +5,12 @@ TCONND_OBJ=$(TCONND_CFILE:.c=.o)
 TCONND_APP=$(BINRARY_PATH)/tconnd
 CONFIG_CFILE=config/config_reader.c
 CONFIG_OBJ=config/config_reader.o
-DEPLIBS=-ltlibc
+DEPLIBS=-ltlibc -ltlog
+TDFILE=tconnd/tconnd_config.td
+TDCFILE=tconnd_config_reader.c
+TDHFILE=tconnd_config_reader.h tconnd_config_types.h
+TDTFIE=$(INCLUDE_PATH)/tconnd/tconnd_config_types.h
+TDOBJ=tconnd_config_reader.o
 
 CINC+=-I./config
 
@@ -19,11 +24,15 @@ all: $(TCONND_APP)
 %.o: %.c %.d
 	$(CC) -c $(CFLAGS) $<
 
+$(TDCFILE):
+	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(TDFILE)
+	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_types $(TDFILE)
+
 $(CONFIG_CFILE):config.td
 	tdata -s ./ -t config -gen tlibc_types $^
 	tdata -s ./ -t config -gen tlibc_reader $^
 
-$(TCONND_APP): $(CONFIG_OBJ) $(TCONND_OBJ)
+$(TCONND_APP): $(TDOBJ) $(TCONND_OBJ)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:$(TCONND_APP)
@@ -33,6 +42,6 @@ install:$(TCONND_APP)
 clean:
 	$(RM) *.o  *.d
 	$(RM) ${TCONND_APP}
-	$(RM) config -rf
-
-
+	$(RM) $(TDHFILE)
+	$(RM) $(TDCFILE)
+	$(RM) $(TDTFIE)

@@ -1,4 +1,4 @@
-<config_t>
+<tconnd_config_t>
 	<log_config>etc/tconnd_log.xml</log_config>	
 	<vector>
 		<tdtp>
@@ -9,4 +9,4 @@
 			</tdgi_pass>
 		</tdtp>
 	</vector>
-</config_t>
+</tconnd_config_t>

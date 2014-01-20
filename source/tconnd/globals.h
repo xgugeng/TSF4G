@@ -1,11 +1,12 @@
 #ifndef _H_GLOBALS_H
 #define _H_GLOBALS_H
 
-#include "config_reader.h"
+#include "tconnd/tconnd_config_types.h"
+
 
 #define TCONND_VERSION "0.0.1"
 
 
-extern config_t g_config;
+extern tconnd_config_t g_config;
 
 #endif//_H_GLOBALS_H
