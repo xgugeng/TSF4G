@@ -8,7 +8,6 @@
 #include "terrno.h"
 
 #define TLOG_VERSION "0.0.1"
-#define TLOG_MAX_MESSAGE_LENGTH 4096
 
 
 typedef struct _tlog_rolling_file_instance_t
@@ -41,6 +40,55 @@ struct _tlog_t
 
 TERROR_CODE tlog_init(tlog_t *self, const char *config_file);
 
-void tlog_log(tlog_t *self, tlog_level_t level, const char* fmt, ...);
+void tlog_write(tlog_t *self, tlog_level_t level, const char *message, size_t message_size);
+
+
+//仿照以下内容自定义日志格式
+#include <sys/time.h>
+#include <time.h>
+
+#define TLOG_HELPER_MESSAGE_LENGTH 1024
+
+#define TLOG_HELPER_LOG(inst, level, fmt, ...)\
+{\
+	struct timeval timestamp;\
+	struct tm	tm;\
+	char message[TLOG_HELPER_MESSAGE_LENGTH];\
+	size_t message_len, _len;\
+	const char* level_name = "";\
+	switch(level)\
+	{\
+	case e_tlog_error:\
+		level_name = "error";\
+		break;\
+	case e_tlog_warn:\
+		level_name = "warn";\
+		break;\
+	case e_tlog_info:\
+		level_name = "info";\
+		break;\
+	case e_tlog_debug:\
+		level_name = "debug";\
+		break;\
+	}\
+	gettimeofday(&timestamp, NULL);\
+	localtime_r(&timestamp.tv_sec, &tm);\
+	message_len = snprintf(message, TLOG_HELPER_MESSAGE_LENGTH,\
+		"%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u : ",\
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,\
+		tm.tm_hour, tm.tm_min, tm.tm_sec\
+		,level_name, __FILE__, __LINE__\
+		);\
+	_len = snprintf(message + message_len, TLOG_HELPER_MESSAGE_LENGTH - message_len\
+		, fmt, __VA_ARGS__);\
+	message_len += _len;\
+	if(message_len + 1 < TLOG_HELPER_MESSAGE_LENGTH)\
+	{\
+		message[message_len++] = '\n';\
+		message[message_len] = 0;\
+	}\
+	message[TLOG_HELPER_MESSAGE_LENGTH - 1] = 0;\
+	tlog_write(inst, level, message, message_len);\
+}
 
 #endif//_H_TLOG

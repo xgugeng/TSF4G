@@ -107,23 +107,13 @@ done:
 	return;
 }
 
-void tlog_log(tlog_t *self, tlog_level_t level, const char* fmt, ...)
+void tlog_write(tlog_t *self, tlog_level_t level, const char *message, size_t message_size)
 {
 	tuint32 i;
-	char message[TLOG_MAX_MESSAGE_LENGTH];
-	size_t message_size;
-	va_list ap;
-	
-		
-	va_start(ap, fmt);
-	vsnprintf(message, TLOG_MAX_MESSAGE_LENGTH, fmt, ap);
-	message[TLOG_MAX_MESSAGE_LENGTH - 1] = 0;
-	message_size = strlen(message);
-	va_end(ap);
 	
 	for(i = 0; i < self->config.appender_num; ++i)	
 	{
-		if(self->config.level > level)
+		if(level > self->config.level)
 		{
 			continue;
 		}

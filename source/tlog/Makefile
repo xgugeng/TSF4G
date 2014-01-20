@@ -6,6 +6,7 @@ LIB=$(LIBRARY_PATH)/libtlog.a
 TDFILE=tlog/tlog_config.td
 TDCFILE=tlog_config_reader.c
 TDHFILE=tlog_config_reader.h tlog_config_types.h
+TDTFIE=$(INCLUDE_PATH)/tlog/tlog_config_types.h
 TDOBJ=tlog_config_reader.o
 
 .PHONY: all clean
@@ -34,4 +35,5 @@ clean:
 	$(RM) $(LIB)
 	$(RM) $(TDHFILE)
 	$(RM) $(TDCFILE)
+	$(RM) $(TDTFIE)
 
