@@ -1,6 +1,6 @@
 include ../../common.mk
 
-TCONND_CFILE=$(wildcard *.c)
+TCONND_CFILE=$(wildcard *.c) $(wildcard instance/*.c)
 TCONND_OBJ=$(TCONND_CFILE:.c=.o)
 TCONND_APP=$(BINRARY_PATH)/tconnd
 CONFIG_CFILE=config/config_reader.c
@@ -12,7 +12,8 @@ TDHFILE=tconnd_config_reader.h tconnd_config_types.h
 TDTFIE=$(INCLUDE_PATH)/tconnd/tconnd_config_types.h
 TDOBJ=tconnd_config_reader.o
 
-CINC+=-I./config
+CINC+=-I./config -I.
+DEPLIBS+=-ltbus -ltlibc -ltcommon
 
 .PHONY: all clean tags
 
@@ -25,6 +26,7 @@ all: $(TCONND_APP)
 	$(CC) -c $(CFLAGS) $<
 
 $(TDCFILE):
+	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader_header $(TDFILE)
 	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(TDFILE)
 	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_types $(TDFILE)
 
@@ -41,11 +43,12 @@ install:$(TCONND_APP)
 
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
-	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	find ~/TServer/include/ . -name "*.h" | cscope -Rbq
+	find $(INCLUDE_PATH) . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	find $(INCLUDE_PATH) . -name "*.h" | cscope -Rbq
 
 clean:
-	$(RM) *.o  *.d
+	find . -name "*.o" | xargs $(RM)
+	find . -name "*.d" | xargs $(RM)
 	$(RM) ${TCONND_APP}
 	$(RM) $(TDHFILE)
 	$(RM) $(TDCFILE)

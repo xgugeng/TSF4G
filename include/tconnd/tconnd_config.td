@@ -13,8 +13,14 @@ struct tconnd_tdtp_t
 {
 	string<TSERVER_IP_LENGTH> ip;
 	uint16 port;
+	uint32 backlog;
+
+	uint32 epoll_size;
 
 	tconnd_tdgi_t tdgi_pass;
+
+	int32 input_tbuskey;
+	int32 output_tbuskey;
 };
 
 struct tconnd_config_t

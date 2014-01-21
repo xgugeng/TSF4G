@@ -19,11 +19,16 @@ struct _tbus_t
 
 TERROR_CODE tbus_init(tbus_t *tb, int size);
 
-TERROR_CODE tbus_send(tbus_t *tb, const char* buf, tuint16 len);
 
-TERROR_CODE tbus_peek(tbus_t *tb, const char** buf, tuint16 *len);
+//len的返回值一定大于等于输入值
+TERROR_CODE tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf, TLIBC_INOUT tuint16 *len);
 
-void tbus_peek_over(tbus_t *tb, tuint16 len);
+void tbus_send_end(tbus_t *tb, tuint16 len);
+
+
+TERROR_CODE tbus_read_begin(tbus_t *tb, TLIBC_OUT const char** buf, TLIBC_OUT tuint16 *len);
+
+void tbus_read_end(tbus_t *tb, tuint16 len);
 
 
 #endif//_H_TBUS

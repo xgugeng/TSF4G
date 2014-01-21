@@ -1,10 +1,10 @@
-include ../common.mk
+include ../../common.mk
 
 CLEANTARGET = clean
 INSTALLTARGET = install
 TAGSTARGET = tags
 
-SUBMODS = tbus tlog tconnd
+SUBMODS = tconnd_client tconnd_server
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 SUBMODSTAGS = $(patsubst %, %.$(TAGSTARGET), $(SUBMODS))

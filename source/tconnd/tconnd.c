@@ -2,9 +2,13 @@
 
 #include "tlibc/protocol/tlibc_xml_reader.h"
 #include "tconnd/tconnd_config_reader.h"
+#include "instance/tdtp_instance.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sched.h>
+
 
 void version()
 {
@@ -25,12 +29,56 @@ void help()
 	fprintf(stderr, "  -c file					Set the config file\n");
 }
 
+
+
+TERROR_CODE instance_init()
+{
+	tuint32 i;
+	TERROR_CODE ret = E_TS_NOERROR;
+
+	for(i = 0; i < g_config.tdtp_num; ++i)
+	{
+		ret = tdtp_instance_init(&g_tdtp_instance[i], &g_config.tdtp[i]);
+		if(ret != E_TS_NOERROR)
+		{
+			goto done;
+		}
+	}
+
+done:
+	return ret;
+}
+
+TERROR_CODE instance_process()
+{
+	tuint32 i;
+	TERROR_CODE ret = E_TS_AGAIN;
+
+	for(i = 0; i < g_config.tdtp_num; ++i)
+	{
+		TERROR_CODE r = tdtp_instance_process(&g_tdtp_instance[i]);
+		if(r == E_TS_NOERROR)
+		{
+			ret = E_TS_NOERROR;
+		}
+		else if(r != E_TS_AGAIN)
+		{
+			ret = r;
+			goto done;
+		}
+		
+	}
+done:
+	return ret;
+}
+
 int main(int argc, char **argv)
 {
 	TLIBC_XML_READER xml_reader;
 	const char *config_file = NULL;
-	int i;
-
+	int i, ret;
+	tuint32 idle_count = 0;
+	
 	for (i = 1; i < argc; ++i)
 	{
 		char* arg;
@@ -76,8 +124,35 @@ int main(int argc, char **argv)
 		fprintf(stderr, "load config file [%s] failed.\n", config_file);
 		goto ERROR_RET;
 	}
-	
 
+	ret = instance_init();
+	if(ret != E_TS_NOERROR)
+	{
+		goto ERROR_RET;
+	}
+	
+	for(;;)
+	{
+		ret = instance_process();
+		if(ret == E_TS_AGAIN)
+		{			
+			++idle_count;
+			if(idle_count > 100)
+			{
+				usleep(1000);
+				idle_count = 0;
+			}
+			else
+			{
+				sched_yield();
+			}
+		}
+		else if(ret != E_TS_NOERROR)
+		{
+			goto ERROR_RET;
+		}
+	}
+	
 	return 0;
 ERROR_RET:
 	return 1;

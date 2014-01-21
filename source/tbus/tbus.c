@@ -35,17 +35,12 @@ ERROR_RET:
 }
 
 
-TERROR_CODE tbus_send(tbus_t *tb, const char* buf, tuint16 len)
+TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tuint16 *len)
 {
 	size_t write_size;	
 	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
 
-	if(sizeof(tbus_header_t) + len + 1 > (unsigned)tb->size)
-	{
-		goto NO_MEMORY;
-	}
-	
 	if(head_offset <= tail_offset)
 	{
 		write_size = tb->size - tail_offset - 1;
@@ -56,51 +51,44 @@ TERROR_CODE tbus_send(tbus_t *tb, const char* buf, tuint16 len)
 	}
 	
 
-	if(write_size < sizeof(tbus_header_t))
+	if(write_size < sizeof(tbus_header_t) + *len)
 	{
 		if((head_offset <= tail_offset) && (head_offset != 0))
-		{			
+		{
 			tb->tail_offset = 0;
 			goto AGAIN;		
 		}
 		goto WOULD_BLOCK;
 	}
-	else
-	{
-		tbus_header_t *header = (tbus_header_t*)(tb->buff + tail_offset);
-		if(write_size < sizeof(tbus_header_t) + len)
-		{
-			if((head_offset <= tail_offset) && (head_offset == 0))
-			{
-				*header = BUILD_HEADER(CMD_IGNORE, 0);
-				tb->tail_offset = 0;
-				goto AGAIN;
-			}
-			goto WOULD_BLOCK;
-		}
-		else
-		{
-			*header = BUILD_HEADER(CMD_PACKAGE, len);
-			memcpy(tb->buff + tail_offset + sizeof(tbus_header_t), buf, len);
-			tail_offset += sizeof(tbus_header_t) + len;
-			tb->tail_offset = tail_offset;
-		}
-	}
+
+	*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
+	*len = write_size - sizeof(tbus_header_t);
 
 	return E_TS_NOERROR;
 WOULD_BLOCK:
 	return E_TS_WOULD_BLOCK;
 AGAIN:
 	return E_TS_AGAIN;
-NO_MEMORY:
-	return E_TS_NO_MEMORY;
 }
 
-TERROR_CODE tbus_peek(tbus_t *tb, const char** buf, tuint16 *len)
+void tbus_send_end(tbus_t *tb, tuint16 len)
+{
+	int head_offset = tb->head_offset;
+	int tail_offset = tb->tail_offset;
+	tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);
+
+	*header = BUILD_HEADER(CMD_PACKAGE, len);
+
+	tail_offset += sizeof(tbus_header_t) + len;
+	tb->tail_offset = tail_offset;
+}
+
+TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, tuint16 *len)
 {
 	size_t read_size;
 	int tail_offset = tb->tail_offset;
 	int head_offset = tb->head_offset;
+	tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);
 
 	if(head_offset <= tail_offset)
 	{
@@ -114,32 +102,31 @@ TERROR_CODE tbus_peek(tbus_t *tb, const char** buf, tuint16 *len)
 	if(read_size < sizeof(tbus_header_t))
 	{
 		if(head_offset > tail_offset)
-		{		
+		{
 			tb->head_offset = 0;
 			goto AGAIN;
 		}
 		goto WOULD_BLOCK;
 	}
-	else
+
+
+	switch(GET_COMMAND(*header))
 	{
-		tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);
-		switch(GET_COMMAND(*header))
+	case CMD_IGNORE:
+		if(head_offset > tail_offset)
 		{
-		case CMD_IGNORE:
-			if(head_offset > tail_offset)
-			{		
-				tb->head_offset = 0;
-				goto AGAIN;
-			}
-			goto WOULD_BLOCK;
-		case CMD_PACKAGE:
-			*buf = tb->buff + head_offset + sizeof(tbus_header_t);
-			*len = GET_PACKAGE_SIZE(*header);
-			break;
-		default:
-			goto ERROR_RET;
+			tb->head_offset = 0;
+			goto AGAIN;
 		}
+		goto WOULD_BLOCK;
+	case CMD_PACKAGE:
+		*buf = tb->buff + head_offset + sizeof(tbus_header_t);
+		*len = GET_PACKAGE_SIZE(*header);
+		break;
+	default:
+		goto ERROR_RET;
 	}
+	
 	
 	return E_TS_NOERROR;
 WOULD_BLOCK:
@@ -150,7 +137,7 @@ ERROR_RET:
 	return E_TS_ERROR;
 }
 
-void tbus_peek_over(tbus_t *tb, tuint16 len)
+void tbus_read_end(tbus_t *tb, tuint16 len)
 {
 	int head_offset = tb->head_offset + sizeof(tbus_header_t) + len;
 	if(head_offset >= tb->size)

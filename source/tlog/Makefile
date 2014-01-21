@@ -21,6 +21,7 @@ all: $(LIB)
 
 $(TDCFILE):
 	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_types $(TDFILE)
+	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader_header $(TDFILE)
 	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(TDFILE)
 
 $(LIB): $(TDOBJ) $(OBJ)
