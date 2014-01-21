@@ -1,5 +1,5 @@
 #include "tlog/tlog.h"
-#include "terrno.h"
+#include "tcommon/terrno.h"
 
 #include "tlibc/protocol/tlibc_xml_reader.h"
 #include "tlog/tlog_config_reader.h"

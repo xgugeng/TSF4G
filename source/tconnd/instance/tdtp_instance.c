@@ -1,5 +1,5 @@
 #include "tlibc/platform/tlibc_platform.h"
-#include "instance/tdtp_instance.h"
+#include "tconnd/instance/tdtp_instance.h"
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
 

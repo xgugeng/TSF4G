@@ -1,58 +1,66 @@
 include ../../common.mk
 
-TCONND_CFILE=$(wildcard *.c) $(wildcard instance/*.c)
-TCONND_OBJ=$(TCONND_CFILE:.c=.o)
-TCONND_APP=$(BINRARY_PATH)/tconnd
-CONFIG_CFILE=config/config_reader.c
-CONFIG_OBJ=config/config_reader.o
-DEPLIBS=-ltlibc -ltlog
-TDFILE=tconnd/tconnd_config.td
-TDCFILE=tconnd_config_reader.c
-TDHFILE=tconnd_config_reader.h tconnd_config_types.h
-TDTFIE=$(INCLUDE_PATH)/tconnd/tconnd_config_types.h
-TDOBJ=tconnd_config_reader.o
-
-CINC+=-I./config -I.
+NAME=tconnd
+#CINC+=
 DEPLIBS+=-ltbus -ltlibc -ltcommon
 
-.PHONY: all clean tags
+#以下为通用部分
+.PHONY: all clean
+TDATA_FILE=$(wildcard *.td)
 
-all: $(TCONND_APP)
+TYPES_HFILE=$(TDATA_FILE:.td=_types.h)
+READER_HFILE=$(TDATA_FILE:.td=_reader.h)
+WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
+READER_CFILE=$(TDATA_FILE:.td=_reader.c)
+WRITER_CFILE=$(TDATA_FILE:.td=_writer.c)
 
-%.d: %.c
-	$(CC) -MM $(CFLAGS) $< -o $@
+C_FILE=$(wildcard *.c) $(wildcard instance/*.c)
+OBJECT_FILE=$(C_FILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
+LIB=$(LIBRARY_PATH)/lib$(NAME).a
+APP=$(NAME)
+TARGET=$(APP)
 
-%.o: %.c %.d
-	$(CC) -c $(CFLAGS) $<
+.PHONY: all clean
 
-$(TDCFILE):
-	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader_header $(TDFILE)
-	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(TDFILE)
-	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_types $(TDFILE)
+%_types.h:%.td
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_types $(NAME)/$<
 
-$(CONFIG_CFILE):config.td
-	tdata -s ./ -t config -gen tlibc_types $^
-	tdata -s ./ -t config -gen tlibc_reader $^
+%_reader.h:%.td %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader_header $(NAME)/$<
 
-$(TCONND_APP): $(TDOBJ) $(TCONND_OBJ)
+%_writer.h:%.td %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_writer_header $(NAME)/$<
+
+%_reader.c:%.td %_reader.h %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(NAME)/$<
+	
+%_writer.c:%.td %_writer.h %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_writer $(NAME)/$<
+	
+
+all:$(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(TARGET) 
+
+$(LIB): $(OBJECT_FILE)
+	ar r $(LIB) $^
+
+$(APP): $(OBJECT_FILE)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
-install:$(TCONND_APP)
-	mkdir -p $(INSTALL_PREFIX)/bin/
-	cp $(TCONND_APP) $(INSTALL_PREFIX)/bin/
+install:
+	mkdir -p $(INSTALL_PREFIX)/lib/
+	cp $(LIB) $(INSTALL_PREFIX)/lib/
 
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
-	find $(INCLUDE_PATH) . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	find $(INCLUDE_PATH) . -name "*.h" | cscope -Rbq
+	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	find ~/TServer/include/ . -name "*.h" | cscope -Rbq
 
 clean:
 	find . -name "*.o" | xargs $(RM)
 	find . -name "*.d" | xargs $(RM)
-	$(RM) ${TCONND_APP}
-	$(RM) $(TDHFILE)
-	$(RM) $(TDCFILE)
-	$(RM) $(TDTFIE)
-	$(RM) cscope.in.out  cscope.out  cscope.po.out
-	$(RM) tags
-
+	$(RM) $(TARGET)
+	$(RM) $(TYPES_HFILE)
+	$(RM) $(READER_HFILE)
+	$(RM) $(WRITER_HFILE)
+	$(RM) $(READER_CFILE)
+	$(RM) $(WRITER_CFILE)

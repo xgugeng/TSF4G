@@ -3,7 +3,7 @@
 
 #include "tlibc/platform/tlibc_platform.h"
 
-#include "terrno.h"
+#include "tcommon/terrno.h"
 
 #define TBUS_VERSION "0.0.1"
 

@@ -1,45 +1,54 @@
 include ../../common.mk
 
-.PHONY: all clean
 NAME=tcommon
-TDATA_FILE=$(wildcard $(INCLUDE_PATH)/$(NAME)/*.td)
-TDATA_FILE_SUFFIX=$(patsubst $(INCLUDE_PATH)/%, %, $(TDATA_FILE))
+#CINC+=
+#DEPLIBS+=
 
-TYPES_HFILE=$(patsubst %.td, $(INCLUDE_PATH)/%_types.h, $(TDATA_FILE_SUFFIX))
-READER_HFILE=$(patsubst %.td, $(INCLUDE_PATH)/%_reader.h, $(TDATA_FILE_SUFFIX))
-WRITER_HFILE=$(patsubst %.td, $(INCLUDE_PATH)/%_writer.h, $(TDATA_FILE_SUFFIX))
-READER_CFILE=$(patsubst %.td, $(SOURCE_PATH)/%_reader.c, $(TDATA_FILE_SUFFIX))
-WRITER_CFILE=$(patsubst %.td, $(SOURCE_PATH)/%_writer.c, $(TDATA_FILE_SUFFIX))
+#以下为通用部分
+.PHONY: all clean
+TDATA_FILE=$(wildcard *.td)
 
-C_FILE=$(wildcard *.c) $(READER_CFILE) $(WRITER_CFILE)
+TYPES_HFILE=$(TDATA_FILE:.td=_types.h)
+READER_HFILE=$(TDATA_FILE:.td=_reader.h)
+WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
+READER_CFILE=$(TDATA_FILE:.td=_reader.c)
+WRITER_CFILE=$(TDATA_FILE:.td=_writer.c)
 
-OBJECT_FILE=$(C_FILE:.c=.o)
-
-LIBRARY=$(LIBRARY_PATH)/lib$(NAME).a
+C_FILE=$(wildcard *.c)
+OBJECT_FILE=$(C_FILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
+LIB=$(LIBRARY_PATH)/lib$(NAME).a
+APP=$(BINRARY_PATH)/$(NAME)
+TARGET=$(LIB)
 
 .PHONY: all clean
 
-all:$(LIBRARY)
+%_types.h:%.td
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_types $(NAME)/$<
 
-%.d: %.c
-	$(CC) -MM $(CFLAGS) $< -o $@
+%_reader.h:%.td %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader_header $(NAME)/$<
 
-%.o: %.c %.d
-	$(CC) -c $(CFLAGS) $<
+%_writer.h:%.td %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_writer_header $(NAME)/$<
 
-%.c:
-	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_types $(TDATA_FILE_SUFFIX)
-	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_reader_header $(TDATA_FILE_SUFFIX)
-	tdata -s $(INCLUDE_PATH) -t $(INCLUDE_PATH) -gen tlibc_writer_header $(TDATA_FILE_SUFFIX)
-	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(TDATA_FILE_SUFFIX)
-	tdata -s $(INCLUDE_PATH) -t $(SOURCE_PATH) -gen tlibc_writer $(TDATA_FILE_SUFFIX)
+%_reader.c:%.td %_reader.h %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_reader $(NAME)/$<
+	
+%_writer.c:%.td %_writer.h %_types.h
+	tdata -s $(SOURCE_PATH) -t $(SOURCE_PATH) -gen tlibc_writer $(NAME)/$<
+	
 
-$(LIBRARY): $(OBJECT_FILE)
-	ar r $(LIBRARY) $^
+all:$(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(TARGET) 
+
+$(LIB): $(OBJECT_FILE)
+	ar r $(LIB) $^
+
+$(APP): $(OBJECT_FILE)
+	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:
 	mkdir -p $(INSTALL_PREFIX)/lib/
-	cp $(LIBRARY) $(INSTALL_PREFIX)/lib/
+	cp $(LIB) $(INSTALL_PREFIX)/lib/
 
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
@@ -49,6 +58,7 @@ tags:
 clean:
 	find . -name "*.o" | xargs $(RM)
 	find . -name "*.d" | xargs $(RM)
+	$(RM) $(TARGET)
 	$(RM) $(TYPES_HFILE)
 	$(RM) $(READER_HFILE)
 	$(RM) $(WRITER_HFILE)

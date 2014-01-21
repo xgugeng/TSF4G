@@ -5,7 +5,7 @@
 #include "tlog/tlog_config_types.h"
 
 #include <stdio.h>
-#include "terrno.h"
+#include "tcommon/terrno.h"
 
 #define TLOG_VERSION "0.0.1"
 

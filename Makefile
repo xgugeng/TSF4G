@@ -1,10 +1,9 @@
-include common.mk
+SUBMODS = source/tcommon source/tlog source/tbus source/tbusmgr source/tconnd source/utils/start-stop-daemon tutorials/tbus/tbus_client tutorials/tbus/tbus_server tutorials/tconnd/tconnd_client tutorials/tconnd/tconnd_server tutorials/tlog/
 
 CLEANTARGET = clean
 INSTALLTARGET = install
 TAGSTARGET = tags
 
-SUBMODS = source tutorials
 SUBMODSCLEAN = $(patsubst %, %.$(CLEANTARGET), $(SUBMODS)) 
 SUBMODSINSTALL = $(patsubst %, %.$(INSTALLTARGET), $(SUBMODS)) 
 SUBMODSTAGS = $(patsubst %, %.$(TAGSTARGET), $(SUBMODS))

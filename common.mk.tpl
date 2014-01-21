@@ -33,3 +33,10 @@ CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CI
 endif
 
 MAKE = make -I $(ROOT_DIR)
+
+%.d: %.c
+	$(CC) -MM $(CFLAGS) $< -o $@
+
+%.o: %.c %.d
+	$(CC) -c $(CFLAGS) $<
+

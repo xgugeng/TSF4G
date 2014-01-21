@@ -2,7 +2,7 @@
 #define _H_INSTANCE_H
 
 #include "tconnd/tconnd_config_types.h"
-#include "terrno.h"
+#include "tcommon/terrno.h"
 #include "tlibc/core/tlibc_list.h"
 #include "tbus/tbus.h"
 #include <sys/epoll.h>
