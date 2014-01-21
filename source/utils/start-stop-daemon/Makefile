@@ -17,7 +17,7 @@ WRITER_CFILE=$(TDATA_FILE:.td=_writer.c)
 C_FILE=$(wildcard *.c) $(wildcard instance/*.c)
 OBJECT_FILE=$(C_FILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
 LIB=$(LIBRARY_PATH)/lib$(NAME).a
-APP=$(NAME)
+APP=$(BINRARY_PATH)/$(NAME)
 TARGET=$(APP)
 
 .PHONY: all clean
@@ -47,8 +47,6 @@ $(APP): $(OBJECT_FILE)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:
-	mkdir -p $(INSTALL_PREFIX)/lib/
-	cp $(LIB) $(INSTALL_PREFIX)/lib/
 
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 

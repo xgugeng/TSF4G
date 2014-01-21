@@ -1,3 +1,5 @@
+include common.mk
+
 SUBMODS = source/tcommon source/tlog source/tbus source/tbusmgr source/tconnd source/utils/start-stop-daemon tutorials/tbus/tbus_client tutorials/tbus/tbus_server tutorials/tconnd/tconnd_client tutorials/tconnd/tconnd_server tutorials/tlog/
 
 CLEANTARGET = clean
@@ -37,8 +39,9 @@ $(SUBMODSINSTALL):
 	@echo "Begin to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)' ......"
 	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(INSTALLTARGET);
 	@echo "Finish to install sub module: '$(patsubst %.$(INSTALLTARGET),%, $@)'" 
-	cp include $(INSTALL_PREFIX)/ -rf
+	mkdir -p $(INSTALL_PREFIX)
 	cp README.md $(INSTALL_PREFIX)/
+	cp $(PACKAGE_PATH)/* $(INSTALL_PREFIX)/ -rf
 
 release:
 	@echo 'release'

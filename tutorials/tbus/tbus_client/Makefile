@@ -47,8 +47,6 @@ $(APP): $(OBJECT_FILE)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:
-	mkdir -p $(INSTALL_PREFIX)/lib/
-	cp $(LIB) $(INSTALL_PREFIX)/lib/
 
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 

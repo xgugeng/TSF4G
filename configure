@@ -1,7 +1,7 @@
 #!/bin/bash
 
-TSERVER_INSTALL_PATH=/usr/local/tserver
-TSERVER_ROOT_DIR=`pwd`
+INSTALL_PATH=/usr/local/tserver
+ROOT_DIR=`pwd`
 
 usage()
 {
@@ -16,7 +16,7 @@ do
 		INSTALL_PATH=$OPTARG
 		;;
 	h)
-		Usage;
+		usage;
 		exit 0;
 		;;
 	:|\?) 
@@ -28,17 +28,22 @@ done
 
 
 cp common.mk.tpl common.mk
-sed -i 's#_TSERVER_INSTALL_PREFIX#'${TSERVER_INSTALL_PATH}'#g' common.mk
-sed -i 's#_TSERVER_ROOT_DIR#'${TSERVER_ROOT_DIR}'#g' common.mk
-if [ ! -d bin ];then
-mkdir -p bin
+sed -i 's#_INSTALL_PREFIX#'${INSTALL_PATH}'#g' common.mk
+sed -i 's#_ROOT_DIR#'${ROOT_DIR}'#g' common.mk
+
+if [ ! -d package/include ];then
+mkdir -p package/include
 fi
 
-if [ ! -d lib ];then
-mkdir -p lib
+if [ ! -d package/bin ];then
+mkdir -p package/bin
 fi
 
-echo "ROOT_DIR=${TSERVER_ROOT_DIR}"
-echo "INSTALL_PATH=${TSERVER_INSTALL_PATH}"
+if [ ! -d package/lib ];then
+mkdir -p package/lib
+fi
+
+echo "ROOT_DIR=${ROOT_DIR}"
+echo "INSTALL_PATH=${INSTALL_PATH}"
 echo "succeed"
 exit 0;

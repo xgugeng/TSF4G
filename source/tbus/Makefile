@@ -39,6 +39,8 @@ TARGET=$(LIB)
 	
 
 all:$(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(TARGET) 
+	mkdir -p $(INCLUDE_PATH)/$(NAME)
+	cp *.h $(INCLUDE_PATH)/$(NAME)/
 
 $(LIB): $(OBJECT_FILE)
 	ar r $(LIB) $^
@@ -47,8 +49,6 @@ $(APP): $(OBJECT_FILE)
 	$(CC) -o $@ $^ $(LDPATH) $(DEPLIBS) 
 
 install:
-	mkdir -p $(INSTALL_PREFIX)/lib/
-	cp $(LIB) $(INSTALL_PREFIX)/lib/
 
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
