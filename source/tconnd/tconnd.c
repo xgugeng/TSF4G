@@ -2,7 +2,7 @@
 
 #include "tlibc/protocol/tlibc_xml_reader.h"
 #include "tconnd/tconnd_config_reader.h"
-#include "instance/tdtp_instance.h"
+#include "tdtp/tdtp_instance.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -5,6 +5,8 @@
 #include "tcommon/terrno.h"
 #include "tlibc/core/tlibc_list.h"
 #include "tbus/tbus.h"
+#include "tlibc/core/tlibc_timer.h"
+
 #include <sys/epoll.h>
 
 
@@ -22,7 +24,10 @@ typedef struct _tdtp_instance_t
 	tbus_t				*input_tbus;
 	
 	int					output_tbusid;
-	tbus_t				*output_tbus;	
+	tbus_t				*output_tbus;
+
+	tlibc_timer_t		timer;
+	tuint64				start_ms;
 }tdtp_instance_t;
 
 

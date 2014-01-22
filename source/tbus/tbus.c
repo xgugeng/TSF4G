@@ -12,25 +12,20 @@ typedef int tbus_header_t;
 #define BUILD_HEADER(cmd, size) (cmd | size)
 
 
-TERROR_CODE tbus_init(tbus_t *tb, int size)
+TERROR_CODE tbus_init(tbus_t *tb, size_t size)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
 	tb->head_offset = 0;
 	tb->tail_offset = 0;
-	if(size < 0)
+	if(size <= TLIBC_OFFSET_OF(tbus_t, buff))
 	{
 		ret = E_TS_NO_MEMORY;
-		goto ERROR_RET;
-	}
-	if((unsigned)size <= TLIBC_OFFSET_OF(tbus_t, buff))
-	{
-		ret = E_TS_NO_MEMORY;
-		goto ERROR_RET;
+		goto done;
 	}
 	tb->size = size - TLIBC_OFFSET_OF(tbus_t, buff);
 	return E_TS_NOERROR;
-ERROR_RET:
+done:
 	return ret;
 }
 
@@ -40,6 +35,11 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tuint16 *len)
 	size_t write_size;	
 	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
+
+	if(*len + sizeof(tbus_header_t) > tb->size)
+	{
+		goto ERROR_RET;
+	}
 
 	if(head_offset <= tail_offset)
 	{
@@ -69,6 +69,8 @@ WOULD_BLOCK:
 	return E_TS_WOULD_BLOCK;
 AGAIN:
 	return E_TS_AGAIN;
+ERROR_RET:
+	return E_TS_NO_MEMORY;
 }
 
 void tbus_send_end(tbus_t *tb, tuint16 len)
@@ -139,7 +141,7 @@ ERROR_RET:
 
 void tbus_read_end(tbus_t *tb, tuint16 len)
 {
-	int head_offset = tb->head_offset + sizeof(tbus_header_t) + len;
+	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_t) + len;
 	if(head_offset >= tb->size)
 	{
 		head_offset = 0;

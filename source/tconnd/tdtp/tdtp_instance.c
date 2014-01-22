@@ -1,5 +1,5 @@
 #include "tlibc/platform/tlibc_platform.h"
-#include "tconnd/instance/tdtp_instance.h"
+#include "tconnd/tdtp/tdtp_instance.h"
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
 
@@ -17,12 +17,25 @@
 #include <unistd.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/time.h>
 
 
 #include <errno.h>
 
 #include <stdio.h>
 
+static tuint64 _get_current_ms()
+{
+	struct timeval tv;	
+	gettimeofday(&tv, NULL);
+
+	return tv.tv_sec*1000 + tv.tv_usec/1000;
+}
+
+tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
+{
+	return _get_current_ms() - self->start_ms;
+}
 
 TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *config)
 {
@@ -86,6 +99,9 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *confi
 	{
 		goto ERROR_RET;
 	}
+
+	tlibc_timer_init(&self->timer, 0);
+	self->start_ms = _get_current_ms();
 	
 	return E_TS_NOERROR;
 ERROR_RET:
@@ -203,18 +219,25 @@ ERROR_RET:
 	return E_TS_ERROR;
 }
 
+void process_timer(const tlibc_timer_entry_t* header)
+{
+//	timer_data_t *self = TLIBC_CONTAINER_OF(header, timer_data_t, timer_entry);
+	header = header;
+}
+
+
 TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 {
-	TERROR_CODE ret = E_TS_NOERROR;
+	TERROR_CODE ret = E_TS_AGAIN;
 	TERROR_CODE r;
 
 	r = process_listen(self);	
 	if(r == E_TS_NOERROR)
 	{
+		ret = E_TS_NOERROR;
 	}
 	else if(r == E_TS_AGAIN)
 	{
-		ret = E_TS_AGAIN;		
 	}
 	else
 	{
@@ -225,15 +248,21 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 	r = process_epool(self);
 	if(r == E_TS_NOERROR)
 	{
+		ret = E_TS_NOERROR;
 	}
 	else if(r == E_TS_AGAIN)
 	{
-		ret = E_TS_AGAIN;
 	}
 	else
 	{
 		ret = r;
 		goto done;
+	}
+
+	if(tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self),
+		process_timer) == E_TLIBC_NOERROR)
+	{
+		ret = E_TS_NOERROR;
 	}
 
 	

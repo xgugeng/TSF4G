@@ -10,14 +10,14 @@
 typedef struct _tbus_t tbus_t;
 struct _tbus_t
 {
-	int size;
+	size_t size;
 	volatile int head_offset;
 	volatile int tail_offset;
 	char buff[0];
 };
 
 
-TERROR_CODE tbus_init(tbus_t *tb, int size);
+TERROR_CODE tbus_init(tbus_t *tb, size_t size);
 
 
 //len的返回值一定大于等于输入值
