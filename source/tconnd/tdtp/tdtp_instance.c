@@ -4,8 +4,8 @@
 #include "tcommon/tdgi_writer.h"
 
 
-#include "tlibc/protocol/tlibc_compact_reader.h"
-#include "tlibc/protocol/tlibc_compact_writer.h"
+#include "tlibc/protocol/tlibc_binary_reader.h"
+#include "tlibc/protocol/tlibc_binary_writer.h"
 
 
 #include <string.h>
@@ -119,7 +119,7 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	
 	tdgi_t pkg;
 	tuint32 pkg_len;
-	TLIBC_COMPACT_WRITER compact_writer;
+	TLIBC_BINARY_WRITER writer;
 	char pkg_buff[sizeof(tdgi_t)];
 
 	if(self->events_num >= TDTP_MAX_EVENTS)
@@ -128,11 +128,11 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 		goto done;
 	}
 
-	tlibc_compact_writer_init(&compact_writer, pkg_buff, sizeof(pkg_buff));	
+	tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));	
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
 	pkg.body.new_connection.cid = 0;
-	tlibc_write_tdgi_t(&compact_writer.super, &pkg);
-	pkg_len = compact_writer.offset;
+	tlibc_write_tdgi_t(&writer.super, &pkg);
+	pkg_len = writer.offset;
 	obuff_len = pkg_len;
 
 	ret = tbus_send_begin(self->output_tbus, &obuff, &obuff_len);
