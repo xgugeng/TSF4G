@@ -36,7 +36,7 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tuint16 *len)
 	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
 
-	if(*len + sizeof(tbus_header_t) > tb->size)
+	if(*len + sizeof(tbus_header_t) + 1> tb->size)
 	{
 		goto ERROR_RET;
 	}
@@ -61,7 +61,7 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tuint16 *len)
 		goto WOULD_BLOCK;
 	}
 
-	*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
+	*buf = tb->buff + sizeof(tbus_header_t) + tail_offset;
 	*len = write_size - sizeof(tbus_header_t);
 
 	return E_TS_NOERROR;
@@ -122,7 +122,7 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, tuint16 *len)
 		}
 		goto WOULD_BLOCK;
 	case CMD_PACKAGE:
-		*buf = tb->buff + head_offset + sizeof(tbus_header_t);
+		*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
 		*len = GET_PACKAGE_SIZE(*header);
 		break;
 	default:
