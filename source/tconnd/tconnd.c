@@ -135,16 +135,16 @@ int main(int argc, char **argv)
 	{
 		ret = instance_process();
 		if(ret == E_TS_AGAIN)
-		{			
+		{
 			++idle_count;
-			if(idle_count > 100)
+			if(idle_count > 30)
 			{
-				usleep(1000);
+//				usleep(1000);
 				idle_count = 0;
 			}
 			else
 			{
-				sched_yield();
+//				sched_yield();
 			}
 		}
 		else if(ret != E_TS_NOERROR)

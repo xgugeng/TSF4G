@@ -14,7 +14,7 @@ WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
 READER_CFILE=$(TDATA_FILE:.td=_reader.c)
 WRITER_CFILE=$(TDATA_FILE:.td=_writer.c)
 
-C_FILE=$(wildcard *.c) $(wildcard tdtp/*.c)
+C_FILE=$(wildcard *.c) $(wildcard tdtp/*.c) $(wildcard tdtp/timer/*.c)
 OBJECT_FILE=$(C_FILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
 LIB=$(LIBRARY_PATH)/lib$(NAME).a
 APP=$(BINRARY_PATH)/$(NAME)
@@ -53,7 +53,7 @@ install:
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
 	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	find ~/TServer/include/ . -name "*.h" | cscope -Rbq
+	find . -name "*.h" -or -name "*.c" | cscope -Rbq
 
 clean:
 	find . -name "*.o" | xargs $(RM)
@@ -64,3 +64,7 @@ clean:
 	$(RM) $(WRITER_HFILE)
 	$(RM) $(READER_CFILE)
 	$(RM) $(WRITER_CFILE)
+	$(RM) tags
+	$(RM) cscope.in.out
+	$(RM) cscope.po.out
+	$(RM) cscope.out

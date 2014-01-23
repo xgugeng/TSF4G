@@ -2,10 +2,17 @@
 #include "tconnd/tdtp/tdtp_instance.h"
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
-
+#include "tconnd/tdtp/tdtp_socket.h"
+#include "tbus/tbus.h"
+#include "tconnd/tdtp/timer/tdtp_timer.h"
 
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
+#include "tlibc/core/tlibc_mempool.h"
+#include "tlibc/core/tlibc_timer.h"
+
+
+
 
 
 #include <string.h>
@@ -18,10 +25,11 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 
 #include <errno.h>
-
+#include <assert.h>
 #include <stdio.h>
 
 static tuint64 _get_current_ms()
@@ -34,36 +42,38 @@ static tuint64 _get_current_ms()
 
 tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
 {
-	return _get_current_ms() - self->start_ms;
+	return _get_current_ms() - self->timer_start_ms;
 }
 
 TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *config)
 {
-    int  nb = 1;
+    int nb = 1;
 
 	self->config = config;
-	struct sockaddr_in sockaddr;
-	memset(&sockaddr, 0, sizeof(struct sockaddr_in));
-
-	sockaddr.sin_family=AF_INET;
-	sockaddr.sin_addr.s_addr = inet_addr(config->ip);
-	sockaddr.sin_port = htons(config->port);
 	
 	self->listenfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(self->listenfd == -1)
 	{
 		goto ERROR_RET;
 	}
-	
-	if(bind(self->listenfd,(struct sockaddr *)(&sockaddr), sizeof(struct sockaddr_in)) == -1)
-	{
-		goto ERROR_RET;
-	}
+
 	
 	if(ioctl(self->listenfd, FIONBIO, &nb) == -1)
 	{
 		goto ERROR_RET;
 	}
+
+	
+	memset(&self->listenaddr, 0, sizeof(struct sockaddr_in));
+
+	self->listenaddr.sin_family=AF_INET;
+	self->listenaddr.sin_addr.s_addr = inet_addr(config->ip);
+	self->listenaddr.sin_port = htons(config->port);
+
+	if(bind(self->listenfd,(struct sockaddr *)(&self->listenaddr), sizeof(struct sockaddr_in)) == -1)
+	{
+		goto ERROR_RET;
+	}	
 
 	if(listen(self->listenfd, config->backlog) == -1)
 	{
@@ -71,7 +81,7 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *confi
 	}
 
 
-	self->epollfd = epoll_create(config->epoll_size);
+	self->epollfd = epoll_create(config->connections);
 	if(self->epollfd == -1)
 	{
 		goto ERROR_RET;
@@ -101,7 +111,31 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *confi
 	}
 
 	tlibc_timer_init(&self->timer, 0);
-	self->start_ms = _get_current_ms();
+	self->timer_start_ms = _get_current_ms();
+
+	self->socket_pool = (tlibc_mempool_t*)malloc(
+		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), config->connections));
+	if(self->socket_pool == NULL)
+	{
+		goto ERROR_RET;
+	}
+	self->socket_pool_size = tlibc_mempool_init(self->socket_pool, 
+        TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), config->connections)
+        , sizeof(tdtp_socket_t));
+	assert(self->socket_pool_size == config->connections);
+
+
+	self->timer_pool = (tlibc_mempool_t*)malloc(
+		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), config->connections));
+	if(self->timer_pool == NULL)
+	{
+		goto ERROR_RET;
+	}
+	self->timer_pool_size = tlibc_mempool_init(self->timer_pool, 
+		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), config->connections)
+		, sizeof(tdtp_timer_t));
+	assert(self->timer_pool_size == config->connections);
+
 	
 	return E_TS_NOERROR;
 ERROR_RET:
@@ -110,100 +144,163 @@ ERROR_RET:
 
 static TERROR_CODE process_listen(tdtp_instance_t *self)
 {
+	int nb = 1;
 	int ret = E_TS_AGAIN;
-	struct sockaddr_in cnt_addr;
-    socklen_t          cnt_len = sizeof(struct sockaddr_in);
-	int conn_sock = 0;
-	char *obuff;
-	tuint16 obuff_len;
 	
+	struct epoll_event 	ev;
+    socklen_t cnt_len;
+	
+	tuint64 conn_mid = 0;
+	tdtp_socket_t *conn_socket;
+	
+	char *tbus_writer_ptr;
+	tuint16 tbus_writer_size;	
 	tdgi_t pkg;
 	tuint32 pkg_len;
 	TLIBC_BINARY_WRITER writer;
 	char pkg_buff[sizeof(tdgi_t)];
 
-	if(self->events_num >= TDTP_MAX_EVENTS)
-	{
-		ret = E_TS_AGAIN;
-		goto done;
-	}
+	tdtp_timer_t *timeout_timer = 0;
+	tuint64 timeout_mid;
 
-	tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));	
+
+//1, 检查tbus是否能发送新的连接包
+	tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.body.new_connection.cid = 0;
+	pkg.body.new_connection.mid = 0;
 	tlibc_write_tdgi_t(&writer.super, &pkg);
 	pkg_len = writer.offset;
-	obuff_len = pkg_len;
+	tbus_writer_size = pkg_len;
+	
 
-	ret = tbus_send_begin(self->output_tbus, &obuff, &obuff_len);
+	ret = tbus_send_begin(self->output_tbus, &tbus_writer_ptr, &tbus_writer_size);
 	if((ret == E_TS_WOULD_BLOCK) || (ret == E_TS_AGAIN))
 	{
 		ret = E_TS_AGAIN;
 		goto done;
+	}
+	if(ret == E_TS_NOERROR)
+	{
 	}
 	else
 	{
 		ret = E_TS_ERROR;
 		goto done;
 	}
-
 	
-	conn_sock = accept(self->listenfd, (struct sockaddr *)&cnt_addr, &cnt_len);
-	if(conn_sock == -1)
+//2, 检查是否能分配socket
+	conn_mid = tlibc_mempool_alloc(self->socket_pool);
+	conn_socket = tlibc_mempool_get(self->socket_pool, conn_mid);
+	if(conn_socket == NULL)
+	{
+		ret = E_TS_AGAIN;
+		goto done;
+	}
+
+
+//2, 检查是否能分配超时定时器
+	timeout_mid = tlibc_mempool_alloc(self->timer_pool);
+	timeout_timer = tlibc_mempool_get(self->timer_pool, timeout_mid);
+
+	if(timeout_timer == NULL)
+	{
+		ret = E_TS_AGAIN;
+		goto free_socket;
+	}
+
+    memset(&conn_socket->socketaddr, 0, sizeof(struct sockaddr_in));
+    cnt_len = sizeof(struct sockaddr_in);
+//3, 接入连接
+   	conn_socket->socketfd = accept(self->listenfd,
+    							(struct sockaddr *)&conn_socket->socketaddr, &cnt_len);
+
+	if(conn_socket->socketfd == -1)
 	{
 		switch(errno)
 		{
 			case EAGAIN:
-#if EWOULDBLOCK != EAGAIN
-			case EWOULDBLOCK:
-#endif
 				ret = E_TS_AGAIN;
-				goto done;
+				break;
+			case EINTR:
+				ret = E_TS_AGAIN;
+				break;
 			default:
 				fprintf(stderr, "%s.%d: accept failed: %s, errno(%d)\n", __FILE__, __LINE__, strerror(errno), errno);
 				ret = E_TS_NOERROR;
-				goto done;
+				break;
 		}
-	}
-	else
-	{
-		int nb = 1;
-		if(ioctl(conn_sock, FIONBIO, &nb) == -1)
-		{
-			close(conn_sock);
-			ret = E_TS_NOERROR;
-			goto done;
-		}
-		self->events[self->events_num].events = EPOLLIN | EPOLLET;
-		self->events[self->events_num].data.fd = conn_sock;
 		
-        if(epoll_ctl(self->epollfd, EPOLL_CTL_ADD, conn_sock,
-                                   &self->events[self->events_num]) == -1)
-		{
-			ret = E_TS_NOERROR;
-			goto done;
-        }
-		else
-		{
-			++self->events_num;
-		}
+		goto free_timer;
+	}
+
+	if(ioctl(conn_socket->socketfd, FIONBIO, &nb) == -1)
+	{
+		ret = E_TS_NOERROR;
+		goto close_socket;
 	}
 	
+	ev.events = EPOLLIN | EPOLLET;
+	ev.data.ptr = conn_socket;	
+    if(epoll_ctl(self->epollfd, EPOLL_CTL_ADD, conn_socket->socketfd, &ev) == -1)
+	{
+		ret = E_TS_NOERROR;
+		goto close_socket;
+	}
+
+//4, 加入超市定时器
+    timeout_timer->acccept_timeout.mid = conn_mid;
+    timeout_timer->acccept_timeout.socketfd = conn_socket->socketfd;
+    timeout_timer->acccept_timeout.mp = self->socket_pool;
+    
+    conn_socket->accept_timeout_timer = conn_mid;
+
+
+	TIMER_ENTRY_BUILD(&timeout_timer->entry, 
+	    self->timer.jiffies + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_timer_accept_timeout);
+
+	
+	tlibc_timer_push(&self->timer, &timeout_timer->entry);
+//5, 发送连接的通知	
+	pkg.cmd = e_tdgi_cmd_new_connection_req;
+	pkg.body.new_connection.mid = conn_mid;
+	
+	tlibc_binary_writer_init(&writer, tbus_writer_ptr, tbus_writer_size);
+	if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+	{
+		ret = E_TS_NOERROR;
+		goto close_socket;
+	}
+	conn_socket->status = e_tdtp_socket_status_accept;
+	tbus_send_end(self->output_tbus, writer.offset);
+
 done:
+	return ret;
+close_socket:
+	close(conn_socket->socketfd);
+free_timer:	
+    tlibc_mempool_free(self->timer_pool, timeout_mid);
+free_socket:
+	tlibc_mempool_free(self->socket_pool, conn_mid);
 	return ret;
 }
 
 static TERROR_CODE process_epool(tdtp_instance_t *self)
 {
 	int i;
+	TERROR_CODE ret = E_TS_AGAIN;
 	
 	if(self->events_num == 0)
 	{
-		self->events_num = epoll_wait(self->epollfd, self->events, TDTP_MAX_EVENTS, -1);
+		self->events_num = epoll_wait(self->epollfd, self->events, TDTP_MAX_EVENTS, 0);
 	    if(self->events_num == -1)
 		{
 			goto ERROR_RET;
 	    }
+	}
+
+	if(self->events_num == 0)
+	{
+	    goto AGAIN;
 	}
 
 	for(i = 0; i < self->events_num; ++i)
@@ -214,17 +311,12 @@ static TERROR_CODE process_epool(tdtp_instance_t *self)
 //		tbus_send_begin();
 	}
 	
-	return E_TS_NOERROR;
+	return ret;
+AGAIN:
+    return E_TS_AGAIN;
 ERROR_RET:
-	return E_TS_ERROR;
+	return E_TS_ERROR;	
 }
-
-void process_timer(const tlibc_timer_entry_t* header)
-{
-//	timer_data_t *self = TLIBC_CONTAINER_OF(header, timer_data_t, timer_entry);
-	header = header;
-}
-
 
 TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 {
@@ -232,6 +324,7 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 	TERROR_CODE r;
 
 	r = process_listen(self);	
+
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
@@ -259,11 +352,12 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		goto done;
 	}
 
-	if(tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self),
-		process_timer) == E_TLIBC_NOERROR)
+
+	if(tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self)) == E_TLIBC_NOERROR)
 	{
 		ret = E_TS_NOERROR;
 	}
+
 
 	
 done:

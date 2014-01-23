@@ -15,10 +15,8 @@ struct tconnd_tdtp_t
 	uint16 port;
 	uint32 backlog;
 
-	uint32 epoll_size;
-
+	uint32 connections;	#最多可以接入的客户端
 	tconnd_tdgi_t tdgi_pass;
-
 	int32 input_tbuskey;
 	int32 output_tbuskey;
 };

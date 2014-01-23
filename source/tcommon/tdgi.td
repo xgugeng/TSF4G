@@ -8,7 +8,7 @@ enum tdgi_cmd_t
 
 struct tdgi_new_connection_t
 {
-	uint32	cid;
+	uint32	mid;
 };
 
 union tdgi_body_t(tdgi_cmd_t selector)
