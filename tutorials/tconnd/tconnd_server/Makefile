@@ -2,7 +2,7 @@ include ../../../common.mk
 
 NAME=tconnd_server
 #CINC+=
-DEPLIBS+=-ltbus
+DEPLIBS+=-ltbus -ltlibc -ltcommon
 
 #以下为通用部分
 .PHONY: all clean

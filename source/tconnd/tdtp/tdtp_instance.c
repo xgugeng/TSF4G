@@ -2,6 +2,8 @@
 #include "tconnd/tdtp/tdtp_instance.h"
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
+#include "tcommon/tdgi_reader.h"
+
 #include "tconnd/tdtp/tdtp_socket.h"
 #include "tbus/tbus.h"
 #include "tconnd/tdtp/timer/tdtp_timer.h"
@@ -167,7 +169,7 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 //1, 检查tbus是否能发送新的连接包
 	tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.body.new_connection.mid = 0;
+	pkg.body.new_connection_req.mid = 0;
 	tlibc_write_tdgi_t(&writer.super, &pkg);
 	pkg_len = writer.offset;
 	tbus_writer_size = pkg_len;
@@ -252,7 +254,7 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
     timeout_timer->acccept_timeout.socketfd = conn_socket->socketfd;
     timeout_timer->acccept_timeout.mp = self->socket_pool;
     
-    conn_socket->accept_timeout_timer = conn_mid;
+    conn_socket->accept_timeout_timer = timeout_mid;
 
 
 	TIMER_ENTRY_BUILD(&timeout_timer->entry, 
@@ -262,7 +264,7 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	tlibc_timer_push(&self->timer, &timeout_timer->entry);
 //5, 发送连接的通知	
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.body.new_connection.mid = conn_mid;
+	pkg.body.new_connection_req.mid = conn_mid;
 	
 	tlibc_binary_writer_init(&writer, tbus_writer_ptr, tbus_writer_size);
 	if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
@@ -318,6 +320,93 @@ ERROR_RET:
 	return E_TS_ERROR;	
 }
 
+static void process_pkg(tdtp_instance_t *self, const tdgi_t *pkg)
+{
+    switch(pkg->cmd)
+    {
+    case e_tdgi_cmd_new_connection_ack:
+        {
+            tdtp_timer_t *timeout_timer = NULL;
+            tdtp_socket_t *conn_socket = tlibc_mempool_get(self->socket_pool
+                , pkg->body.new_connection_req.mid);
+        	if(conn_socket == NULL)
+        	{
+        		goto done;
+        	}
+        	
+            timeout_timer = tlibc_mempool_get(self->timer_pool
+                , conn_socket->accept_timeout_timer);            
+            if(timeout_timer == NULL)
+            {
+                goto done;
+            }
+
+        	tlibc_timer_pop(&timeout_timer->entry);
+            break;
+        }
+    default:
+        goto done;
+    }
+    
+done:
+    return;
+}
+
+static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
+{
+    tdgi_t pkg;
+	TERROR_CODE ret = E_TS_AGAIN;
+	const char*message;
+	tuint16 message_len;
+	TLIBC_BINARY_READER reader;
+	tuint16 len;
+	TLIBC_ERROR_CODE r;
+	
+    ret = tbus_read_begin(self->input_tbus, &message, &message_len);
+    if(ret == E_TS_NOERROR)
+    {
+        len = message_len;
+        while(len > 0)
+        {
+            tlibc_binary_reader_init(&reader, message, len);
+            r = tlibc_read_tdgi_t(&reader.super, &pkg);
+            if(r == E_TLIBC_NOERROR)
+            {
+                process_pkg(self, &pkg);
+                len -= reader.offset;
+            }
+            else
+            {
+                assert(0);
+                printf("error\n");
+                exit(1);
+            }
+        }           
+        tbus_read_end(self->input_tbus, message_len);
+        ret = E_TS_NOERROR;
+    }
+    else if(ret == E_TS_AGAIN)
+    {
+        goto AGAIN;
+    }
+    else if(ret == E_TS_WOULD_BLOCK)
+    {
+        goto AGAIN;
+    }
+    else
+    {
+        goto ERROR_RET;
+    }
+
+    
+
+    return ret;
+AGAIN:
+    return E_TS_AGAIN;
+ERROR_RET:
+    return E_TS_ERROR;
+}
+
 TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 {
 	TERROR_CODE ret = E_TS_AGAIN;
@@ -358,6 +447,20 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		ret = E_TS_NOERROR;
 	}
 
+
+    r = process_input_tbus(self);
+	if(r == E_TS_NOERROR)
+	{
+		ret = E_TS_NOERROR;
+	}
+	else if(r == E_TS_AGAIN)
+	{
+	}
+	else
+	{
+		ret = r;
+		goto done;
+	}
 
 	
 done:
