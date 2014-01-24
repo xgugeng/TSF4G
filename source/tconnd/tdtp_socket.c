@@ -1,4 +1,4 @@
-#include "tconnd/tdtp/tdtp_socket.h"
+#include "tconnd/tdtp_socket.h"
 #include <assert.h>
 
 void tdtp_socket_process_pkg(tdtp_socket_t *self)

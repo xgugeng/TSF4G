@@ -3,7 +3,7 @@
 
 #include "tlibc/core/tlibc_timer.h"
 
-#include "tconnd/tdtp/timer/tdtp_timer_accept_timeout.h"
+#include "tconnd/timer/tdtp_timer_accept_timeout.h"
 /*
  *  存放定时器上下文
 */

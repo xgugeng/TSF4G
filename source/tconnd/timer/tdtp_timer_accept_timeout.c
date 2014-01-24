@@ -1,7 +1,7 @@
-#include "tconnd/tdtp/timer/tdtp_timer_accept_timeout.h"
+#include "tconnd/timer/tdtp_timer_accept_timeout.h"
 #include "tlibc/platform/tlibc_platform.h"
 #include "tlibc/core/tlibc_mempool.h"
-#include "tconnd/tdtp/timer/tdtp_timer.h"
+#include "tconnd/timer/tdtp_timer.h"
 #include <unistd.h>
 
 

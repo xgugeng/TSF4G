@@ -2,7 +2,7 @@
 #define _H_GLOBALS_H
 
 #include "tconnd/tconnd_config_types.h"
-#include "tdtp/tdtp_instance.h"
+#include "tdtp_instance.h"
 
 
 #define TCONND_VERSION "0.0.1"

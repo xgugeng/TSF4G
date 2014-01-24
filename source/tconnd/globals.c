@@ -1,6 +1,6 @@
 #include "globals.h"
 
-#include "tdtp/tdtp_instance.h"
+#include "tdtp_instance.h"
 
 tconnd_config_t g_config;
 

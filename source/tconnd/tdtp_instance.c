@@ -1,12 +1,12 @@
 #include "tlibc/platform/tlibc_platform.h"
-#include "tconnd/tdtp/tdtp_instance.h"
+#include "tconnd/tdtp_instance.h"
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
 #include "tcommon/tdgi_reader.h"
 
-#include "tconnd/tdtp/tdtp_socket.h"
+#include "tconnd/tdtp_socket.h"
 #include "tbus/tbus.h"
-#include "tconnd/tdtp/timer/tdtp_timer.h"
+#include "tconnd/timer/tdtp_timer.h"
 
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"

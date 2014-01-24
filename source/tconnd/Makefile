@@ -14,7 +14,7 @@ WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
 READER_CFILE=$(TDATA_FILE:.td=_reader.c)
 WRITER_CFILE=$(TDATA_FILE:.td=_writer.c)
 
-C_FILE=$(wildcard *.c) $(wildcard tdtp/*.c) $(wildcard tdtp/timer/*.c)
+C_FILE=$(wildcard *.c) $(wildcard timer/*.c)
 OBJECT_FILE=$(C_FILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
 LIB=$(LIBRARY_PATH)/lib$(NAME).a
 APP=$(BINRARY_PATH)/$(NAME)
