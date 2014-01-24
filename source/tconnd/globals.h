@@ -10,8 +10,6 @@
 
 extern tconnd_config_t g_config;
 
-extern tdtp_instance_t g_tdtp_instance[TCONND_MAX_TDTP_NUM];
-
-
+extern tdtp_instance_t g_tdtp_instance;
 
 #endif//_H_GLOBALS_H

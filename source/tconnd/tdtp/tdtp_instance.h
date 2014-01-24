@@ -16,8 +16,6 @@
 
 typedef struct _tdtp_instance_t
 {
-	const tconnd_tdtp_t *config;
-
 	struct sockaddr_in  listenaddr;
 	int					listenfd;
 	
@@ -45,7 +43,7 @@ typedef struct _tdtp_instance_t
 
 
 
-TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *config);
+TERROR_CODE tdtp_instance_init(tdtp_instance_t *self);
 
 TERROR_CODE tdtp_instance_process(tdtp_instance_t *self);
 

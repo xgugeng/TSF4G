@@ -33,41 +33,28 @@ void help()
 
 TERROR_CODE instance_init()
 {
-	tuint32 i;
 	TERROR_CODE ret = E_TS_NOERROR;
 
-	for(i = 0; i < g_config.tdtp_num; ++i)
-	{
-		ret = tdtp_instance_init(&g_tdtp_instance[i], &g_config.tdtp[i]);
-		if(ret != E_TS_NOERROR)
-		{
-			goto done;
-		}
-	}
-
-done:
+	ret = tdtp_instance_init(&g_tdtp_instance);
 	return ret;
 }
 
 TERROR_CODE instance_process()
 {
-	tuint32 i;
 	TERROR_CODE ret = E_TS_AGAIN;
 
-	for(i = 0; i < g_config.tdtp_num; ++i)
+	TERROR_CODE r = tdtp_instance_process(&g_tdtp_instance);
+	if(r == E_TS_NOERROR)
 	{
-		TERROR_CODE r = tdtp_instance_process(&g_tdtp_instance[i]);
-		if(r == E_TS_NOERROR)
-		{
-			ret = E_TS_NOERROR;
-		}
-		else if(r != E_TS_AGAIN)
-		{
-			ret = r;
-			goto done;
-		}
-		
+		ret = E_TS_NOERROR;
 	}
+	else if(r != E_TS_AGAIN)
+	{
+		ret = r;
+		goto done;
+	}
+		
+
 done:
 	return ret;
 }

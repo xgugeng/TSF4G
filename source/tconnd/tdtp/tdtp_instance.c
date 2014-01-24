@@ -13,7 +13,7 @@
 #include "tlibc/core/tlibc_mempool.h"
 #include "tlibc/core/tlibc_timer.h"
 
-
+#include "tconnd/globals.h"
 
 
 
@@ -47,12 +47,10 @@ tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
 	return _get_current_ms() - self->timer_start_ms;
 }
 
-TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *config)
+TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 {
     int nb = 1;
 
-	self->config = config;
-	
 	self->listenfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(self->listenfd == -1)
 	{
@@ -69,27 +67,27 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *confi
 	memset(&self->listenaddr, 0, sizeof(struct sockaddr_in));
 
 	self->listenaddr.sin_family=AF_INET;
-	self->listenaddr.sin_addr.s_addr = inet_addr(config->ip);
-	self->listenaddr.sin_port = htons(config->port);
+	self->listenaddr.sin_addr.s_addr = inet_addr(g_config.ip);
+	self->listenaddr.sin_port = htons(g_config.port);
 
 	if(bind(self->listenfd,(struct sockaddr *)(&self->listenaddr), sizeof(struct sockaddr_in)) == -1)
 	{
 		goto ERROR_RET;
 	}	
 
-	if(listen(self->listenfd, config->backlog) == -1)
+	if(listen(self->listenfd, g_config.backlog) == -1)
 	{
 		goto ERROR_RET;
 	}
 
 
-	self->epollfd = epoll_create(config->connections);
+	self->epollfd = epoll_create(g_config.connections);
 	if(self->epollfd == -1)
 	{
 		goto ERROR_RET;
 	}
 
-	self->input_tbusid = shmget(config->input_tbuskey, 0, 0666);
+	self->input_tbusid = shmget(g_config.input_tbuskey, 0, 0666);
 	if(self->input_tbusid == -1)
 	{
 		goto ERROR_RET;
@@ -100,7 +98,7 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *confi
 		goto ERROR_RET;
 	}
 
-	self->output_tbusid = shmget(config->output_tbuskey, 0, 0666);
+	self->output_tbusid = shmget(g_config.output_tbuskey, 0, 0666);
 	if(self->output_tbusid == -1)
 	{
 		goto ERROR_RET;
@@ -115,27 +113,27 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self, const tconnd_tdtp_t *confi
 	self->timer_start_ms = _get_current_ms();
 
 	self->socket_pool = (tlibc_mempool_t*)malloc(
-		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), config->connections));
+		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), g_config.connections));
 	if(self->socket_pool == NULL)
 	{
 		goto ERROR_RET;
 	}
 	self->socket_pool_size = tlibc_mempool_init(self->socket_pool, 
-        TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), config->connections)
+        TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), g_config.connections)
         , sizeof(tdtp_socket_t));
-	assert(self->socket_pool_size == config->connections);
+	assert(self->socket_pool_size == g_config.connections);
 
 
 	self->timer_pool = (tlibc_mempool_t*)malloc(
-		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), config->connections));
+		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), g_config.connections));
 	if(self->timer_pool == NULL)
 	{
 		goto ERROR_RET;
 	}
 	self->timer_pool_size = tlibc_mempool_init(self->timer_pool, 
-		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), config->connections)
+		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), g_config.connections)
 		, sizeof(tdtp_timer_t));
-	assert(self->timer_pool_size == config->connections);
+	assert(self->timer_pool_size == g_config.connections);
 
 	
 	return E_TS_NOERROR;

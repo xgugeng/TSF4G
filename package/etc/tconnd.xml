@@ -1,16 +1,10 @@
 <tconnd_config_t>
 	<log_config>etc/tconnd_log.xml</log_config>	
-	<vector>
-		<tdtp>
-			<ip>127.0.0.1</ip>
-			<port>7001</port>
-			<backlog>128</backlog>
-			<connections>65536</connections>
-			<tdgi_pass>
-				<shmkey>123456</shmkey>
-			</tdgi_pass>
-			<input_tbuskey>10001</input_tbuskey>
-			<output_tbuskey>10002</output_tbuskey>
-		</tdtp>
-	</vector>
+	<ip>127.0.0.1</ip>
+	<port>7001</port>
+	<backlog>128</backlog>
+	<connections>65536</connections>
+	<tdgi_pass>123456</tdgi_pass>
+	<input_tbuskey>10001</input_tbuskey>
+	<output_tbuskey>10002</output_tbuskey>
 </tconnd_config_t>
