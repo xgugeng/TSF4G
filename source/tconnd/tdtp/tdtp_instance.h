@@ -12,7 +12,6 @@
 #include <sys/epoll.h>
 #include <netinet/in.h>
 
-
 #define TDTP_MAX_EVENTS 1024
 
 typedef struct _tdtp_instance_t

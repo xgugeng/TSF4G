@@ -7,29 +7,21 @@ enum tdgi_cmd_t
 	e_tdgi_cmd_fine_thank_you_and_you = 1,	
 	e_tdgi_cmd_new_connection_req = 3,
 	e_tdgi_cmd_new_connection_ack = 4,
-};
 
-struct tdgi_new_connection_req_t
-{
-	uint64	mid;
-};
-
-struct tdgi_new_connection_ack_t
-{
-	uint64	mid;
+	e_tdgi_cmd_send = 5,
 };
 
 union tdgi_body_t(tdgi_cmd_t selector)
 {
-e_tdgi_cmd_new_connection_req:
-	tdgi_new_connection_req_t	new_connection_req;
-e_tdgi_cmd_new_connection_ack:
-	tdgi_new_connection_ack_t	new_connection_ack;
+e_tdgi_cmd_send:
+    uint16 send_size;
 };
+
 
 struct tdgi_t
 {
 	tdgi_cmd_t		cmd;
-	tdgi_body_t		body(cmd);
+	uint64          mid;
+	tdgi_body_t     body(cmd);
 };
 
