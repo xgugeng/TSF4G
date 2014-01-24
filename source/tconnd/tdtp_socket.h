@@ -17,7 +17,7 @@ typedef enum _tdtp_socket_status_t
 
 typedef struct _tdtp_socket_op
 {
-    const tdgi_t *head;
+    tdgi_t head;
     struct iovec iov;
 }tdtp_socket_op;
 
@@ -32,14 +32,15 @@ typedef struct _tdtp_socket_t
 	tuint64 accept_timeout_timer;
 
 
-    tdtp_socket_op op_list[TDTP_SOCKET_OP_LIST_NUM];
+    const tdtp_socket_op *op_list[TDTP_SOCKET_OP_LIST_NUM];
     tuint32 op_list_num;
 }tdtp_socket_t;
 
 
 
-void tdtp_socket_process_pkg(tdtp_socket_t *self);
+void tdtp_socket_process(tdtp_socket_t *self);
 
-void tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_t *head, const char* content);
+void tdtp_socket_push_pkg(tdtp_socket_t *self, const tdtp_socket_op *head);
+
 
 #endif//_H_TDTP_SOCKET_H

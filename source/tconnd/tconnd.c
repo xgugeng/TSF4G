@@ -29,36 +29,6 @@ void help()
 	fprintf(stderr, "  -c file					Set the config file\n");
 }
 
-
-
-TERROR_CODE instance_init()
-{
-	TERROR_CODE ret = E_TS_NOERROR;
-
-	ret = tdtp_instance_init(&g_tdtp_instance);
-	return ret;
-}
-
-TERROR_CODE instance_process()
-{
-	TERROR_CODE ret = E_TS_AGAIN;
-
-	TERROR_CODE r = tdtp_instance_process(&g_tdtp_instance);
-	if(r == E_TS_NOERROR)
-	{
-		ret = E_TS_NOERROR;
-	}
-	else if(r != E_TS_AGAIN)
-	{
-		ret = r;
-		goto done;
-	}
-		
-
-done:
-	return ret;
-}
-
 int main(int argc, char **argv)
 {
 	TLIBC_XML_READER xml_reader;
@@ -100,9 +70,9 @@ int main(int argc, char **argv)
 	}
 	if (config_file == NULL)
 	{
-			fprintf(stderr, "Missing config file specification\n");
-			usage();
-			goto ERROR_RET;
+		fprintf(stderr, "Missing config file specification\n");
+		usage();
+		goto ERROR_RET;
 	}
 
 	if((tlibc_xml_reader_init(&xml_reader, config_file) != E_TLIBC_NOERROR)
@@ -112,7 +82,7 @@ int main(int argc, char **argv)
 		goto ERROR_RET;
 	}
 
-	ret = instance_init();
+	ret = tdtp_instance_init(&g_tdtp_instance);
 	if(ret != E_TS_NOERROR)
 	{
 		goto ERROR_RET;
@@ -120,7 +90,7 @@ int main(int argc, char **argv)
 	
 	for(;;)
 	{
-		ret = instance_process();
+		ret = tdtp_instance_process(&g_tdtp_instance);
 		if(ret == E_TS_AGAIN)
 		{
 			++idle_count;

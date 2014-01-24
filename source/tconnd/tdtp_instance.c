@@ -36,7 +36,7 @@
 
 static tuint64 _get_current_ms()
 {
-	struct timeval tv;	
+	struct timeval tv;
 	gettimeofday(&tv, NULL);
 
 	return tv.tv_sec*1000 + tv.tv_usec/1000;
@@ -317,33 +317,13 @@ AGAIN:
 ERROR_RET:
 	return E_TS_ERROR;	
 }
-/*
-static TERROR_CODE process_input_pkg_list(tdtp_instance_t *self
-    , tdgi_t *pkg_list
-    //, const char* pkg_content[]
-    , tuint32 pkg_size)
-{
-    tuint32 i;
-    for(i = 0; i < pkg_size; ++i)
-    {
-        tdtp_socket_t *s = tlibc_mempool_get(self->socket_pool, pkg_list[i].mid);
-        if(s == NULL)
-        {
-            continue;
-        }
-        //tdtp_socket_push_pkg(s, pkg_list[i], pkg_content[i]);
-    }
-	return 0;
-}
-*/
-#define ACTIVE_SOCKET_NUM 1024
+
 #define MAX_PACKAGE_LIST_NUM 1024
 static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 {
-    tdgi_t pkg_list[MAX_PACKAGE_LIST_NUM];
-    const char* pkg_content[MAX_PACKAGE_LIST_NUM];
+    tdtp_socket_t *pkg_socket[MAX_PACKAGE_LIST_NUM];
+    tdtp_socket_op pkg_list[MAX_PACKAGE_LIST_NUM];
     tuint32 pkg_list_num;
-
     
 	TERROR_CODE ret = E_TS_AGAIN;
 	const char*message;
@@ -352,6 +332,7 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 	tuint16 len;
 	TLIBC_ERROR_CODE r;
 	pkg_list_num = 0;
+	tuint32 i;
 	
     ret = tbus_read_begin(self->input_tbus, &message, &message_len);
     if(ret == E_TS_AGAIN)
@@ -362,7 +343,7 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
     {
         goto AGAIN;
     }
-    else
+    else if(ret != E_TS_NOERROR)
     {
         goto ERROR_RET;
     }
@@ -372,38 +353,60 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
     while(len > 0)
     {
         tlibc_binary_reader_init(&reader, message, len);
-        r = tlibc_read_tdgi_t(&reader.super, &pkg_list[pkg_list_num]);
+        r = tlibc_read_tdgi_t(&reader.super, &pkg_list[pkg_list_num].head);
         if(r != E_TLIBC_NOERROR)
         {
             goto ERROR_RET;
         }
-        if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
-        {
-            //process_input_pkg_list(self, pkg_list, pkg_content, pkg_list_num);
-            pkg_list_num = 0;
-        }
+        pkg_socket[pkg_list_num] = 
+            (tdtp_socket_t*)tlibc_mempool_get(self->socket_pool, pkg_list[pkg_list_num].head.mid);
         
-        if(pkg_list[pkg_list_num].cmd == e_tdgi_cmd_send)
+        
+        if(pkg_list[pkg_list_num].head.cmd == e_tdgi_cmd_send)
         {
-            pkg_content[pkg_list_num] = message + reader.offset;
-            message += reader.offset + pkg_list[pkg_list_num].body.send_size;
-            len -= reader.offset + pkg_list[pkg_list_num].body.send_size;
+            pkg_list[pkg_list_num].iov.iov_base = (void*)message + reader.offset;
+            pkg_list[pkg_list_num].iov.iov_len = 
+                pkg_list[pkg_list_num].head.body.send_size;
+            
+            message += reader.offset + pkg_list[pkg_list_num].head.body.send_size;
+            len -= reader.offset + pkg_list[pkg_list_num].head.body.send_size;
         }
         else
         {
             len -= reader.offset;
             message += reader.offset;
         }
-        ++pkg_list_num;
+        if(pkg_socket[pkg_list_num] != NULL)
+        {        
+            if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
+            {
+                for(i = 0; i < pkg_list_num; ++i)
+                {
+                    tdtp_socket_push_pkg(pkg_socket[i], &pkg_list[i]);
+                }
+                for(i = 0; i < pkg_list_num; ++i)
+                {
+                    tdtp_socket_process(pkg_socket[i]);
+                }
+                pkg_list_num = 0;
+            }
+            ++pkg_list_num;
+        }
     }
-    
-//    process_input_pkg_list(self, pkg_list, pkg_list_num);
+    for(i = 0; i < pkg_list_num; ++i)
+    {
+        tdtp_socket_push_pkg(pkg_socket[i], &pkg_list[i]);
+    }
+    for(i = 0; i < pkg_list_num; ++i)
+    {
+        tdtp_socket_process(pkg_socket[i]);
+    }
     pkg_list_num = 0;
+
     tbus_read_end(self->input_tbus, message_len);
     
     ret = E_TS_NOERROR;
 
-//done:
     return ret;
 AGAIN:
     return E_TS_AGAIN;
