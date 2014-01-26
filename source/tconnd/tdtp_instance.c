@@ -6,12 +6,14 @@
 
 #include "tconnd/tdtp_socket.h"
 #include "tbus/tbus.h"
-#include "tconnd/timer/tdtp_timer.h"
+
 
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
 #include "tlibc/core/tlibc_mempool.h"
 #include "tlibc/core/tlibc_timer.h"
+#include "tlibc/core/tlibc_list.h"
+
 
 #include "tconnd/globals.h"
 
@@ -28,6 +30,7 @@
 #include <sys/shm.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <limits.h>
 
 
 #include <errno.h>
@@ -46,6 +49,7 @@ tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
 {
 	return _get_current_ms() - self->timer_start_ms;
 }
+
 
 TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 {
@@ -124,17 +128,20 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 	assert(self->socket_pool_size == g_config.connections);
 
 
-	self->timer_pool = (tlibc_mempool_t*)malloc(
-		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), g_config.connections));
-	if(self->timer_pool == NULL)
+
+	self->package_pool = (tlibc_mempool_t*)malloc(
+		TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM));
+	if(self->package_pool == NULL)
 	{
 		goto ERROR_RET;
 	}
-	self->timer_pool_size = tlibc_mempool_init(self->timer_pool, 
-		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_timer_t), g_config.connections)
-		, sizeof(tdtp_timer_t));
-	assert(self->timer_pool_size == g_config.connections);
+	self->package_pool_size = tlibc_mempool_init(self->package_pool, 
+        TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM)
+        , sizeof(package_buff_t));
+	assert(self->package_pool_size == MAX_PACKAGE_NUM);
 
+
+	tlibc_list_init(&self->readable_list);
 	
 	return E_TS_NOERROR;
 ERROR_RET:
@@ -143,13 +150,11 @@ ERROR_RET:
 
 static TERROR_CODE process_listen(tdtp_instance_t *self)
 {
-	int nb = 1;
 	int ret = E_TS_AGAIN;
+	TERROR_CODE r;
 	
 	struct epoll_event 	ev;
-    socklen_t cnt_len;
 	
-	tuint64 conn_mid = 0;
 	tdtp_socket_t *conn_socket;
 	
 	char *tbus_writer_ptr;
@@ -159,15 +164,10 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	TLIBC_BINARY_WRITER writer;
 	char pkg_buff[sizeof(tdgi_t)];
 
-	tdtp_timer_t *timeout_timer = 0;
-	tuint64 timeout_mid;
-	struct sockaddr_in socketaddr;
-
-
 //1, 检查tbus是否能发送新的连接包
 	tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.mid = 0;
+	pkg.mid_num = 1;
 	tlibc_write_tdgi_t(&writer.super, &pkg);
 	pkg_len = writer.offset;
 	tbus_writer_size = pkg_len;
@@ -189,54 +189,18 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	}
 	
 //2, 检查是否能分配socket
-	conn_mid = tlibc_mempool_alloc(self->socket_pool);
-	conn_socket = tlibc_mempool_get(self->socket_pool, conn_mid);
+	conn_socket = tdtp_socket_alloc();
 	if(conn_socket == NULL)
 	{
 		ret = E_TS_AGAIN;
 		goto done;
 	}
 
-
-//2, 检查是否能分配超时定时器
-	timeout_mid = tlibc_mempool_alloc(self->timer_pool);
-	timeout_timer = tlibc_mempool_get(self->timer_pool, timeout_mid);
-
-	if(timeout_timer == NULL)
+    r = tdtp_socket_accept(conn_socket, self->listenfd);
+	if(r != E_TS_NOERROR)
 	{
-		ret = E_TS_AGAIN;
-		goto free_socket;
-	}
-
-    memset(&socketaddr, 0, sizeof(struct sockaddr_in));
-    cnt_len = sizeof(struct sockaddr_in);
-//3, 接入连接
-   	conn_socket->socketfd = accept(self->listenfd,
-    							(struct sockaddr *)&socketaddr, &cnt_len);
-
-	if(conn_socket->socketfd == -1)
-	{
-		switch(errno)
-		{
-			case EAGAIN:
-				ret = E_TS_AGAIN;
-				break;
-			case EINTR:
-				ret = E_TS_AGAIN;
-				break;
-			default:
-				fprintf(stderr, "%s.%d: accept failed: %s, errno(%d)\n", __FILE__, __LINE__, strerror(errno), errno);
-				ret = E_TS_NOERROR;
-				break;
-		}
-		
-		goto free_timer;
-	}
-
-	if(ioctl(conn_socket->socketfd, FIONBIO, &nb) == -1)
-	{
-		ret = E_TS_NOERROR;
-		goto close_socket;
+	    ret = E_TS_NOERROR;
+    	goto free_socket;
 	}
 	
 	ev.events = EPOLLIN | EPOLLET;
@@ -244,72 +208,79 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
     if(epoll_ctl(self->epollfd, EPOLL_CTL_ADD, conn_socket->socketfd, &ev) == -1)
 	{
 		ret = E_TS_NOERROR;
-		goto close_socket;
+		goto free_socket;
 	}
 
-//4, 加入超市定时器
-    timeout_timer->acccept_timeout.mid = conn_mid;
-    timeout_timer->acccept_timeout.socketfd = conn_socket->socketfd;
-    timeout_timer->acccept_timeout.mp = self->socket_pool;
-    
-    conn_socket->accept_timeout_timer = timeout_mid;
-
-
-	TIMER_ENTRY_BUILD(&timeout_timer->entry, 
-	    self->timer.jiffies + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_timer_accept_timeout);
-
-	
-	tlibc_timer_push(&self->timer, &timeout_timer->entry);
 //5, 发送连接的通知	
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.mid = conn_mid;
+	pkg.mid_num = 0;
+	pkg.mid[pkg.mid_num] = conn_socket->mid;
+	++pkg.mid_num;
 	
 	tlibc_binary_writer_init(&writer, tbus_writer_ptr, tbus_writer_size);
 	if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
 	{
+	    assert(0);
 		ret = E_TS_NOERROR;
-		goto close_socket;
+		goto free_socket;
 	}
-	conn_socket->status = e_tdtp_socket_status_accept;
+	conn_socket->status = e_tdtp_socket_status_syn_sent;
 	tbus_send_end(self->output_tbus, writer.offset);
 
 done:
 	return ret;
-close_socket:
-	close(conn_socket->socketfd);
-free_timer:	
-    tlibc_mempool_free(self->timer_pool, timeout_mid);
 free_socket:
-	tlibc_mempool_free(self->socket_pool, conn_mid);
+    tdtp_socket_free(conn_socket);
 	return ret;
 }
 
+#define TDTP_MAX_EVENTS 1024
 static TERROR_CODE process_epool(tdtp_instance_t *self)
 {
 	int i;
 	TERROR_CODE ret = E_TS_AGAIN;
-	
-	if(self->events_num == 0)
+	TLIBC_LIST_HEAD *iter, *next;
+    TERROR_CODE r;
+
+	if(tlibc_list_empty(&self->readable_list))
 	{
-		self->events_num = epoll_wait(self->epollfd, self->events, TDTP_MAX_EVENTS, 0);
-	    if(self->events_num == -1)
+		struct epoll_event 	events[TDTP_MAX_EVENTS];
+		int                 events_num;
+		
+		events_num = epoll_wait(self->epollfd, events, TDTP_MAX_EVENTS, 0);
+	    if(events_num == -1)
 		{
 			goto ERROR_RET;
 	    }
+
+	    for(i = 0; i < events_num; ++i)
+	    {
+            tdtp_socket_t *socket = events[i].data.ptr;
+            tlibc_list_init(&socket->readable_list);
+            tlibc_list_add_tail(&socket->readable_list, &self->readable_list);
+	    }
 	}
 
-	if(self->events_num == 0)
+	if(tlibc_list_empty(&self->readable_list))
 	{
 	    goto AGAIN;
 	}
 
-	for(i = 0; i < self->events_num; ++i)
-	{
-//		char *buff;
-//		tuint16 buff_size = 1;
-		
-//		tbus_send_begin();
-	}
+    for(iter = self->readable_list.next; iter != &self->readable_list;iter = next)
+    {
+        tdtp_socket_t *socket = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, readable_list);
+        next = iter->next;
+        
+        r = tdtp_socket_recv(socket);
+        if(r != E_TS_AGAIN)
+        {
+            if(r != E_TS_NOERROR)
+            {
+                tdtp_socket_free(socket);
+            }
+            tlibc_list_del(iter);
+        }
+    }
 	
 	return ret;
 AGAIN:
@@ -318,11 +289,11 @@ ERROR_RET:
 	return E_TS_ERROR;	
 }
 
-#define MAX_PACKAGE_LIST_NUM 1024
+//tbus中最多一次处理的包的个数
+#define MAX_PACKAGE_LIST_NUM 65536
 static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 {
-    tdtp_socket_t *pkg_socket[MAX_PACKAGE_LIST_NUM];
-    tdtp_socket_op pkg_list[MAX_PACKAGE_LIST_NUM];
+    tdgi_t pkg_list[MAX_PACKAGE_LIST_NUM];
     tuint32 pkg_list_num;
     
 	TERROR_CODE ret = E_TS_AGAIN;
@@ -333,6 +304,8 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 	TLIBC_ERROR_CODE r;
 	pkg_list_num = 0;
 	tuint32 i;
+    TLIBC_LIST_HEAD writeable_list;
+    TLIBC_LIST_HEAD *iter, *next;
 	
     ret = tbus_read_begin(self->input_tbus, &message, &message_len);
     if(ret == E_TS_AGAIN)
@@ -350,58 +323,76 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 
     assert(ret == E_TS_NOERROR);
     len = message_len;
+    tlibc_list_init(&writeable_list);
     while(len > 0)
     {
+        tdgi_t *pkg = &pkg_list[pkg_list_num];
+        tuint16 pkg_size;
+        const char* body_addr;
+        tuint16 body_size;
+        
         tlibc_binary_reader_init(&reader, message, len);
-        r = tlibc_read_tdgi_t(&reader.super, &pkg_list[pkg_list_num].head);
+        r = tlibc_read_tdgi_t(&reader.super, pkg);
         if(r != E_TLIBC_NOERROR)
         {
             goto ERROR_RET;
         }
-        pkg_socket[pkg_list_num] = 
-            (tdtp_socket_t*)tlibc_mempool_get(self->socket_pool, pkg_list[pkg_list_num].head.mid);
-        
-        
-        if(pkg_list[pkg_list_num].head.cmd == e_tdgi_cmd_send)
+        pkg_size = reader.offset;
+
+        for(i = 0; i < pkg->mid_num; ++i)
         {
-            pkg_list[pkg_list_num].iov.iov_base = (void*)message + reader.offset;
-            pkg_list[pkg_list_num].iov.iov_len = 
-                pkg_list[pkg_list_num].head.body.send_size;
+            tdtp_socket_t *socket = (tdtp_socket_t*)tlibc_mempool_get(self->socket_pool, pkg->mid[i]);
             
-            message += reader.offset + pkg_list[pkg_list_num].head.body.send_size;
-            len -= reader.offset + pkg_list[pkg_list_num].head.body.send_size;
-        }
-        else
-        {
-            len -= reader.offset;
-            message += reader.offset;
-        }
-        if(pkg_socket[pkg_list_num] != NULL)
-        {        
-            if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
+            if(pkg->cmd == e_tdgi_cmd_send)
             {
-                for(i = 0; i < pkg_list_num; ++i)
-                {
-                    tdtp_socket_push_pkg(pkg_socket[i], &pkg_list[i]);
-                }
-                for(i = 0; i < pkg_list_num; ++i)
-                {
-                    tdtp_socket_process(pkg_socket[i]);
-                }
-                pkg_list_num = 0;
+                body_addr = message + reader.offset + pkg->size;
+                body_size = pkg->size;
             }
-            ++pkg_list_num;
+            else
+            {
+                body_addr = NULL;
+                body_size = 0;
+            }
+            
+            if(socket != NULL)
+            {
+                ++pkg_list_num;            
+                tdtp_socket_push_pkg(socket, pkg, body_addr, body_size);                
+
+                if(tlibc_list_empty(&socket->writeable_list))
+                {
+                    tlibc_list_add_tail(&socket->writeable_list, &writeable_list);
+                }
+                
+                if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
+                {
+                    for(iter = writeable_list.next; iter != &writeable_list; iter = next)
+                    {
+                        tdtp_socket_t *s = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, writeable_list);
+                        next = iter->next;
+                        
+                        tdtp_socket_process(s);
+                        tlibc_list_del(iter);
+                        tlibc_list_init(&s->writeable_list);
+                    }
+                    pkg_list_num = 0;
+                }
+            }
         }
+        
+        message += pkg_size + body_size;
+        len -= pkg_size + body_size;
     }
-    for(i = 0; i < pkg_list_num; ++i)
+    
+    if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
     {
-        tdtp_socket_push_pkg(pkg_socket[i], &pkg_list[i]);
+        for(iter = writeable_list.next; iter != &writeable_list; iter = iter->next)
+        {
+            tdtp_socket_t *s = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, writeable_list);
+            tdtp_socket_process(s);
+        }
+        pkg_list_num = 0;
     }
-    for(i = 0; i < pkg_list_num; ++i)
-    {
-        tdtp_socket_process(pkg_socket[i]);
-    }
-    pkg_list_num = 0;
 
     tbus_read_end(self->input_tbus, message_len);
     
@@ -434,27 +425,6 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		goto done;
 	}
 	
-	r = process_epool(self);
-	if(r == E_TS_NOERROR)
-	{
-		ret = E_TS_NOERROR;
-	}
-	else if(r == E_TS_AGAIN)
-	{
-	}
-	else
-	{
-		ret = r;
-		goto done;
-	}
-
-
-	if(tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self)) == E_TLIBC_NOERROR)
-	{
-		ret = E_TS_NOERROR;
-	}
-
-
     r = process_input_tbus(self);
 	if(r == E_TS_NOERROR)
 	{
@@ -469,6 +439,25 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		goto done;
 	}
 
+	
+	r = process_epool(self);
+	if(r == E_TS_NOERROR)
+	{
+		ret = E_TS_NOERROR;
+	}
+	else if(r == E_TS_AGAIN)
+	{
+	}
+	else
+	{
+		ret = r;
+		goto done;
+	}
+
+    if(tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self)) == E_TLIBC_NOERROR)
+    {
+        ret = E_TS_NOERROR;
+    }
 	
 done:
 	return ret;

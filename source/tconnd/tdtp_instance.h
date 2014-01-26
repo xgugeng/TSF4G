@@ -9,10 +9,10 @@
 #include "tlibc/core/tlibc_mempool.h"
 #include "tlibc/core/tlibc_timer.h"
 
+
 #include <sys/epoll.h>
 #include <netinet/in.h>
 
-#define TDTP_MAX_EVENTS 1024
 
 typedef struct _tdtp_instance_t
 {
@@ -20,9 +20,9 @@ typedef struct _tdtp_instance_t
 	int					listenfd;
 	
 	int					epollfd;
-	
-	struct epoll_event 	events[TDTP_MAX_EVENTS];
-	int					events_num;
+
+//有数据需要读取的socket
+    TLIBC_LIST_HEAD     readable_list;
     
 	int					input_tbusid;
 	tbus_t				*input_tbus;
@@ -36,9 +36,8 @@ typedef struct _tdtp_instance_t
 	tlibc_mempool_t		*socket_pool;
 	tuint32				socket_pool_size;
 
-
-	tlibc_mempool_t		*timer_pool;
-	tuint32				timer_pool_size;
+	tlibc_mempool_t		*package_pool;
+	tuint32				package_pool_size;
 }tdtp_instance_t;
 
 

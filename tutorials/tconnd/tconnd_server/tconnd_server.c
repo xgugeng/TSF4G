@@ -86,7 +86,8 @@ void process_pkg(const tdgi_t *req)
     {
     case e_tdgi_cmd_new_connection_req:
         rsp.cmd = e_tdgi_cmd_new_connection_ack;
-        rsp.mid = req->mid;
+        rsp.mid_num = req->mid_num;
+        memcpy(&rsp.mid, &req->mid, req->mid_num * sizeof(tuint64));
         block_send_pkg(otb, &rsp);
         break;
     default:
