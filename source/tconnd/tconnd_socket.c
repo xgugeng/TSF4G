@@ -213,7 +213,7 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
                 while((j < self->op_list.num) && (self->op_list.head[j]->cmd == e_tdgi_cmd_send))
                 {
                     //在push的时候检查过self->op_list.head[j]->size小于SSIZE_MAX
-                    if(total_size > SSIZE_MAX - self->op_list.head[j]->size)
+                    if((unsigned)total_size > SSIZE_MAX - self->op_list.head[j]->size)
                     {
                         break;
                     }

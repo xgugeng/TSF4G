@@ -53,7 +53,7 @@ install:
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
 	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	find ~/TServer/include/ . -name "*.h" | cscope -Rbq
+	find . -name "*.h" | cscope -Rbq
 
 clean:
 	find . -name "*.o" | xargs $(RM)
