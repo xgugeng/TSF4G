@@ -74,13 +74,21 @@ int main(int argc, char **argv)
 		usage();
 		goto ERROR_RET;
 	}
-
-	if((tlibc_xml_reader_init(&xml_reader, config_file) != E_TLIBC_NOERROR)
-		||(tlibc_read_tconnd_config_t(&xml_reader.super, &g_config) != E_TLIBC_NOERROR))
+	
+    tlibc_xml_reader_init(&xml_reader);
+    if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
+    {
+   		fprintf(stderr, "load push config file [%s] failed.\n", config_file);
+        goto ERROR_RET;
+    }
+    
+	if(tlibc_read_tconnd_config_t(&xml_reader.super, &g_config) != E_TLIBC_NOERROR)
 	{
-		fprintf(stderr, "load config file [%s] failed.\n", config_file);
+		fprintf(stderr, "load read file [%s] failed.\n", config_file);
+		tlibc_xml_reader_pop_file(&xml_reader);
 		goto ERROR_RET;
 	}
+    tlibc_xml_reader_pop_file(&xml_reader);
 
 	ret = tdtp_instance_init(&g_tdtp_instance);
 	if(ret != E_TS_NOERROR)

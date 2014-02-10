@@ -31,16 +31,23 @@ static void rolling_file_init(tlog_rolling_file_instance_t *self, const tlog_rol
 
 TERROR_CODE tlog_init(tlog_t *self, const char *config_file)
 {
-	TERROR_CODE ret = E_TS_ERROR;;
+	TERROR_CODE ret = E_TS_NOERROR;;
 	TLIBC_XML_READER xml_reader;
 	tuint32 i;
 	
-	tlibc_xml_reader_init(&xml_reader, config_file);
+	tlibc_xml_reader_init(&xml_reader);
+	if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
+	{
+    	ret = E_TS_ERROR;
+	    goto done;
+	}	
 	if(tlibc_read_tlog_config_t(&xml_reader.super, &self->config) != E_TLIBC_NOERROR)
 	{
 		ret = E_TS_ERROR;
-		goto ERROR_RET;
+		tlibc_xml_reader_pop_file(&xml_reader);
+		goto done;
 	}
+    tlibc_xml_reader_pop_file(&xml_reader);
 
 	self->instance.appender_instance_num = self->config.appender_num;
 	for(i = 0; i < self->instance.appender_instance_num; ++i)
@@ -54,8 +61,7 @@ TERROR_CODE tlog_init(tlog_t *self, const char *config_file)
 	
 	}
 
-	return E_TS_NOERROR;
-ERROR_RET:
+done:
 	return ret;
 }
 

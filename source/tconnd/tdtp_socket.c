@@ -326,7 +326,8 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     //计算末尾残余的字节数
     for(iter = package_ptr; iter < limit_ptr;)
     {
-        remain_size = tlibc_little_to_host16(*(tuint16*)iter);
+        remain_size = *(tuint16*)iter
+        tlibc_little_to_host16(remain_size);
         iter += sizeof(tuint16) + remain_size;
     }
     remain_ptr = limit_ptr - remain_size;
