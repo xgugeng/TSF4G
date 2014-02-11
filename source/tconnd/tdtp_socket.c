@@ -11,6 +11,8 @@
 #include "tlibc/core/tlibc_util.h" 
 #include "tcommon/tdgi_writer.h"
 
+#include <sys/ioctl.h>
+
 
 
 tdtp_socket_t *tdtp_socket_alloc()
@@ -70,6 +72,7 @@ void tdtp_socket_async_close(const tlibc_timer_entry_t *super)
 
 TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
 {
+    int nb = 1;
     TERROR_CODE ret = E_TS_NOERROR;
     socklen_t cnt_len;
 
@@ -100,6 +103,12 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
 	    g_tdtp_instance.timer.jiffies + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_socket_accept_timeout);
 
 	
+	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
+	{
+    	ret = E_TS_ERRNO;
+		goto done;
+	}
+
 	tlibc_timer_push(&g_tdtp_instance.timer, &self->accept_timeout);
 	self->status = e_tdtp_socket_status_syn_sent;
 done:
@@ -230,7 +239,8 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     char *iter;
 
 
-    assert(self->status == e_tdtp_socket_status_established);
+    assert((self->status == e_tdtp_socket_status_syn_sent)
+        ||(self->status == e_tdtp_socket_status_established));
     
     //用个常量?
     tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
@@ -302,6 +312,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
                     goto done;
                 }
                 tbus_send_end(g_tdtp_instance.output_tbus, header_size);
+                ret = E_TS_CLOSE;
                 break;
         }
         tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
@@ -316,33 +327,52 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         self->package_buff = NULL;
     }
     limit_ptr = body_ptr + r;
+
     
-    //计算末尾残余的字节数
-    for(iter = package_ptr; iter < limit_ptr;)
+    if(limit_ptr < package_ptr + sizeof(tuint16))
     {
-        remain_size = *(tuint16*)iter
-        tlibc_little_to_host16(remain_size);
-        iter += sizeof(tuint16) + remain_size;
+        remain_ptr = package_ptr;
+        remain_size = limit_ptr - package_ptr;
     }
-    remain_ptr = limit_ptr - remain_size;
-    package_buff->buff_size = limit_ptr - remain_ptr;
-    memcpy(package_buff, remain_ptr, limit_ptr - remain_ptr);
-    self->package_buff = package_buff;
-
-    pkg.cmd = e_tdgi_cmd_recv;
-    pkg.mid[0] = self->mid;
-    pkg.mid_num = 1;
-    pkg.size = remain_ptr - package_ptr;
-
-    tlibc_binary_writer_init(&writer, header_ptr, header_size);
-    if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+    else
     {
-        assert(0);
+        for(iter = package_ptr; iter < limit_ptr;)
+        {
+            remain_size = *(tuint16*)iter
+            tlibc_little_to_host16(remain_size);
+            remain_ptr = iter;
+            iter += sizeof(tuint16) + remain_size;
+        }
+    }
+    
+    if(limit_ptr - remain_ptr > 0)
+    {
+        package_buff->buff_size = limit_ptr - remain_ptr;
+        memcpy(package_buff->buff, remain_ptr, limit_ptr - remain_ptr);
+        self->package_buff = package_buff;
+    }
+    else
+    {
         tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
-        ret = E_TS_ERROR;
-        goto done;
     }
-    tbus_send_end(g_tdtp_instance.output_tbus, header_size  + package_size + body_size);
+
+    if(remain_ptr - package_ptr > 0)
+    {
+        pkg.cmd = e_tdgi_cmd_recv;
+        pkg.mid[0] = self->mid;
+        pkg.mid_num = 1;
+        pkg.size = remain_ptr - package_ptr;
+
+        tlibc_binary_writer_init(&writer, header_ptr, header_size);
+        if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+        {
+            assert(0);
+            tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
+            ret = E_TS_ERROR;
+            goto done;
+        }
+        tbus_send_end(g_tdtp_instance.output_tbus, writer.offset + pkg.size);
+    }
     
 done:
     return ret;

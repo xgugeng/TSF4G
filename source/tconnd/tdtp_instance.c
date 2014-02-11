@@ -284,9 +284,13 @@ static TERROR_CODE process_epool(tdtp_instance_t *self)
         if(ret == E_TS_WOULD_BLOCK)
         {
             tlibc_list_del(iter);
-        }
+        }        
         else if(ret != E_TS_NOERROR)
         {
+            if(ret == E_TS_CLOSE)
+            {
+                ret = E_TS_NOERROR;
+            }
             tlibc_list_del(iter);
             tdtp_socket_free(socket);
         }
@@ -454,4 +458,15 @@ done:
 	return ret;
 }
 
+void tdtp_instance_fini(tdtp_instance_t *self)
+{
+    shmdt(self->input_tbus);
+    shmdt(self->output_tbus);
+    //need to close all socket!
+    free(self->socket_pool);
+    free(self->package_pool);
+
+    close(self->listenfd);
+    close(self->epollfd);
+}
 

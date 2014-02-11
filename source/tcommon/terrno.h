@@ -10,6 +10,7 @@ typedef enum _TERROR_CODE
     E_TS_ERRNO = 3,
 	E_TS_NO_MEMORY = 4,
 	E_TS_CAN_NOT_OPEN_FILE = 5,
+	E_TS_CLOSE = 6,
 
 }TERROR_CODE;
 

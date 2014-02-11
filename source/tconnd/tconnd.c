@@ -8,6 +8,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <sched.h>
+#include <signal.h>
+
 
 
 void version()
@@ -29,12 +31,27 @@ void help()
 	fprintf(stderr, "  -c file					Set the config file\n");
 }
 
+static int g_sig_term = FALSE;
+
+static void on_signal(int sig)
+{
+    switch(sig)
+    {
+        case SIGINT:
+        case SIGTERM:
+            g_sig_term = TRUE;
+            break;
+    }
+}
+
+
 int main(int argc, char **argv)
 {
 	TLIBC_XML_READER xml_reader;
 	const char *config_file = NULL;
 	int i, ret;
 	tuint32 idle_count = 0;
+    struct sigaction  sa;
 	
 	for (i = 1; i < argc; ++i)
 	{
@@ -90,13 +107,26 @@ int main(int argc, char **argv)
 	}
     tlibc_xml_reader_pop_file(&xml_reader);
 
+  
 	ret = tdtp_instance_init(&g_tdtp_instance);
 	if(ret != E_TS_NOERROR)
 	{
 		goto ERROR_RET;
 	}
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	sa.sa_handler = on_signal;
+	sigemptyset(&sa.sa_mask);
 	
-	for(;;)
+	if((sigaction(SIGTERM, &sa, NULL) != 0)
+	 ||(sigaction(SIGINT, &sa, NULL) != 0))
+	{
+	    goto ERROR_RET;
+	}
+
+    g_sig_term = FALSE;
+	
+	for(;!g_sig_term;)
 	{
 		ret = tdtp_instance_process(&g_tdtp_instance);
 		switch(ret)
@@ -104,7 +134,7 @@ int main(int argc, char **argv)
 		case E_TS_NOERROR:
 		    break;
 		case E_TS_WOULD_BLOCK:
-    		{   		
+    		{
     			++idle_count;
     			if(idle_count > 30)
     			{
@@ -121,7 +151,9 @@ int main(int argc, char **argv)
         	goto ERROR_RET;
 		}
 	}
-	
+
+	tdtp_instance_fini(&g_tdtp_instance);
+
 	return 0;
 ERROR_RET:
 	return 1;

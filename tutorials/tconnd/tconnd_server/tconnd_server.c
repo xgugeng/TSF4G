@@ -75,10 +75,11 @@ void block_send_pkg(tbus_t *tb, const tdgi_t *pkg)
 }
 
 
-void process_pkg(const tdgi_t *req)
+tuint16 process_pkg(const tdgi_t *req,  const char* body_ptr)
 {
     tdgi_t rsp;
-
+    TLIBC_UNUSED(body_ptr);
+    
     switch(req->cmd)
     {
     case e_tdgi_cmd_new_connection_req:
@@ -87,9 +88,13 @@ void process_pkg(const tdgi_t *req)
         memcpy(&rsp.mid, &req->mid, req->mid_num * sizeof(tuint64));
         block_send_pkg(otb, &rsp);
         break;
+    case e_tdgi_cmd_recv:
+        printf("recv: %u\n", req->size);
+        return req->size;
     default:
         break;
     }
+    return 0;
 }
 
 
@@ -121,18 +126,18 @@ int main()
 		    len = message_len;
 		    while(len > 0)
 		    {
+		        tuint16 body_size;
+		        
     			tlibc_binary_reader_init(&reader, message, len);
 	    		r = tlibc_read_tdgi_t(&reader.super, &pkg);
-	    		if(r == E_TLIBC_NOERROR)
+	    		if(r != E_TLIBC_NOERROR)
 	    		{
-	    		    process_pkg(&pkg);
-	    		    len -= reader.offset;
-	    		}
-	    		else
-	    		{
-	    		    printf("error\n");
+    	    		printf("error\n");
 	    		    exit(1);
-	    		}
+	    		}		
+                body_size = process_pkg(&pkg, message + pkg.size);
+                len -= reader.offset + body_size;
+                message += reader.offset + body_size;
 	    	}			
 			tbus_read_end(itb, message_len);
 			continue;
