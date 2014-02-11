@@ -27,7 +27,7 @@ const char *message = NULL;
 tbus_t *itb;
 tbus_t *otb;
 
-void block_send_pkg(tbus_t *tb, const tdgi_t *pkg)
+void block_send_pkg(tbus_t *tb, const tdgi_rsp_t *pkg)
 {
     char *addr;
     size_t len = 0;
@@ -44,7 +44,7 @@ void block_send_pkg(tbus_t *tb, const tdgi_t *pkg)
         if(ret == E_TS_NOERROR)
         {
         	tlibc_binary_writer_init(&writer, addr, len);
-            r = tlibc_write_tdgi_t(&writer.super, pkg);
+            r = tlibc_write_tdgi_rsp_t(&writer.super, pkg);
             if(r != E_TLIBC_NOERROR)
             {
                 ++len;
@@ -75,17 +75,17 @@ void block_send_pkg(tbus_t *tb, const tdgi_t *pkg)
 }
 
 
-tuint16 process_pkg(const tdgi_t *req,  const char* body_ptr)
+tuint16 process_pkg(const tdgi_req_t *req,  const char* body_ptr)
 {
-    tdgi_t rsp;
+    tdgi_rsp_t rsp;
     TLIBC_UNUSED(body_ptr);
     
     switch(req->cmd)
     {
     case e_tdgi_cmd_new_connection_req:
-        rsp.cmd = e_tdgi_cmd_new_connection_ack;
-        rsp.mid_num = req->mid_num;
-        memcpy(&rsp.mid, &req->mid, req->mid_num * sizeof(tuint64));
+        rsp.cmd = e_tdgi_cmd_new_connection_rsp;
+        rsp.mid_num = 1;
+        rsp.mid[0] = req->mid;
         block_send_pkg(otb, &rsp);
         break;
     case e_tdgi_cmd_recv:
@@ -101,7 +101,7 @@ tuint16 process_pkg(const tdgi_t *req,  const char* body_ptr)
 
 int main()
 {
-    tdgi_t pkg;
+    tdgi_req_t pkg;
 	int ishm_id, oshm_id;
 	tuint16 len;
 	size_t message_len;
@@ -129,7 +129,7 @@ int main()
 		        tuint16 body_size;
 		        
     			tlibc_binary_reader_init(&reader, message, len);
-	    		r = tlibc_read_tdgi_t(&reader.super, &pkg);
+	    		r = tlibc_read_tdgi_req_t(&reader.super, &pkg);
 	    		if(r != E_TLIBC_NOERROR)
 	    		{
     	    		printf("error\n");

@@ -33,7 +33,7 @@ typedef enum _tdtp_socket_status_t
 typedef struct _tdtp_socket_op_list
 {
     tuint32 num;
-    const tdgi_t *head[IOV_MAX];
+    const tdgi_rsp_t *head[IOV_MAX];
     struct iovec iov[IOV_MAX];
 }tdtp_socket_op_list;
 
@@ -64,7 +64,7 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd);
 
 TERROR_CODE tdtp_socket_process(tdtp_socket_t *self);
 
-TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_t *head, const char* body, size_t body_size);
+TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
 
 TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self);
 

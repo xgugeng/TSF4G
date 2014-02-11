@@ -122,10 +122,10 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
 	tuint32 i, j;
     for(i = 0; i < self->op_list.num;)
     {
-        const tdgi_t *pkg = self->op_list.head[i];
+        const tdgi_rsp_t *pkg = self->op_list.head[i];
         switch(pkg->cmd)
         {
-        case e_tdgi_cmd_new_connection_ack:
+        case e_tdgi_cmd_new_connection_rsp:
             {
                 if(self->status != e_tdtp_socket_status_syn_sent)
                 {
@@ -191,7 +191,7 @@ done:
     return ret;
 }
 
-TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_t *head, const char* body, size_t body_size)
+TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size)
 {
     TERROR_CODE ret = E_TS_NOERROR;
 
@@ -229,9 +229,9 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     tuint16 remain_size;
 
     
-    tdgi_t pkg;
+    tdgi_req_t pkg;
     TLIBC_BINARY_WRITER writer;
-    char pkg_buff[sizeof(tdgi_t)];
+    char pkg_buff[sizeof(tdgi_req_t)];
     size_t total_size;
     int r;
     tuint64 package_buff_mid;
@@ -245,8 +245,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     //用个常量?
     tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
     pkg.cmd = e_tdgi_cmd_recv;
-    pkg.mid_num = 1;
-    tlibc_write_tdgi_t(&writer.super, &pkg);
+    tlibc_write_tdgi_req_t(&writer.super, &pkg);
 
     
     header_size = writer.offset;
@@ -301,10 +300,9 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
             default:
                 tlibc_binary_writer_init(&writer, header_ptr, header_size);
                 pkg.cmd = e_tdgi_cmd_recv;
-                pkg.mid[0] = self->mid;
-                pkg.mid_num = 1;
+                pkg.mid = self->mid;
                 pkg.size = 0;
-                if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+                if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
                 {
                     assert(0);
                     tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
@@ -359,12 +357,11 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     if(remain_ptr - package_ptr > 0)
     {
         pkg.cmd = e_tdgi_cmd_recv;
-        pkg.mid[0] = self->mid;
-        pkg.mid_num = 1;
+        pkg.mid = self->mid;
         pkg.size = remain_ptr - package_ptr;
 
         tlibc_binary_writer_init(&writer, header_ptr, header_size);
-        if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+        if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
         {
             assert(0);
             tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);

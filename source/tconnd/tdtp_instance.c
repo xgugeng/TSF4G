@@ -158,16 +158,15 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	
 	char *tbus_writer_ptr;
 	size_t tbus_writer_size;	
-	tdgi_t pkg;
+	tdgi_req_t pkg;
 	tuint32 pkg_len;
 	TLIBC_BINARY_WRITER writer;
-	char pkg_buff[sizeof(tdgi_t)];
+	char pkg_buff[sizeof(tdgi_req_t)];
 
 //1, 检查tbus是否能发送新的连接包
 	tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.mid_num = 1;
-	tlibc_write_tdgi_t(&writer.super, &pkg);
+	tlibc_write_tdgi_req_t(&writer.super, &pkg);
 	pkg_len = writer.offset;
 	tbus_writer_size = pkg_len;
 	
@@ -214,12 +213,10 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 
 //5, 发送连接的通知	
 	pkg.cmd = e_tdgi_cmd_new_connection_req;
-	pkg.mid_num = 0;
-	pkg.mid[pkg.mid_num] = conn_socket->mid;
-	++pkg.mid_num;
+	pkg.mid = conn_socket->mid;
 	
 	tlibc_binary_writer_init(&writer, tbus_writer_ptr, tbus_writer_size);
-	if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+	if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
 	{
 	    assert(0);
 		ret = E_TS_ERROR;
@@ -304,7 +301,7 @@ done:
 #define MAX_PACKAGE_LIST_NUM 255
 static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 {
-    static tdgi_t pkg_list[MAX_PACKAGE_LIST_NUM];
+    static tdgi_rsp_t pkg_list[MAX_PACKAGE_LIST_NUM];
     tuint32 pkg_list_num = 0;
 	TERROR_CODE ret = E_TS_NOERROR;
 	const char*message;
@@ -330,13 +327,13 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
     tlibc_list_init(&writeable_list);
     while(len > 0)
     {
-        tdgi_t *pkg = &pkg_list[pkg_list_num];
+        tdgi_rsp_t *pkg = &pkg_list[pkg_list_num];
         tuint16 pkg_size;
         const char* body_addr;
         tuint16 body_size;
         
         tlibc_binary_reader_init(&reader, message, len);
-        r = tlibc_read_tdgi_t(&reader.super, pkg);
+        r = tlibc_read_tdgi_rsp_t(&reader.super, pkg);
         if(r != E_TLIBC_NOERROR)
         {
             ret = E_TS_ERROR;
