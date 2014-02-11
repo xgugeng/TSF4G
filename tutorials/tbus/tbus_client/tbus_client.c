@@ -26,7 +26,7 @@ int main()
 		tuint16 data_size;
 		
 		char *message;
-		tuint16 message_size;
+		size_t message_size;
 		
 		snprintf(data, MAX_MESSAGE_LENGTH, "hello %d", i);
 		data[MAX_MESSAGE_LENGTH - 1] = 0;
@@ -45,10 +45,6 @@ int main()
 		if(ret == E_TS_WOULD_BLOCK)
 		{
 			usleep(1000);
-		}
-		else if(ret == E_TS_AGAIN)
-		{
-			continue;
 		}
 		else
 		{

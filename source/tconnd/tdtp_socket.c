@@ -70,7 +70,7 @@ void tdtp_socket_async_close(const tlibc_timer_entry_t *super)
 
 TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
 {
-    TERROR_CODE ret = E_TS_ERROR;
+    TERROR_CODE ret = E_TS_NOERROR;
     socklen_t cnt_len;
 
     memset(&self->socketaddr, 0, sizeof(struct sockaddr_in));
@@ -82,14 +82,14 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
         switch(errno)
         {
             case EAGAIN:
-                ret = E_TS_AGAIN;
+                ret = E_TS_WOULD_BLOCK;
                 break;
             case EINTR:
-                ret = E_TS_AGAIN;
+                ret = E_TS_WOULD_BLOCK;
                 break;
             default:
                 fprintf(stderr, "%s.%d: accept failed: %s, errno(%d)\n", __FILE__, __LINE__, strerror(errno), errno);
-                ret = E_TS_AGAIN;
+                ret = E_TS_ERRNO;
                 break;
         }
         goto done;
@@ -223,7 +223,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     tdgi_t pkg;
     TLIBC_BINARY_WRITER writer;
     char pkg_buff[sizeof(tdgi_t)];
-    tuint16 total_size;
+    size_t total_size;
     int r;
     tuint64 package_buff_mid;
     package_buff_t *package_buff = NULL;
@@ -253,17 +253,12 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     total_size = header_size + package_size + body_size;
 
     ret = tbus_send_begin(g_tdtp_instance.output_tbus, &header_ptr, &total_size);
-    if((ret == E_TS_WOULD_BLOCK) || (ret == E_TS_AGAIN))
+    if(ret == E_TS_WOULD_BLOCK)
     {
-        ret = E_TS_AGAIN;
         goto done;
     }
-    if(ret == E_TS_NOERROR)
+    else if(ret != E_TS_NOERROR)
     {
-    }
-    else
-    {
-        ret = E_TS_ERROR;
         goto done;
     }
 
@@ -276,7 +271,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     package_buff = tlibc_mempool_get(g_tdtp_instance.package_pool, package_buff_mid);
     if(package_buff == NULL)
     {
-        ret = E_TS_AGAIN;
+        ret = E_TS_WOULD_BLOCK;
         goto done;
     }
 
@@ -288,10 +283,10 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         switch(errno)
         {
             case EAGAIN:
-                ret = E_TS_AGAIN;
+                ret = E_TS_WOULD_BLOCK;
                 break;
             case EINTR:
-                ret = E_TS_AGAIN;
+                ret = E_TS_WOULD_BLOCK;
                 break;
             default:
                 tlibc_binary_writer_init(&writer, header_ptr, header_size);
@@ -307,7 +302,6 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
                     goto done;
                 }
                 tbus_send_end(g_tdtp_instance.output_tbus, header_size);
-                ret = E_TS_ERROR;
                 break;
         }
         tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);

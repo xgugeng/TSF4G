@@ -30,15 +30,17 @@ done:
 }
 
 
-TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tuint16 *len)
+TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, size_t *len)
 {
+    TERROR_CODE ret = E_TS_NOERROR;
 	size_t write_size;	
 	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
 
-	if(*len + sizeof(tbus_header_t) + 1> tb->size)
+	if(*len + sizeof(tbus_header_t) + 1 > tb->size)
 	{
-		goto ERROR_RET;
+	    ret = E_TS_NO_MEMORY;
+		goto done;
 	}
 
 	if(head_offset <= tail_offset)
@@ -56,24 +58,20 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tuint16 *len)
 		if((head_offset <= tail_offset) && (head_offset != 0))
 		{
 			tb->tail_offset = 0;
-			goto AGAIN;		
+			return tbus_send_begin(tb, buf, len);
 		}
-		goto WOULD_BLOCK;
+		ret = E_TS_WOULD_BLOCK;
+		goto done;
 	}
 
 	*buf = tb->buff + sizeof(tbus_header_t) + tail_offset;
 	*len = write_size - sizeof(tbus_header_t);
 
-	return E_TS_NOERROR;
-WOULD_BLOCK:
-	return E_TS_WOULD_BLOCK;
-AGAIN:
-	return E_TS_AGAIN;
-ERROR_RET:
-	return E_TS_NO_MEMORY;
+done:
+    return ret;
 }
 
-void tbus_send_end(tbus_t *tb, tuint16 len)
+void tbus_send_end(tbus_t *tb, size_t len)
 {
 	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
@@ -85,8 +83,9 @@ void tbus_send_end(tbus_t *tb, tuint16 len)
 	tb->tail_offset = tail_offset;
 }
 
-TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, tuint16 *len)
+TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
 {
+    TERROR_CODE ret = E_TS_NOERROR;
 	size_t read_size;
 	int tail_offset = tb->tail_offset;
 	int head_offset = tb->head_offset;
@@ -106,9 +105,10 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, tuint16 *len)
 		if(head_offset > tail_offset)
 		{
 			tb->head_offset = 0;
-			goto AGAIN;
+			return tbus_read_begin(tb, buf, len);
 		}
-		goto WOULD_BLOCK;
+		ret = E_TS_WOULD_BLOCK;
+		goto done;
 	}
 
 
@@ -118,28 +118,24 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, tuint16 *len)
 		if(head_offset > tail_offset)
 		{
 			tb->head_offset = 0;
-			goto AGAIN;
+			return tbus_read_begin(tb, buf, len);
 		}
-		goto WOULD_BLOCK;
+		ret = E_TS_WOULD_BLOCK;
+		goto done;
 	case CMD_PACKAGE:
 		*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
 		*len = GET_PACKAGE_SIZE(*header);
 		break;
 	default:
-		goto ERROR_RET;
+	    ret = E_TS_ERROR;
+		goto done;
 	}
 	
-	
-	return E_TS_NOERROR;
-WOULD_BLOCK:
-	return E_TS_WOULD_BLOCK;
-AGAIN:
-	return E_TS_AGAIN;
-ERROR_RET:
-	return E_TS_ERROR;
+done:
+    return ret;
 }
 
-void tbus_read_end(tbus_t *tb, tuint16 len)
+void tbus_read_end(tbus_t *tb, size_t len)
 {
 	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_t) + len;
 	if(head_offset >= tb->size)

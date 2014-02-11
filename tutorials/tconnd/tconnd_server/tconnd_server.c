@@ -30,7 +30,7 @@ tbus_t *otb;
 void block_send_pkg(tbus_t *tb, const tdgi_t *pkg)
 {
     char *addr;
-    tuint16 len = 0;
+    size_t len = 0;
     TERROR_CODE ret;
     TLIBC_ERROR_CODE r;
     int idle = 0;
@@ -64,9 +64,6 @@ void block_send_pkg(tbus_t *tb, const tdgi_t *pkg)
             {
                 usleep(1000);
             }
-        }
-        else if(ret == E_TS_AGAIN)
-        {        
         }
         else
         {
@@ -102,7 +99,7 @@ int main()
     tdgi_t pkg;
 	int ishm_id, oshm_id;
 	tuint16 len;
-	tuint16 message_len;
+	size_t message_len;
 	TERROR_CODE ret;
 	tuint32 i;
 	TLIBC_BINARY_READER reader;
@@ -138,10 +135,6 @@ int main()
 	    		}
 	    	}			
 			tbus_read_end(itb, message_len);
-			continue;
-		}
-		else if(ret == E_TS_AGAIN)
-		{			
 			continue;
 		}
 		else if(ret == E_TS_WOULD_BLOCK)

@@ -18,7 +18,7 @@ int main()
 {
 	int shm_id = shmget(SHM_KEY, 0, 0666);
 	tbus_t *tb = shmat(shm_id, NULL, 0);
-	tuint16 len;
+	size_t len;
 	TERROR_CODE ret;
 	tuint32 i;
 
@@ -27,12 +27,8 @@ int main()
 		ret = tbus_read_begin(tb, &message, &len);
 		if(ret == E_TS_NOERROR)
 		{
-			printf("recv %u bytes, message:%s\n", len, message);
+			printf("recv %zu bytes, message:%s\n", len, message);
 			tbus_read_end(tb, len);
-			continue;
-		}
-		else if(ret == E_TS_AGAIN)
-		{			
 			continue;
 		}
 		else if(ret == E_TS_WOULD_BLOCK)

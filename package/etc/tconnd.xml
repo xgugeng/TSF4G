@@ -4,7 +4,7 @@
 	<port>7001</port>
 	<backlog>128</backlog>
 	<iovmax>64</iovmax>
-	<connections>65536</connections>
+	<connections>1024</connections>
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>

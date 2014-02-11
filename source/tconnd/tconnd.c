@@ -99,22 +99,26 @@ int main(int argc, char **argv)
 	for(;;)
 	{
 		ret = tdtp_instance_process(&g_tdtp_instance);
-		if(ret == E_TS_AGAIN)
+		switch(ret)
 		{
-			++idle_count;
-			if(idle_count > 30)
-			{
-				usleep(1000);
-				idle_count = 0;
-			}
-			else
-			{
-				sched_yield();
-			}
-		}
-		else if(ret != E_TS_NOERROR)
-		{
-			goto ERROR_RET;
+		case E_TS_NOERROR:
+		    break;
+		case E_TS_WOULD_BLOCK:
+    		{   		
+    			++idle_count;
+    			if(idle_count > 30)
+    			{
+    				usleep(1000);
+    				idle_count = 0;
+    			}
+    			else
+    			{
+    				sched_yield();
+    			}
+	    	}
+		    break;
+		default:
+        	goto ERROR_RET;
 		}
 	}
 	

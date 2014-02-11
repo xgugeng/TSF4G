@@ -150,15 +150,14 @@ ERROR_RET:
 
 static TERROR_CODE process_listen(tdtp_instance_t *self)
 {
-	int ret = E_TS_AGAIN;
-	TERROR_CODE r;
+	int ret = E_TS_NOERROR;
 	
 	struct epoll_event 	ev;
 	
 	tdtp_socket_t *conn_socket;
 	
 	char *tbus_writer_ptr;
-	tuint16 tbus_writer_size;	
+	size_t tbus_writer_size;	
 	tdgi_t pkg;
 	tuint32 pkg_len;
 	TLIBC_BINARY_WRITER writer;
@@ -174,32 +173,27 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	
 
 	ret = tbus_send_begin(self->output_tbus, &tbus_writer_ptr, &tbus_writer_size);
-	if((ret == E_TS_WOULD_BLOCK) || (ret == E_TS_AGAIN))
+	if(ret == E_TS_WOULD_BLOCK)
 	{
-		ret = E_TS_AGAIN;
+		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
-	if(ret == E_TS_NOERROR)
+	else if(ret != E_TS_NOERROR)
 	{
-	}
-	else
-	{
-		ret = E_TS_ERROR;
-		goto done;
+	    goto done;
 	}
 	
 //2, 检查是否能分配socket
 	conn_socket = tdtp_socket_alloc();
 	if(conn_socket == NULL)
 	{
-		ret = E_TS_AGAIN;
+		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
 
-    r = tdtp_socket_accept(conn_socket, self->listenfd);
-	if(r != E_TS_NOERROR)
+    ret = tdtp_socket_accept(conn_socket, self->listenfd);
+	if(ret != E_TS_NOERROR)
 	{
-	    ret = E_TS_NOERROR;
     	goto free_socket;
 	}
 	
@@ -207,7 +201,14 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	ev.data.ptr = conn_socket;	
     if(epoll_ctl(self->epollfd, EPOLL_CTL_ADD, conn_socket->socketfd, &ev) == -1)
 	{
-		ret = E_TS_NOERROR;
+	    if(errno == ENOMEM)
+	    {
+	        ret = E_TS_WOULD_BLOCK;
+	    }
+	    else
+	    {
+    	    ret = E_TS_ERRNO;
+	    }		
 		goto free_socket;
 	}
 
@@ -221,7 +222,7 @@ static TERROR_CODE process_listen(tdtp_instance_t *self)
 	if(tlibc_write_tdgi_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
 	{
 	    assert(0);
-		ret = E_TS_NOERROR;
+		ret = E_TS_ERROR;
 		goto free_socket;
 	}
 	conn_socket->status = e_tdtp_socket_status_syn_sent;
@@ -238,9 +239,8 @@ free_socket:
 static TERROR_CODE process_epool(tdtp_instance_t *self)
 {
 	int i;
-	TERROR_CODE ret = E_TS_AGAIN;
+	TERROR_CODE ret = E_TS_NOERROR;
 	TLIBC_LIST_HEAD *iter, *next;
-    TERROR_CODE r;
 
 	if(tlibc_list_empty(&self->readable_list))
 	{
@@ -250,7 +250,15 @@ static TERROR_CODE process_epool(tdtp_instance_t *self)
 		events_num = epoll_wait(self->epollfd, events, TDTP_MAX_EVENTS, 0);
 	    if(events_num == -1)
 		{
-			goto ERROR_RET;
+		    if(errno == EINTR)
+		    {
+		        ret = E_TS_WOULD_BLOCK;
+		    }
+		    else
+		    {
+		        ret = E_TS_ERRNO;
+		    }
+			goto done;
 	    }
 
 	    for(i = 0; i < events_num; ++i)
@@ -263,7 +271,8 @@ static TERROR_CODE process_epool(tdtp_instance_t *self)
 
 	if(tlibc_list_empty(&self->readable_list))
 	{
-	    goto AGAIN;
+        ret = E_TS_WOULD_BLOCK;
+	    goto done;
 	}
 
     for(iter = self->readable_list.next; iter != &self->readable_list;iter = next)
@@ -271,57 +280,48 @@ static TERROR_CODE process_epool(tdtp_instance_t *self)
         tdtp_socket_t *socket = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, readable_list);
         next = iter->next;
         
-        r = tdtp_socket_recv(socket);
-        if(r != E_TS_AGAIN)
+        ret = tdtp_socket_recv(socket);
+        if(ret == E_TS_WOULD_BLOCK)
         {
-            if(r != E_TS_NOERROR)
-            {
-                tdtp_socket_free(socket);
-            }
             tlibc_list_del(iter);
         }
+        else if(ret != E_TS_NOERROR)
+        {
+            tlibc_list_del(iter);
+            tdtp_socket_free(socket);
+        }
     }
-	
+
+done:	
 	return ret;
-AGAIN:
-    return E_TS_AGAIN;
-ERROR_RET:
-	return E_TS_ERROR;	
 }
 
 //tbus中最多一次处理的包的个数
-#define MAX_PACKAGE_LIST_NUM 65536
+#define MAX_PACKAGE_LIST_NUM 255
 static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 {
-    tdgi_t pkg_list[MAX_PACKAGE_LIST_NUM];
-    tuint32 pkg_list_num;
-    
-	TERROR_CODE ret = E_TS_AGAIN;
+    static tdgi_t pkg_list[MAX_PACKAGE_LIST_NUM];
+    tuint32 pkg_list_num = 0;
+	TERROR_CODE ret = E_TS_NOERROR;
 	const char*message;
-	tuint16 message_len;
+	size_t message_len;
 	TLIBC_BINARY_READER reader;
 	tuint16 len;
 	TLIBC_ERROR_CODE r;
-	pkg_list_num = 0;
 	tuint32 i;
     TLIBC_LIST_HEAD writeable_list;
     TLIBC_LIST_HEAD *iter, *next;
-	
+
     ret = tbus_read_begin(self->input_tbus, &message, &message_len);
-    if(ret == E_TS_AGAIN)
+    if(ret == E_TS_WOULD_BLOCK)
     {
-        goto AGAIN;
-    }
-    else if(ret == E_TS_WOULD_BLOCK)
-    {
-        goto AGAIN;
+        goto done;
     }
     else if(ret != E_TS_NOERROR)
     {
-        goto ERROR_RET;
+        goto done;
     }
 
-    assert(ret == E_TS_NOERROR);
     len = message_len;
     tlibc_list_init(&writeable_list);
     while(len > 0)
@@ -335,7 +335,8 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
         r = tlibc_read_tdgi_t(&reader.super, pkg);
         if(r != E_TLIBC_NOERROR)
         {
-            goto ERROR_RET;
+            ret = E_TS_ERROR;
+            goto done;
         }
         pkg_size = reader.offset;
 
@@ -384,56 +385,43 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
         len -= pkg_size + body_size;
     }
     
-    if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
+    for(iter = writeable_list.next; iter != &writeable_list; iter = iter->next)
     {
-        for(iter = writeable_list.next; iter != &writeable_list; iter = iter->next)
-        {
-            tdtp_socket_t *s = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, writeable_list);
-            tdtp_socket_process(s);
-        }
-        pkg_list_num = 0;
+        tdtp_socket_t *s = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, writeable_list);
+        tdtp_socket_process(s);
     }
+    pkg_list_num = 0;
 
     tbus_read_end(self->input_tbus, message_len);
     
-    ret = E_TS_NOERROR;
-
+done:
     return ret;
-AGAIN:
-    return E_TS_AGAIN;
-ERROR_RET:
-    return E_TS_ERROR;
 }
+
 
 TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 {
-	TERROR_CODE ret = E_TS_AGAIN;
+	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	TERROR_CODE r;
+	TLIBC_ERROR_CODE tlibc_ret;
 
-	r = process_listen(self);	
-
+	r = process_listen(self);
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
 	}
-	else if(r == E_TS_AGAIN)
-	{
-	}
-	else
+	else if(r != E_TS_WOULD_BLOCK)
 	{
 		ret = r;
 		goto done;
 	}
-	
+
     r = process_input_tbus(self);
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
 	}
-	else if(r == E_TS_AGAIN)
-	{
-	}
-	else
+	else if(r != E_TS_WOULD_BLOCK)
 	{
 		ret = r;
 		goto done;
@@ -445,18 +433,21 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 	{
 		ret = E_TS_NOERROR;
 	}
-	else if(r == E_TS_AGAIN)
-	{
-	}
-	else
+	else if(r != E_TS_WOULD_BLOCK)
 	{
 		ret = r;
 		goto done;
 	}
 
-    if(tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self)) == E_TLIBC_NOERROR)
+    tlibc_ret = tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self));
+    if(tlibc_ret == E_TLIBC_NOERROR)
     {
         ret = E_TS_NOERROR;
+    }
+    else if(tlibc_ret != E_TLIBC_WOULD_BLOCK)
+    {
+        ret = E_TS_ERROR;
+        goto done;
     }
 	
 done:
