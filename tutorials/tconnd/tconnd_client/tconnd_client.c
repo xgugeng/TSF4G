@@ -98,43 +98,32 @@ int robot_init(robot_s *self)
         goto ERROR_RET;
     }
     
-	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
-	{	    
-		goto ERROR_RET;
-	}
-	
-	ev.events = EPOLLIN | EPOLLERR;
-	ev.data.ptr = self;	
-
     memset(&self->address, 0, sizeof(self->address));
 	self->address.sin_family 	    = AF_INET;
 	self->address.sin_port 	    = htons(PORT);
 	self->address.sin_addr.s_addr = inet_addr("127.0.0.1"); 
 
     r = connect(self->socketfd, (struct sockaddr *)&self->address, sizeof(self->address));
-    if(r == 0)
+    if(r != 0)
     {
-        self->state = e_establish;
-        robot_send_buff(self);
-    }
-    else
-    {
-        switch(errno)
-        {
-        case EINPROGRESS:
-            self->state = e_syn_send;
-            break;
-        default:
-            goto ERROR_RET;
-        }        
+        return FALSE;
     }
 
-    
+  	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
+	{	    
+		goto ERROR_RET;
+	}	
+	ev.events = EPOLLIN;
+	ev.data.ptr = self;	
+	
+    self->state = e_establish;
+
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
 	{
 	    goto ERROR_RET;
 	}
 
+    robot_send_buff(self);
 
     return TRUE;
 ERROR_RET:
@@ -176,6 +165,12 @@ int robot_process(robot_s *self, int pollin)
             {
                 int r;
                 r = recv(self->socketfd, buff, BUFF_SIZE, 0);
+                if(r <= 0)
+                {
+                    close(self->socketfd);
+                    self->state = e_close;
+                    return robot_init(self);
+                }
             }
             return robot_send_buff(self);
         }
