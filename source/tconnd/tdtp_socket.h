@@ -6,6 +6,7 @@
 #include "tlibc/core/tlibc_timer.h"
 #include "tcommon/tdgi_types.h"
 #include "tcommon/terrno.h"
+#include "tcommon/tdtp.h"
 
 #include <sys/uio.h>
 #include <limits.h>
@@ -17,8 +18,8 @@
 typedef struct _package_buff_t
 {
     tuint64 mid;
-    char buff[TLIBC_UINT16_MAX];
-    tuint16 buff_size;
+    char buff[TDTP_SIZE_T_MAX];
+    tdtp_size_t buff_size;
 }package_buff_t;
 
 

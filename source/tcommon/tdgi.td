@@ -2,26 +2,28 @@
 
 enum tdgi_cmd_t
 {
-	e_tdgi_cmd_new_connection_req,
-	e_tdgi_cmd_new_connection_rsp,
-
+	e_tdgi_cmd_connect,
+	e_tdgi_cmd_accept,
 	e_tdgi_cmd_recv,
 	e_tdgi_cmd_send,
+	e_tdgi_cmd_close,
 };
 
 const uint32 TDGI_BROADCAST_LIMIT = 65536;
+const uint32 TDGI_SIZE_T_MAX = 0xffffffff;
+typedef uint32 tdgi_size_t;
 
 struct tdgi_req_t
 {
 	tdgi_cmd_t		cmd;
 	uint64          mid;
-	uint16          size;
+	tdgi_size_t     size;
 };
 
 struct tdgi_rsp_t
 {
 	tdgi_cmd_t		cmd;
 	vector<uint64, TDGI_BROADCAST_LIMIT>  mid;
-	uint16          size;
+	tdgi_size_t          size;
 };
 

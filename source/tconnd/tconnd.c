@@ -10,6 +10,10 @@
 #include <sched.h>
 #include <signal.h>
 
+#include "tcommon/tdgi_types.h"
+#include "tcommon/tdgi_writer.h"
+#include "tlibc/protocol/tlibc_binary_writer.h"
+
 
 
 void version()
@@ -52,6 +56,9 @@ int main(int argc, char **argv)
 	int i, ret;
 	tuint32 idle_count = 0;
     struct sigaction  sa;
+    tdgi_req_t pkg;
+    TLIBC_BINARY_WRITER writer;
+    char pkg_buff[sizeof(tdgi_req_t)];
 	
 	for (i = 1; i < argc; ++i)
 	{
@@ -107,6 +114,15 @@ int main(int argc, char **argv)
 	}
     tlibc_xml_reader_pop_file(&xml_reader);
 
+
+    tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
+    memset(&pkg, 0, sizeof(pkg));
+    if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+    {
+        goto ERROR_RET;
+    }
+    g_head_size = writer.offset;
+
   
 	ret = tdtp_instance_init(&g_tdtp_instance);
 	if(ret != E_TS_NOERROR)
@@ -121,6 +137,7 @@ int main(int argc, char **argv)
 	if((sigaction(SIGTERM, &sa, NULL) != 0)
 	 ||(sigaction(SIGINT, &sa, NULL) != 0))
 	{
+    	tdtp_instance_fini(&g_tdtp_instance);
 	    goto ERROR_RET;
 	}
 

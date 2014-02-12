@@ -75,15 +75,15 @@ void block_send_pkg(tbus_t *tb, const tdgi_rsp_t *pkg)
 }
 
 
-tuint16 process_pkg(const tdgi_req_t *req,  const char* body_ptr)
+tdgi_size_t process_pkg(const tdgi_req_t *req,  const char* body_ptr)
 {
     tdgi_rsp_t rsp;
     TLIBC_UNUSED(body_ptr);
     
     switch(req->cmd)
     {
-    case e_tdgi_cmd_new_connection_req:
-        rsp.cmd = e_tdgi_cmd_new_connection_rsp;
+    case e_tdgi_cmd_connect:
+        rsp.cmd = e_tdgi_cmd_accept;
         rsp.mid_num = 1;
         rsp.mid[0] = req->mid;
         block_send_pkg(otb, &rsp);
@@ -103,7 +103,7 @@ int main()
 {
     tdgi_req_t pkg;
 	int ishm_id, oshm_id;
-	tuint16 len;
+	size_t len;
 	size_t message_len;
 	TERROR_CODE ret;
 	tuint32 i;
@@ -126,7 +126,7 @@ int main()
 		    len = message_len;
 		    while(len > 0)
 		    {
-		        tuint16 body_size;
+		        tdgi_size_t body_size;
 		        
     			tlibc_binary_reader_init(&reader, message, len);
 	    		r = tlibc_read_tdgi_req_t(&reader.super, &pkg);

@@ -7,9 +7,11 @@
 
 #define TCONND_VERSION "0.0.1"
 
-
 extern tconnd_config_t g_config;
 
 extern tdtp_instance_t g_tdtp_instance;
+
+extern size_t              g_head_size;
+
 
 #endif//_H_GLOBALS_H

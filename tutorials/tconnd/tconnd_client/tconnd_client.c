@@ -23,7 +23,7 @@ int main()
 	{
 		TERROR_CODE ret;
 		char data[MAX_MESSAGE_LENGTH];
-		tuint16 data_size;
+		size_t data_size;
 		
 		char *message;
 		size_t message_size;

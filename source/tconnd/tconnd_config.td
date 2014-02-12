@@ -3,6 +3,7 @@ import "tcommon/tcommon.td"
 #tdgi: tdata包处理服务器接口协议, 使用共享内存进行传输， 传输内容包括tcp连接的建立， 关闭， 数据接受， 发送等内容。
 #tdtp: tdata包传输协议， 使用tcp进行传输， 包含包头， 包体两部分。 包头是一个小端编码的16位整数， 表示包体的大小。
 
+
 struct tconnd_config_t
 {
 	string<TSERVER_FILE_NAME_LENGH>		log_config; 	#log配置文件的路径

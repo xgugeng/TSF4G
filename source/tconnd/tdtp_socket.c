@@ -10,6 +10,10 @@
 #include "tlibc/protocol/tlibc_binary_writer.h"
 #include "tlibc/core/tlibc_util.h" 
 #include "tcommon/tdgi_writer.h"
+#include "tcommon/tdtp.h"
+#include "tcommon/tdtp_types.h"
+
+
 
 #include <sys/ioctl.h>
 
@@ -125,7 +129,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
         const tdgi_rsp_t *pkg = self->op_list.head[i];
         switch(pkg->cmd)
         {
-        case e_tdgi_cmd_new_connection_rsp:
+        case e_tdgi_cmd_accept:
             {
                 if(self->status != e_tdtp_socket_status_syn_sent)
                 {
@@ -138,35 +142,50 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 ++i;
                 continue;
             }
-        case e_tdgi_cmd_send:
+        case e_tdgi_cmd_close:
             {
-                size_t total_size;
-                size_t send_size;
-                
-                if(self->status != e_tdtp_socket_status_established)
+                if((self->status != e_tdtp_socket_status_established)
+                  ||(self->status != e_tdtp_socket_status_syn_sent))
                 {
                     ++i;
                     continue;
-                    break;
                 }
+                
                 if(self->op_list.head[i]->size == 0)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
                         g_tdtp_instance.timer.jiffies + 0, tdtp_socket_async_close);
                     tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
                     self->status = e_tdtp_socket_status_closing;
-                    goto done;
+                }
+                ++i;
+                continue;
+            };
+        case e_tdgi_cmd_send:
+            {
+                ssize_t total_size;
+                ssize_t send_size;
+                
+                if(self->status != e_tdtp_socket_status_established)
+                {
+                    ++i;
+                    continue;
                 }
                 
                 total_size = 0;
                 j= i;
                 while((j < self->op_list.num) && (self->op_list.head[j]->cmd == e_tdgi_cmd_send))
                 {
+                    //在push的时候检查过self->op_list.head[j]->size小于SSIZE_MAX
+                    if(total_size > SSIZE_MAX - self->op_list.head[j]->size)
+                    {
+                        break;
+                    }
                     total_size += self->op_list.head[j]->size;
                     ++j;
                 }
                 send_size = writev(self->socketfd, self->op_list.iov + i, j - i);
-                if(send_size < total_size)
+                if((send_size < 0) || (send_size != total_size))
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
                         g_tdtp_instance.timer.jiffies + 0, tdtp_socket_async_close);
@@ -203,8 +222,17 @@ TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_rsp_t *head, co
             goto done;
         }
     }
-    
+
     assert(self->op_list.num < IOV_MAX);
+    
+#if TDGI_SIZE_T_MAX >= SSIZE_MAX
+    if(head->size > SSIZE_MAX)
+    {
+        ret = E_TS_ERROR;
+        goto done;
+    }
+#endif
+
     self->op_list.head[self->op_list.num] = head;
     self->op_list.iov[self->op_list.num].iov_base = (void*)body;
     self->op_list.iov[self->op_list.num].iov_len = body_size;
@@ -218,20 +246,18 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
 {
     TERROR_CODE ret = E_TS_NOERROR;
     char *header_ptr;
-    tuint16 header_size;
+    size_t header_size;
     char *package_ptr;
-    tuint16 package_size;
+    size_t package_size;
     char *body_ptr;
-    tuint16 body_size;    
+    size_t body_size;    
     char *limit_ptr;
 
     char* remain_ptr;
-    tuint16 remain_size;
-
+    tdtp_size_t remain_size;
     
     tdgi_req_t pkg;
     TLIBC_BINARY_WRITER writer;
-    char pkg_buff[sizeof(tdgi_req_t)];
     size_t total_size;
     int r;
     tuint64 package_buff_mid;
@@ -242,13 +268,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     assert((self->status == e_tdtp_socket_status_syn_sent)
         ||(self->status == e_tdtp_socket_status_established));
     
-    //用个常量?
-    tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
-    pkg.cmd = e_tdgi_cmd_recv;
-    tlibc_write_tdgi_req_t(&writer.super, &pkg);
-
-    
-    header_size = writer.offset;
+    header_size = g_head_size;
     if(self->package_buff == NULL)
     {
         package_size = 0;
@@ -325,9 +345,8 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         self->package_buff = NULL;
     }
     limit_ptr = body_ptr + r;
-
     
-    if(limit_ptr < package_ptr + sizeof(tuint16))
+    if(limit_ptr < package_ptr + sizeof(tdtp_size_t))
     {
         remain_ptr = package_ptr;
         remain_size = limit_ptr - package_ptr;
@@ -336,10 +355,10 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     {
         for(iter = package_ptr; iter < limit_ptr;)
         {
-            remain_size = *(tuint16*)iter
-            tlibc_little_to_host16(remain_size);
+            remain_size = *(tdtp_size_t*)iter
+            TDTP_LITTLE2SIZE(remain_size);
             remain_ptr = iter;
-            iter += sizeof(tuint16) + remain_size;
+            iter += sizeof(tdtp_size_t) + remain_size;
         }
     }
     
