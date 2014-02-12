@@ -12,6 +12,8 @@
 #include <limits.h>
 
 #define TDTP_TIMER_ACCEPT_TIME_MS 5000
+#define TDTP_TIMER_PACKAGE_TIME_MS 5000
+
 
 #define MAX_PACKAGE_NUM 1024
 

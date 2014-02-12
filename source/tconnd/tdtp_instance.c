@@ -343,7 +343,7 @@ static TERROR_CODE process_input_tbus(tdtp_instance_t *self)
             goto done;
         }
         pkg_size = reader.offset;
-        if(pkg->size > TLIBC_UINT16_MAX)
+        if(pkg->size > TDTP_SIZE_T_MAX)
         {
             ret = E_TS_ERROR;
             goto done;

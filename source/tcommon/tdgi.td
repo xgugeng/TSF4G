@@ -3,8 +3,9 @@
 enum tdgi_cmd_t
 {
 	e_tdgi_cmd_connect,
-	e_tdgi_cmd_accept,
 	e_tdgi_cmd_recv,
+	
+	e_tdgi_cmd_accept,
 	e_tdgi_cmd_send,
 	e_tdgi_cmd_close,
 };

@@ -53,6 +53,7 @@ void tdtp_socket_free(tdtp_socket_t *self)
     }
     if(self->package_buff != NULL)
     {
+        tlibc_timer_pop(&self->package_timeout);
         tlibc_mempool_free(g_tdtp_instance.package_pool, self->package_buff->mid);
     }
     tlibc_mempool_free(g_tdtp_instance.socket_pool, self->mid);
@@ -101,17 +102,15 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
         }
         goto done;
     }
-
     
-	TIMER_ENTRY_BUILD(&self->accept_timeout, 
-	    g_tdtp_instance.timer.jiffies + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_socket_accept_timeout);
-
-	
 	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
 	{
     	ret = E_TS_ERRNO;
 		goto done;
 	}
+    
+	TIMER_ENTRY_BUILD(&self->accept_timeout, 
+	    g_tdtp_instance.timer.jiffies + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_socket_accept_timeout);	
 
 	tlibc_timer_push(&g_tdtp_instance.timer, &self->accept_timeout);
 	self->status = e_tdtp_socket_status_syn_sent;
@@ -343,6 +342,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         memcpy(package_ptr, self->package_buff->buff, package_size);
         tlibc_mempool_free(g_tdtp_instance.package_pool, self->package_buff->mid);
         self->package_buff = NULL;
+        tlibc_timer_pop(&self->package_timeout);
     }
     limit_ptr = body_ptr + r;
     
@@ -367,6 +367,11 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         package_buff->buff_size = limit_ptr - remain_ptr;
         memcpy(package_buff->buff, remain_ptr, limit_ptr - remain_ptr);
         self->package_buff = package_buff;
+
+        
+        TIMER_ENTRY_BUILD(&self->package_timeout, 
+            g_tdtp_instance.timer.jiffies + TDTP_TIMER_PACKAGE_TIME_MS, tdtp_socket_accept_timeout);        
+        tlibc_timer_push(&g_tdtp_instance.timer, &self->package_timeout);
     }
     else
     {
