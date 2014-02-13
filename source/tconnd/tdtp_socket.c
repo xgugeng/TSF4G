@@ -217,7 +217,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                     ++j;
                 }
                 send_size = writev(self->socketfd, self->op_list.iov + i, j - i);
-                if((send_size < 0) || (send_size != total_size))
+                if(send_size != total_size)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
                         g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
@@ -291,7 +291,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     tdgi_req_t pkg;
     TLIBC_BINARY_WRITER writer;
     size_t total_size;
-    int r;
+    ssize_t r;
     tuint64 package_buff_mid;
     package_buff_t *package_buff = NULL;
     char *iter;
@@ -340,29 +340,25 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     r = recv(self->socketfd, body_ptr, body_size, 0);
     if(r <= 0)
     {
-        switch(errno)
+        if((r == 0) || ((errno != EAGAIN) && (errno != EINTR)))
+        {        
+            tlibc_binary_writer_init(&writer, header_ptr, header_size);
+            pkg.cmd = e_tdgi_cmd_recv;
+            pkg.mid = self->mid;
+            pkg.size = 0;
+            if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
+            {
+                assert(0);
+                tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
+                ret = E_TS_ERROR;
+                goto done;
+            }
+            tbus_send_end(g_tdtp_instance.output_tbus, header_size);
+            ret = E_TS_CLOSE;
+        }
+        else
         {
-            case EAGAIN:
-                ret = E_TS_ERRNO;
-                break;
-            case EINTR:
-                ret = E_TS_ERRNO;
-                break;
-            default:
-                tlibc_binary_writer_init(&writer, header_ptr, header_size);
-                pkg.cmd = e_tdgi_cmd_recv;
-                pkg.mid = self->mid;
-                pkg.size = 0;
-                if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
-                {
-                    assert(0);
-                    tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
-                    ret = E_TS_ERROR;
-                    goto done;
-                }
-                tbus_send_end(g_tdtp_instance.output_tbus, header_size);
-                ret = E_TS_CLOSE;
-                break;
+            ret = E_TS_ERRNO;
         }
         tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
         goto done;
