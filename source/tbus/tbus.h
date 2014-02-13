@@ -7,6 +7,18 @@
 
 #define TBUS_VERSION "0.0.1"
 
+typedef enum _tbus_cmd_e
+{
+    e_tbus_cmd_package = 1,
+    e_tbus_cmd_ignore = 2,
+}tbus_cmd_e;
+
+typedef struct _tbus_header_s
+{
+    tbus_cmd_e cmd;
+    size_t size;
+}tbus_header_s;
+
 typedef struct _tbus_t tbus_t;
 struct _tbus_t
 {

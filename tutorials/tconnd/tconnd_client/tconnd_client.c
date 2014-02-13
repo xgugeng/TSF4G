@@ -17,6 +17,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sched.h>
+#include "tlibc/core/tlibc_timer.h"
+#include "tlibc/core/tlibc_error_code.h"
+#include <sys/time.h>
 
 
 
@@ -27,18 +30,13 @@
 #define PORT 7001
 #define BUFF_SIZE 1024
 int g_epollfd;
+tlibc_timer_t g_timer;
 
-
-typedef enum _robot_state_e
-{
-    e_close,
-    e_syn_send,
-    e_establish,
-}robot_state_e;
 
 typedef struct _robot_s
 {
-    robot_state_e state;
+    tlibc_timer_entry_t entry;
+
     int socketfd;
     struct sockaddr_in address;
 }robot_s;
@@ -52,12 +50,13 @@ int robot_send_buff(robot_s *self)
     char *data_ptr = buff + TDTP_SIZEOF_SIZE_T;
     int len;
     int total_size, send_size;
+    int idle_times;
 
-    len = snprintf(data_ptr, BUFF_SIZE - TDTP_SIZEOF_SIZE_T, "hello %ld!\n", time(0));
-    ++len;
+    snprintf(data_ptr, BUFF_SIZE - TDTP_SIZEOF_SIZE_T, "hello %ld!\n", time(0));
+    len = 1024;
     *pkg_ptr = len;
     TDTP_SIZE2LITTLE(*pkg_ptr);
-    total_size = TDTP_SIZEOF_SIZE_T + len;
+    total_size = len + 2;
     send_size = 0;
     while(send_size < total_size)
     {
@@ -68,19 +67,37 @@ int robot_send_buff(robot_s *self)
             {
             case EINTR:
             case EAGAIN:
+                ++idle_times;
+                if(idle_times > 50)
+                {
+                    usleep(1000);
+                }
                 continue;
-            default:                    
-                close(self->socketfd);
-                self->state = e_close;
-                return robot_init(self);
+            default:
+                printf("send error\n");
+                exit(1);
             }
         }
         else
         {
+            idle_times = 0;
             send_size += r;
         }
     }
     return TRUE;
+}
+
+#define THINKING_INTERVAL 500
+
+void robot_timeout(const tlibc_timer_entry_t *super)
+{
+    robot_s *self = TLIBC_CONTAINER_OF(super, robot_s, entry);
+
+    robot_send_buff(self);
+
+    TIMER_ENTRY_BUILD(&self->entry, 
+	    g_timer.jiffies + THINKING_INTERVAL, robot_timeout);
+    tlibc_timer_push(&g_timer, &self->entry);
 }
 
 
@@ -91,7 +108,6 @@ int robot_init(robot_s *self)
 	struct epoll_event 	ev;
 	
 
-    self->state = e_close;
     self->socketfd = socket(AF_INET, SOCK_STREAM, 0);
     if(self->socketfd == -1)
     {
@@ -116,12 +132,17 @@ int robot_init(robot_s *self)
 	ev.events = EPOLLIN;
 	ev.data.ptr = self;	
 	
-    self->state = e_establish;
 
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
 	{
 	    goto ERROR_RET;
 	}
+
+	
+	TIMER_ENTRY_BUILD(&self->entry, 
+	    g_timer.jiffies + 0, robot_timeout);
+
+	tlibc_timer_push(&g_timer, &self->entry);
 
     robot_send_buff(self);
 
@@ -131,52 +152,31 @@ ERROR_RET:
 }
 
 
-int robot_process(robot_s *self, int pollin)
+void robot_process_recv(robot_s *self)
 {
     char buff[BUFF_SIZE];
-    
-    switch(self->state)
+    int r;
+    for(;;)
     {
-    case e_close:
-        return robot_init(self);
-    case e_syn_send:
-        {            
-            int error = 0;  
-            socklen_t len = sizeof(int);  
-            if(getsockopt(self->socketfd, SOL_SOCKET, SO_ERROR, &error, &len) != 0)
-            {
-                close(self->socketfd);
-                self->state = e_close;
-                return robot_init(self);
-            }
-            else
-            {
-                if(error == 0)
-                {
-                    self->state = e_establish;
-                    return robot_send_buff(self);
-                }
-            }
-            break;
-        }
-    case e_establish:
+        r = recv(self->socketfd, buff, BUFF_SIZE, 0);
+        if(r < 0)
         {
-            if(pollin)
+            if (errno == EAGAIN)
             {
-                int r;
-                r = recv(self->socketfd, buff, BUFF_SIZE, 0);
-                if(r <= 0)
-                {
-                    close(self->socketfd);
-                    self->state = e_close;
-                    return robot_init(self);
-                }
+                break;
             }
-            return robot_send_buff(self);
+            printf("recv error!\n");
+            exit(1);
         }
-        break;
     }
-    return TRUE;
+}
+
+static tuint64 _get_current_ms()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+
+	return tv.tv_sec*1000 + tv.tv_usec/1000;
 }
 
 
@@ -184,12 +184,16 @@ int robot_process(robot_s *self, int pollin)
 #define ROBOT_MAX_EVENTS 1
 int main()
 {
+    tuint64 start_ms;
     robot_s robot[ROBOT_NUM];
     int i;
     struct epoll_event  events[ROBOT_MAX_EVENTS];
     int                 events_num;
     size_t idle_times = 0;
+    int busy = FALSE;
 
+    start_ms = _get_current_ms();
+    tlibc_timer_init(&g_timer, 0);
 
     g_epollfd = epoll_create(ROBOT_NUM);
     if(g_epollfd == -1)
@@ -201,8 +205,12 @@ int main()
         robot_init(&robot[i]);
     }
 
+
+    
     for(;;)
     {
+        busy = FALSE;
+        
         events_num = epoll_wait(g_epollfd, events, ROBOT_MAX_EVENTS, 0);
         if(events_num == -1)
         {
@@ -217,10 +225,21 @@ int main()
         }
         else if(events_num > 0)
         {
+            busy = TRUE;
             for(i = 0;i < events_num; ++i)
             {
-                robot_process(events[i].data.ptr, TRUE);
-            }	
+                robot_process_recv(events[i].data.ptr);
+            }
+        }
+
+        if(tlibc_timer_tick(&g_timer, _get_current_ms() - start_ms) == E_TLIBC_NOERROR)
+        {
+            busy = TRUE;
+        }
+        
+        if(busy)
+        {
+            idle_times = 0;
         }
         else
         {

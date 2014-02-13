@@ -1,7 +1,8 @@
 #!/bin/bash
 
 TBUSMGR=../../package/bin/tbusmgr
-
-${TBUSMGR} -s 1024 -w 10001
-${TBUSMGR} -s 1024 -w 10002
+ipcrm -M 10001
+ipcrm -M 10002
+${TBUSMGR} -s 2048 -w 10001
+${TBUSMGR} -s 2048 -w 10002
 

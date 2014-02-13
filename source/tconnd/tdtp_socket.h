@@ -27,10 +27,10 @@ typedef struct _package_buff_t
 
 typedef enum _tdtp_socket_status_t
 {
-	e_tdtp_socket_status_closed = 0,
-	e_tdtp_socket_status_syn_sent = 1,
-	e_tdtp_socket_status_established = 2,
-	e_tdtp_socket_status_closing = 3,
+	e_tdtp_socket_status_closed = 1,
+	e_tdtp_socket_status_syn_sent = 2,
+	e_tdtp_socket_status_established = 3,
+	e_tdtp_socket_status_closing = 4,
 }tdtp_socket_status_t;
 
 typedef struct _tdtp_socket_op_list
@@ -48,12 +48,14 @@ typedef struct _tdtp_socket_t
 	struct sockaddr_in socketaddr;
 
 	tlibc_timer_entry_t accept_timeout;
-	tlibc_timer_entry_t close_timeout;
     tlibc_timer_entry_t package_timeout;
+	tlibc_timer_entry_t close_timeout;
 
     package_buff_t *package_buff;
     TLIBC_LIST_HEAD readable_list;
-    TLIBC_LIST_HEAD writeable_list;
+    TLIBC_LIST_HEAD writable_list;
+    int writable;
+    int readable;
 
 
     tdtp_socket_op_list op_list;

@@ -2,6 +2,7 @@
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
 #include "tcommon/tdgi_reader.h"
+#include "tcommon/tdtp.h"
 
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
@@ -112,18 +113,27 @@ tdgi_size_t process_pkg(const tdgi_req_t *req,  const char* body_ptr)
                 rsp.size = 0;
                 block_send_pkg(otb, &rsp, NULL, 0);
                 printf("server close\n");
-                return 0;
             }
             else
             {
+                const char *iter, *limit, *next;
                 rsp.cmd = e_tdgi_cmd_send;
                 rsp.mid_num = 1;
                 rsp.mid[0] = req->mid;            
                 rsp.size = req->size;
                 block_send_pkg(otb, &rsp, body_ptr, req->size);
-                printf("recv: %u -- %s\n", req->size, body_ptr);
-                return req->size;
+                printf("recv: %u bytes\n", req->size);
+                limit = body_ptr + req->size;
+                for(iter = body_ptr; iter < limit; iter = next)
+                {
+                    tdtp_size_t pkg_size = *(tdtp_size_t*)iter;
+                    const char* pkg_content = iter + sizeof(tdtp_size_t);
+                    next = iter + sizeof(tdtp_size_t) + pkg_size;
+                    printf("\t pkg_size: %u\n", pkg_size);
+                    printf("\t pkg_content: %s\n", pkg_content);
+                }
             }
+            return req->size;
         }
     default:
         break;
@@ -170,7 +180,7 @@ int main()
     	    		printf("error\n");
 	    		    exit(1);
 	    		}		
-                body_size = process_pkg(&pkg, message + pkg.size);
+                body_size = process_pkg(&pkg, message + reader.offset);
                 len -= reader.offset + body_size;
                 message += reader.offset + body_size;
 	    	}			

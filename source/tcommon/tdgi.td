@@ -2,12 +2,12 @@
 
 enum tdgi_cmd_t
 {
-	e_tdgi_cmd_connect,
-	e_tdgi_cmd_recv,
+	e_tdgi_cmd_connect = 1,
+	e_tdgi_cmd_recv = 2,
 	
-	e_tdgi_cmd_accept,
-	e_tdgi_cmd_send,
-	e_tdgi_cmd_close,
+	e_tdgi_cmd_accept = 3,
+	e_tdgi_cmd_send = 4,
+	e_tdgi_cmd_close = 5,
 };
 
 const uint32 TDGI_BROADCAST_LIMIT = 65536;

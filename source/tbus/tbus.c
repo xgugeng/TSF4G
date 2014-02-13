@@ -4,13 +4,6 @@
 
 #include <string.h>
 
-#define CMD_PACKAGE 0x100
-#define CMD_IGNORE 0x200
-typedef int tbus_header_t;
-#define GET_COMMAND(cmd) (cmd & 0xff00)
-#define GET_PACKAGE_SIZE(cmd) (cmd & 0xff)
-#define BUILD_HEADER(cmd, size) (cmd | size)
-
 
 TERROR_CODE tbus_init(tbus_t *tb, size_t size)
 {
@@ -36,8 +29,9 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, size_t *len)
 	size_t write_size;	
 	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
+	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
-	if(*len + sizeof(tbus_header_t) + 1 > tb->size)
+	if(*len + sizeof(tbus_header_s) + 1 > tb->size)
 	{
 	    ret = E_TS_NO_MEMORY;
 		goto done;
@@ -53,10 +47,15 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, size_t *len)
 	}
 	
 
-	if(write_size < sizeof(tbus_header_t) + *len)
+	if(write_size < sizeof(tbus_header_s) + *len)
 	{
 		if((head_offset <= tail_offset) && (head_offset != 0))
 		{
+		    if(write_size >= sizeof(tbus_header_s))
+		    {
+                header->cmd = e_tbus_cmd_ignore;
+                header->size = 0;
+		    }
 			tb->tail_offset = 0;
 			return tbus_send_begin(tb, buf, len);
 		}
@@ -64,8 +63,8 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, size_t *len)
 		goto done;
 	}
 
-	*buf = tb->buff + sizeof(tbus_header_t) + tail_offset;
-	*len = write_size - sizeof(tbus_header_t);
+	*buf = tb->buff + tail_offset + sizeof(tbus_header_s);
+	*len = write_size - sizeof(tbus_header_s);
 
 done:
     return ret;
@@ -73,13 +72,13 @@ done:
 
 void tbus_send_end(tbus_t *tb, size_t len)
 {
-	int head_offset = tb->head_offset;
 	int tail_offset = tb->tail_offset;
-	tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);
+	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
-	*header = BUILD_HEADER(CMD_PACKAGE, len);
+	header->cmd = e_tbus_cmd_package;
+	header->size = len;
 
-	tail_offset += sizeof(tbus_header_t) + len;
+	tail_offset += sizeof(tbus_header_s) + len;
 	tb->tail_offset = tail_offset;
 }
 
@@ -89,7 +88,7 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
 	size_t read_size;
 	int tail_offset = tb->tail_offset;
 	int head_offset = tb->head_offset;
-	tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);
+	tbus_header_s *header = (tbus_header_s*)(tb->buff + head_offset);
 
 	if(head_offset <= tail_offset)
 	{
@@ -100,7 +99,7 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
 		read_size = tb->size - head_offset;
 	}
 
-	if(read_size < sizeof(tbus_header_t))
+	if(read_size < sizeof(tbus_header_s))
 	{
 		if(head_offset > tail_offset)
 		{
@@ -112,9 +111,9 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
 	}
 
 
-	switch(GET_COMMAND(*header))
+	switch(header->cmd)
 	{
-	case CMD_IGNORE:
+	case e_tbus_cmd_ignore:
 		if(head_offset > tail_offset)
 		{
 			tb->head_offset = 0;
@@ -122,9 +121,9 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
 		}
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
-	case CMD_PACKAGE:
-		*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
-		*len = GET_PACKAGE_SIZE(*header);
+	case e_tbus_cmd_package:
+		*buf = tb->buff + sizeof(tbus_header_s) + head_offset;
+		*len = header->size;
 		break;
 	default:
 	    ret = E_TS_ERROR;
@@ -137,7 +136,7 @@ done:
 
 void tbus_read_end(tbus_t *tb, size_t len)
 {
-	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_t) + len;
+	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_s) + len;
 	if(head_offset >= tb->size)
 	{
 		head_offset = 0;

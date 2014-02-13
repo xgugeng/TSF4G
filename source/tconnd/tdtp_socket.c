@@ -18,6 +18,28 @@
 #include <sys/ioctl.h>
 
 
+void tdtp_socket_close_timeout(const tlibc_timer_entry_t *super)
+{
+    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, close_timeout);
+
+    tdtp_socket_free(self);
+}
+
+
+void tdtp_socket_accept_timeout(const tlibc_timer_entry_t *super)
+{
+    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, accept_timeout);
+
+    tdtp_socket_free(self);
+}
+
+
+void tdtp_socket_package_timeout(const tlibc_timer_entry_t *super)
+{
+    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, package_timeout);
+
+    tdtp_socket_free(self);
+}
 
 tdtp_socket_t *tdtp_socket_alloc()
 {
@@ -30,7 +52,14 @@ tdtp_socket_t *tdtp_socket_alloc()
 	    socket->op_list.num = 0;
 	    socket->package_buff = NULL;
 	    tlibc_list_init(&socket->readable_list);
-	    tlibc_list_init(&socket->writeable_list);	    
+	    tlibc_list_init(&socket->writable_list);
+
+	    
+        TIMER_ENTRY_BUILD(&socket->package_timeout, 0, NULL);
+        TIMER_ENTRY_BUILD(&socket->close_timeout, 0, NULL);
+        TIMER_ENTRY_BUILD(&socket->accept_timeout, 0, NULL);
+        socket->writable = FALSE;
+        socket->readable = FALSE;
 	}
     return socket;
 }
@@ -42,38 +71,30 @@ void tdtp_socket_free(tdtp_socket_t *self)
     case e_tdtp_socket_status_closed:
         break;
     case e_tdtp_socket_status_syn_sent:
-    	tlibc_timer_pop(&self->accept_timeout);
         close(self->socketfd);
         break;
     case e_tdtp_socket_status_established:
         close(self->socketfd);
+        break;
     case e_tdtp_socket_status_closing:
         close(self->socketfd);
         break;
     }
+
+    tlibc_timer_pop(&self->close_timeout);
+    tlibc_timer_pop(&self->package_timeout);
+    tlibc_timer_pop(&self->accept_timeout);
+    if(self->readable)
+    {
+        tlibc_list_del(&self->readable_list);
+    }
+   
     if(self->package_buff != NULL)
     {
-        tlibc_timer_pop(&self->package_timeout);
         tlibc_mempool_free(g_tdtp_instance.package_pool, self->package_buff->mid);
     }
     tlibc_mempool_free(g_tdtp_instance.socket_pool, self->mid);
 }
-
-void tdtp_socket_accept_timeout(const tlibc_timer_entry_t *super)
-{
-    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, accept_timeout);
-    
-    close(self->socketfd);
-    tlibc_mempool_free(g_tdtp_instance.socket_pool, self->mid);
-}
-
-void tdtp_socket_async_close(const tlibc_timer_entry_t *super)
-{
-    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, close_timeout);
-
-    tdtp_socket_free(self);
-}
-
 
 TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
 {
@@ -130,35 +151,47 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
         {
         case e_tdgi_cmd_accept:
             {
+                struct epoll_event 	ev;
+                
                 if(self->status != e_tdtp_socket_status_syn_sent)
                 {
                     ++i;
                     continue;
                 }
                 tlibc_timer_pop(&self->accept_timeout);
+
                 
-                self->status = e_tdtp_socket_status_established;
-                ++i;
-                continue;
-            }
-        case e_tdgi_cmd_close:
-            {
-                if((self->status != e_tdtp_socket_status_established)
-                  ||(self->status != e_tdtp_socket_status_syn_sent))
-                {
-                    ++i;
-                    continue;
-                }
-                
-                if(self->op_list.head[i]->size == 0)
+                ev.events = EPOLLIN | EPOLLET;
+                ev.data.ptr = self;  
+                if(epoll_ctl(g_tdtp_instance.epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
-                        g_tdtp_instance.timer.jiffies + 0, tdtp_socket_async_close);
+                        g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
                     tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
                     self->status = e_tdtp_socket_status_closing;
                 }
+                else
+                {
+                    self->status = e_tdtp_socket_status_established;
+                }                
                 ++i;
-                continue;
+                break;
+            }
+        case e_tdgi_cmd_close:
+            {
+                if(self->status == e_tdtp_socket_status_closing)
+                {
+                    ++i;
+                    break;
+                }
+                
+                TIMER_ENTRY_BUILD(&self->close_timeout, 
+                    g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
+                tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
+                self->status = e_tdtp_socket_status_closing;
+
+                ++i;
+                break;
             };
         case e_tdgi_cmd_send:
             {
@@ -168,7 +201,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 if(self->status != e_tdtp_socket_status_established)
                 {
                     ++i;
-                    continue;
+                    break;
                 }
                 
                 total_size = 0;
@@ -187,7 +220,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 if((send_size < 0) || (send_size != total_size))
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
-                        g_tdtp_instance.timer.jiffies + 0, tdtp_socket_async_close);
+                        g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
                 
                 
                     tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
@@ -264,8 +297,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     char *iter;
 
 
-    assert((self->status == e_tdtp_socket_status_syn_sent)
-        ||(self->status == e_tdtp_socket_status_established));
+    assert(self->status == e_tdtp_socket_status_established);
     
     header_size = g_head_size;
     if(self->package_buff == NULL)
@@ -311,10 +343,10 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         switch(errno)
         {
             case EAGAIN:
-                ret = E_TS_WOULD_BLOCK;
+                ret = E_TS_ERRNO;
                 break;
             case EINTR:
-                ret = E_TS_WOULD_BLOCK;
+                ret = E_TS_ERRNO;
                 break;
             default:
                 tlibc_binary_writer_init(&writer, header_ptr, header_size);
@@ -370,8 +402,9 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
 
         
         TIMER_ENTRY_BUILD(&self->package_timeout, 
-            g_tdtp_instance.timer.jiffies + TDTP_TIMER_PACKAGE_TIME_MS, tdtp_socket_accept_timeout);        
+            g_tdtp_instance.timer.jiffies + TDTP_TIMER_PACKAGE_TIME_MS, tdtp_socket_package_timeout);
         tlibc_timer_push(&g_tdtp_instance.timer, &self->package_timeout);
+        assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
     }
     else
     {
@@ -388,7 +421,6 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
         if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
         {
             assert(0);
-            tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
             ret = E_TS_ERROR;
             goto done;
         }

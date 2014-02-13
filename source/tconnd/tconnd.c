@@ -149,6 +149,7 @@ int main(int argc, char **argv)
 		switch(ret)
 		{
 		case E_TS_NOERROR:
+    		idle_count = 0;
 		    break;
 		case E_TS_WOULD_BLOCK:
     		{
