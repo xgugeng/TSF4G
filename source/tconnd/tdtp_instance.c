@@ -16,6 +16,7 @@
 
 #include "tconnd/signal_processing.h"
 #include "tconnd/globals.h"
+#include "tconnd/tconnd_config.h"
 
 
 
@@ -55,8 +56,15 @@ tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
 
 TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 {
-    int nb = 1;
+    int nb = 1;    
+    if(tconnd_config_init(g_config_file) != E_TS_NOERROR)
+    {
+        goto ERROR_RET;
+    }
+
     g_tdtp_instance_switch = FALSE;
+    //warning!
+    g_head_size = 16;
 
     if(signal_processing_init() != E_TS_NOERROR)
     {

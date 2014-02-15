@@ -15,5 +15,7 @@ extern size_t              g_head_size;
 
 extern int g_tdtp_instance_switch;
 
+const char* g_config_file;
+
 
 #endif//_H_GLOBALS_H

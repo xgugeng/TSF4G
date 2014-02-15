@@ -1,19 +1,7 @@
 #include "globals.h"
-
-#include "tlibc/protocol/tlibc_xml_reader.h"
-#include "tconnd/tconnd_config_reader.h"
 #include "tdtp_instance.h"
-
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <signal.h>
-
-#include "tcommon/tdgi_types.h"
-#include "tcommon/tdgi_writer.h"
-#include "tlibc/protocol/tlibc_binary_writer.h"
-
-
 
 void version()
 {
@@ -31,12 +19,8 @@ void help()
 
 int main(int argc, char **argv)
 {
-	TLIBC_XML_READER xml_reader;
-	const char *config_file = NULL;
 	int i, ret;
-    tdgi_req_t pkg;
-    TLIBC_BINARY_WRITER writer;
-    char pkg_buff[sizeof(tdgi_req_t)];
+
 	
 	for (i = 1; i < argc; ++i)
 	{
@@ -59,13 +43,13 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    config_file = arg;
+		    g_config_file = arg;
             break;
 		}
 
 		arg = strtok(NULL, " =");
 	}
-	if (config_file == NULL)
+	if (g_config_file == NULL)
 	{
 		fprintf(stderr, "Missing config file specification\n");
 		help();
@@ -73,33 +57,6 @@ int main(int argc, char **argv)
 	}
 
 
-	
-    tlibc_xml_reader_init(&xml_reader);
-    if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
-    {
-   		fprintf(stderr, "load push config file [%s] failed.\n", config_file);
-        goto ERROR_RET;
-    }
-    
-	if(tlibc_read_tconnd_config_t(&xml_reader.super, &g_config) != E_TLIBC_NOERROR)
-	{
-		fprintf(stderr, "load read file [%s] failed.\n", config_file);
-		tlibc_xml_reader_pop_file(&xml_reader);
-		goto ERROR_RET;
-	}
-    tlibc_xml_reader_pop_file(&xml_reader);
-
-
-
-    tlibc_binary_writer_init(&writer, pkg_buff, sizeof(pkg_buff));
-    memset(&pkg, 0, sizeof(pkg));
-    if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
-    {
-        goto ERROR_RET;
-    }
-    g_head_size = writer.offset;
-
- 
 	ret = tdtp_instance_init(&g_tdtp_instance);
 	if(ret != E_TS_NOERROR)
 	{
