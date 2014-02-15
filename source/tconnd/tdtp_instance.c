@@ -14,7 +14,7 @@
 #include "tlibc/core/tlibc_timer.h"
 #include "tlibc/core/tlibc_list.h"
 
-
+#include "tconnd/signal_processing.h"
 #include "tconnd/globals.h"
 
 
@@ -31,6 +31,8 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <sched.h>
+
 
 
 #include <errno.h>
@@ -54,6 +56,12 @@ tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
 TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 {
     int nb = 1;
+    g_tdtp_instance_switch = FALSE;
+
+    if(signal_processing_init() != E_TS_NOERROR)
+    {
+        goto ERROR_RET;
+    }
     
 
 	self->listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -467,6 +475,17 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		goto done;
 	}
 
+	r = signal_processing_proc();
+	if(r == E_TS_NOERROR)
+	{
+	    ret = E_TS_NOERROR;
+	}
+	else if(r != E_TS_WOULD_BLOCK)
+	{
+		ret = r;
+		goto done;
+	}
+
     tlibc_ret = tlibc_timer_tick(&self->timer, tdtp_instance_get_time_ms(self));
     if(tlibc_ret == E_TLIBC_NOERROR)
     {
@@ -480,6 +499,44 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 	
 done:
 	return ret;
+}
+
+
+TERROR_CODE tdtp_instance_loop(tdtp_instance_t *self)
+{
+    tuint32 idle_count = 0;
+    TERROR_CODE ret;
+
+    g_tdtp_instance_switch = TRUE;
+	for(;g_tdtp_instance_switch;)
+	{
+		ret = tdtp_instance_process(self);
+		switch(ret)
+		{
+		case E_TS_NOERROR:
+    		idle_count = 0;
+		    break;
+		case E_TS_WOULD_BLOCK:
+    		{
+    			++idle_count;
+    			if(idle_count > 30)
+    			{
+    				usleep(1000);
+    				idle_count = 0;
+    			}
+    			else
+    			{
+    				sched_yield();
+    			}
+	    	}
+		    break;
+		default:
+        	goto done;
+		}
+	}
+
+done:
+	return ret;	
 }
 
 void tdtp_instance_fini(tdtp_instance_t *self)

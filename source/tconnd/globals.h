@@ -13,5 +13,7 @@ extern tdtp_instance_t g_tdtp_instance;
 
 extern size_t              g_head_size;
 
+extern int g_tdtp_instance_switch;
+
 
 #endif//_H_GLOBALS_H

@@ -46,6 +46,7 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self);
 
 TERROR_CODE tdtp_instance_process(tdtp_instance_t *self);
 
+TERROR_CODE tdtp_instance_loop(tdtp_instance_t *self);
 
 void tdtp_instance_fini(tdtp_instance_t *self);
 
