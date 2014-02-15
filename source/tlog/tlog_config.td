@@ -4,10 +4,10 @@ const uint16 TLOG_MAX_APPENDER_NUM = 32;
 
 enum tlog_level_t
 {
-	e_tlog_error,
-	e_tlog_warn,
-	e_tlog_info,
-	e_tlog_debug,
+	e_tlog_error = 1,
+	e_tlog_warn = 2,
+	e_tlog_info = 3,
+	e_tlog_debug = 4,
 };
 
 enum tlog_appender_type_t

@@ -12,9 +12,9 @@ void help()
 {
 	fprintf(stderr, "Usage: tconnd [options] file\n");  
 	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "  -version					Print the compiler version.\n");
-    fprintf(stderr, "  -help					Print the useage.\n");
-	fprintf(stderr, "  file					    Set the config file.\n");
+	fprintf(stderr, "  -version                 Print the compiler version.\n");
+    fprintf(stderr, "  -help                    Print the useage.\n");
+	fprintf(stderr, "  file                     Set the config file.\n");
 }
 
 int main(int argc, char **argv)

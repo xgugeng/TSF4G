@@ -1,5 +1,5 @@
 <tlog_config_t>
-	<level>e_tlog_debug</level>
+	<level>e_tlog_error</level>
 	<vector>
 		<appender>
 			<type>e_tlog_rolling_file</type>

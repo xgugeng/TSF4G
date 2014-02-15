@@ -119,16 +119,15 @@ void tlog_write(tlog_t *self, tlog_level_t level, const char *message, size_t me
 	
 	for(i = 0; i < self->config.appender_num; ++i)	
 	{
-		if(level > self->config.level)
+		if(level <= self->config.level)
 		{
-			continue;
-		}
-		switch(self->config.appender[i].type)
-		{
-			case e_tlog_rolling_file:
-				rolling_file_log(&self->instance.appender_instance[i].rolling_file, &self->config.appender[i].rolling_file, message, message_size);
-				break;
-		}		
+    		switch(self->config.appender[i].type)
+    		{
+    			case e_tlog_rolling_file:
+    				rolling_file_log(&self->instance.appender_instance[i].rolling_file, &self->config.appender[i].rolling_file, message, message_size);
+    				break;
+    		}
+        }
 	}
 }
 
