@@ -6,7 +6,7 @@
 
 #include "tconnd/tconnd_config_reader.h"
 #include "tlibc/protocol/tlibc_xml_reader.h"
-#include "tconnd/tlog_instance.h"
+#include "tlog/tlog_instance.h"
 #include "tconnd/tconnd_config_types.h"
 
 tconnd_config_t g_config;

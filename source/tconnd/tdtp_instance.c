@@ -15,7 +15,7 @@
 #include "tlibc/core/tlibc_list.h"
 
 
-#include "tconnd/tlog_instance.h"
+#include "tlog/tlog_instance.h"
 #include "tconnd/tconnd_config.h"
 #include "tlog/tlog.h"
 
