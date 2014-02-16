@@ -2,10 +2,15 @@
 #define _H_TCONND_TIMER_H
 
 #include "tconnd/tdtp_instance.h"
+#include "tlibc/core/tlibc_timer.h"
 
-tuint64 get_current_ms();
+extern tlibc_timer_t       g_timer;
 
-tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self);
+#define tconnd_timer_ms g_timer.jiffies
+
+void tconnd_timer_init();
+
+TERROR_CODE tconnd_timer_process();
 
 #endif//_H_TCONND_TIMER_H
 

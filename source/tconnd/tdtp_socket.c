@@ -13,7 +13,7 @@
 #include "tcommon/tdtp.h"
 #include "tcommon/tdtp_types.h"
 
-
+#include "tconnd/tconnd_timer.h"
 
 #include <sys/ioctl.h>
 
@@ -131,9 +131,9 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
 	}
     
 	TIMER_ENTRY_BUILD(&self->accept_timeout, 
-	    g_tdtp_instance.timer.jiffies + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_socket_accept_timeout);	
-
-	tlibc_timer_push(&g_tdtp_instance.timer, &self->accept_timeout);
+	    tconnd_timer_ms + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_socket_accept_timeout);
+	tlibc_timer_push(&g_timer, &self->accept_timeout);
+	
 	self->status = e_tdtp_socket_status_syn_sent;
 done:
     return ret;
@@ -166,8 +166,8 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 if(epoll_ctl(g_tdtp_instance.epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
-                        g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
-                    tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
+                        tconnd_timer_ms, tdtp_socket_close_timeout);
+                    tlibc_timer_push(&g_timer, &self->close_timeout);
                     self->status = e_tdtp_socket_status_closing;
                 }
                 else
@@ -186,8 +186,8 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 }
                 
                 TIMER_ENTRY_BUILD(&self->close_timeout, 
-                    g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
-                tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
+                    tconnd_timer_ms, tdtp_socket_close_timeout);
+                tlibc_timer_push(&g_timer, &self->close_timeout);
                 self->status = e_tdtp_socket_status_closing;
 
                 ++i;
@@ -220,10 +220,10 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 if(send_size != total_size)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
-                        g_tdtp_instance.timer.jiffies + 0, tdtp_socket_close_timeout);
+                        tconnd_timer_ms, tdtp_socket_close_timeout);
                 
                 
-                    tlibc_timer_push(&g_tdtp_instance.timer, &self->close_timeout);
+                    tlibc_timer_push(&g_timer, &self->close_timeout);
 
                     self->status = e_tdtp_socket_status_closing;
                     ret = E_TS_ERROR;
@@ -398,8 +398,8 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
 
         
         TIMER_ENTRY_BUILD(&self->package_timeout, 
-            g_tdtp_instance.timer.jiffies + TDTP_TIMER_PACKAGE_TIME_MS, tdtp_socket_package_timeout);
-        tlibc_timer_push(&g_tdtp_instance.timer, &self->package_timeout);
+            tconnd_timer_ms + TDTP_TIMER_PACKAGE_TIME_MS, tdtp_socket_package_timeout);
+        tlibc_timer_push(&g_timer, &self->package_timeout);
         assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
     }
     else

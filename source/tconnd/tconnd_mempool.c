@@ -4,10 +4,10 @@
 #include "globals.h"
 #include <assert.h>
 
-tlibc_mempool_t *socket_pool;
-tuint32 socket_pool_size;
-tlibc_mempool_t *package_pool;
-tuint32 package_pool_size;
+static tlibc_mempool_t *socket_pool;
+static tuint32 socket_pool_size;
+static tlibc_mempool_t *package_pool;
+static tuint32 package_pool_size;
 
 TERROR_CODE tconnd_mempool_init()
 {

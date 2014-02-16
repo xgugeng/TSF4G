@@ -9,6 +9,58 @@
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
 
+#include <sys/ioctl.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+
+
+
+TERROR_CODE tconnd_listen_init(tdtp_instance_t *self)
+{
+    int nb = 1;
+    TERROR_CODE ret = E_TS_NOERROR;
+
+	self->listenfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(self->listenfd == -1)
+	{
+	    ret = E_TS_ERRNO;
+		goto done;
+	}
+
+	
+	if(ioctl(self->listenfd, FIONBIO, &nb) == -1)
+	{
+        ret = E_TS_ERRNO;
+		goto close_listenfd;
+	}
+
+	
+	memset(&self->listenaddr, 0, sizeof(struct sockaddr_in));
+
+	self->listenaddr.sin_family=AF_INET;
+	self->listenaddr.sin_addr.s_addr = inet_addr(g_config.ip);
+	self->listenaddr.sin_port = htons(g_config.port);
+
+	if(bind(self->listenfd,(struct sockaddr *)(&self->listenaddr), sizeof(struct sockaddr_in)) == -1)
+	{
+        ret = E_TS_ERRNO;
+		goto close_listenfd;
+	}	
+
+	if(listen(self->listenfd, g_config.backlog) == -1)
+	{
+        ret = E_TS_ERRNO;
+		goto close_listenfd;
+	}
+	
+close_listenfd:
+    close(self->listenfd);
+done:
+    return ret;
+}
+
 TERROR_CODE process_listen(tdtp_instance_t *self)
 {
 	int ret = E_TS_NOERROR;
@@ -66,5 +118,22 @@ done:
 free_socket:
     tdtp_socket_free(conn_socket);
 	return ret;
+}
+
+
+void tconnd_listen_fini(tdtp_instance_t *self)
+{
+    int i;
+      
+    for(i = self->socket_pool->used_head; i < self->socket_pool->unit_num; )
+    {
+        tlibc_mempool_block_t *b = TLIBC_MEMPOOL_GET_BLOCK(self->socket_pool, i);
+        tdtp_socket_t *s = (tdtp_socket_t *)&b->data;
+        tdtp_socket_free(s);
+
+        i = b->next;
+    }
+
+    close(self->listenfd);
 }
 

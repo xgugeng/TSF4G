@@ -30,9 +30,6 @@ typedef struct _tdtp_instance_t
 	int					output_tbusid;
 	tbus_t				*output_tbus;
 
-	tlibc_timer_t		timer;
-	tuint64				timer_start_ms;
-
 	tlibc_mempool_t		*socket_pool;
 	tuint32				socket_pool_size;
 

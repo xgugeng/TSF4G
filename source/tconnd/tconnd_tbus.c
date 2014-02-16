@@ -6,6 +6,49 @@
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tcommon/tdtp.h"
 #include "tconnd/tdtp_socket.h"
+#include "globals.h"
+
+#include <sys/ipc.h>
+#include <sys/shm.h>
+
+
+TERROR_CODE tconnd_tbus_init(tdtp_instance_t *self)
+{
+    TERROR_CODE ret = E_TS_NOERROR;
+
+	self->input_tbusid = shmget(g_config.input_tbuskey, 0, 0666);
+	if(self->input_tbusid == -1)
+	{
+	    ret = E_TS_ERRNO;
+		goto done;
+	}
+	self->input_tbus = shmat(self->input_tbusid, NULL, 0);
+	if(self->input_tbus == NULL)
+	{
+	    ret = E_TS_ERRNO;
+		goto done;
+	}
+
+	self->output_tbusid = shmget(g_config.output_tbuskey, 0, 0666);
+	if(self->output_tbusid == -1)
+	{
+	    ret = E_TS_ERRNO;
+		goto shmdt_input;
+	}
+	self->output_tbus = shmat(self->output_tbusid, NULL, 0);
+	if(self->output_tbus == NULL)
+	{
+	    ret = E_TS_ERRNO;
+		goto shmdt_input;
+	}
+	goto done;
+
+	
+shmdt_input:
+    shmdt(self->input_tbus);
+done:
+    return ret;
+}
 
 //tbus中最多一次处理的包的个数
 #define MAX_PACKAGE_LIST_NUM 255
@@ -128,5 +171,11 @@ TERROR_CODE process_input_tbus(tdtp_instance_t *self)
     
 done:
     return ret;
+}
+
+void tconnd_tbus_fini(tdtp_instance_t *self)
+{
+    shmdt(self->input_tbus);
+    shmdt(self->output_tbus);
 }
 

@@ -4,8 +4,29 @@
 #include "tconnd/tdtp_instance.h"
 #include "tconnd/tdtp_socket.h"
 
+#include "globals.h"
+
+#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+#include <sys/epoll.h>
+
+
+TERROR_CODE tconnd_epoll_init(tdtp_instance_t *self)
+{
+    TERROR_CODE ret = E_TS_NOERROR;
+
+	tlibc_list_init(&self->readable_list);
+
+	self->epollfd = epoll_create(g_config.connections);
+	if(self->epollfd == -1)
+	{
+	    ret = E_TS_ERRNO;
+		goto done;
+	}
+done:
+    return ret;
+}
 
 #define TDTP_MAX_EVENTS 1024
 TERROR_CODE process_epool(tdtp_instance_t *self)
@@ -93,4 +114,8 @@ done:
 	return ret;
 }
 
+void tconnd_epoll_fini(tdtp_instance_t *self)
+{
+    close(self->epollfd);
+}
 

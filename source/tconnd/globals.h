@@ -11,7 +11,7 @@ extern tconnd_config_t g_config;
 
 extern tdtp_instance_t g_tdtp_instance;
 
-extern size_t              g_head_size;
+#define g_head_size 16
 
 extern int g_tdtp_instance_switch;
 
