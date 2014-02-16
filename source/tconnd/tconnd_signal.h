@@ -1,5 +1,5 @@
-#ifndef _H_SIGNAL_PROCESSING_H
-#define _H_SIGNAL_PROCESSING_H
+#ifndef _H_TCONND_SIGNAL_H
+#define _H_TCONND_SIGNAL_H
 
 #include "tcommon/terrno.h"
 
@@ -23,5 +23,5 @@ RETURN VALUE
 */
 TERROR_CODE signal_processing_proc();
 
-#endif//_H_SIGNAL_PROCESSING_H
+#endif//_H_TCONND_SIGNAL_H
 
