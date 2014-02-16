@@ -1,7 +1,7 @@
 #ifndef _H_TCONND_TIMER_H
 #define _H_TCONND_TIMER_H
 
-#include "tconnd/tdtp_instance.h"
+#include "tcommon/terrno.h"
 #include "tlibc/core/tlibc_timer.h"
 
 extern tlibc_timer_t       g_timer;

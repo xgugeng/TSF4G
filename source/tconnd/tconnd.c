@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include "tconnd/tdtp_instance.h"
+#include "tconnd/tconnd_reactor.h"
 
 #define TCONND_VERSION "0.0.1"
 

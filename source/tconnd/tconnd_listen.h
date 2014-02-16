@@ -1,7 +1,7 @@
 #ifndef _H_TCONND_LISTEN_H
 #define _H_TCONND_LISTEN_H
 
-#include "tconnd/tdtp_instance.h"
+#include "tcommon/terrno.h"
 
 extern int g_listenfd;
 

@@ -1,5 +1,5 @@
-#ifndef _H_INSTANCE_H
-#define _H_INSTANCE_H
+#ifndef _H_TCONND_REACTOR_H
+#define _H_TCONND_REACTOR_H
 
 #include "tconnd/tconnd_config_types.h"
 #include "tcommon/terrno.h"
@@ -24,5 +24,5 @@ void tdtp_instance_loop();
 
 void tdtp_instance_fini();
 
-#endif //_H_INSTANCE_H
+#endif //_H_TCONND_REACTOR_H
 

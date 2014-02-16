@@ -1,5 +1,5 @@
 #include "tconnd_timer.h"
-#include "tconnd/tdtp_instance.h"
+#include "tconnd/tconnd_reactor.h"
 #include "tlibc/core/tlibc_timer.h"
 
 #include <sys/time.h>

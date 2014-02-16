@@ -1,5 +1,5 @@
-#ifndef _H_TDTP_SOCKET_H
-#define _H_TDTP_SOCKET_H
+#ifndef _H_TCONND_SOCKET_H
+#define _H_TCONND_SOCKET_H
 
 #include "tlibc/platform/tlibc_platform.h"
 #include <netinet/in.h>
@@ -75,4 +75,4 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self);
 
 
 
-#endif//_H_TDTP_SOCKET_H
+#endif//_H_TCONND_SOCKET_H

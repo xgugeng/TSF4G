@@ -1,8 +1,8 @@
 #include "tconnd/tconnd_epoll.h"
 #include "tlibc/core/tlibc_list.h"
 #include "tcommon/terrno.h"
-#include "tconnd/tdtp_instance.h"
-#include "tconnd/tdtp_socket.h"
+#include "tconnd/tconnd_reactor.h"
+#include "tconnd/tconnd_socket.h"
 #include "tconnd/tconnd_config.h"
 
 #include <unistd.h>

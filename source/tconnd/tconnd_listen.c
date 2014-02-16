@@ -1,7 +1,7 @@
 #include "tconnd_listen.h"
 #include "tcommon/terrno.h"
-#include "tconnd/tdtp_instance.h"
-#include "tconnd/tdtp_socket.h"
+#include "tconnd/tconnd_reactor.h"
+#include "tconnd/tconnd_socket.h"
 #include "tbus/tbus.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
 #include <assert.h>

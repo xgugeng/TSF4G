@@ -1,4 +1,4 @@
-#include "tconnd/tdtp_socket.h"
+#include "tconnd/tconnd_socket.h"
 #include <assert.h>
 
 #include <string.h>
@@ -19,6 +19,7 @@
 #include "tconnd/tconnd_config.h"
 
 #include <sys/ioctl.h>
+#include <sys/epoll.h>
 
 
 void tdtp_socket_close_timeout(const tlibc_timer_entry_t *super)
