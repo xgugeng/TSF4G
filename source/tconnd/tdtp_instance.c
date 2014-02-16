@@ -16,7 +16,7 @@
 
 #include "tconnd/signal_processing.h"
 #include "tconnd/globals.h"
-#include "tconnd/tconnd_log.h"
+#include "tconnd/tlog_instance.h"
 #include "tconnd/tconnd_config.h"
 #include "tlog/tlog.h"
 
@@ -66,11 +66,11 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 
     if(tlog_init(&g_tlog_instance, g_config.log_config) != E_TS_NOERROR)
     {
-        INFO_PRINTF("tlog init [%s] failed.\n", g_config.log_config);
+        INFO_PRINT("tlog init [%s] failed.", g_config.log_config);
         goto ERROR_RET;
     }
-    INFO_PRINTF("tlog init [%s] succeed.\n", g_config.log_config);
-    INFO_LOG("tlog init [%s] succeed.\n", g_config.log_config);
+    INFO_PRINT("tlog init [%s] succeed.", g_config.log_config);
+    INFO_LOG("tlog init [%s] succeed.", g_config.log_config);
 
     g_tdtp_instance_switch = FALSE;
     //warning!
@@ -170,8 +170,8 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 
 	tlibc_list_init(&self->readable_list);
 
-    INFO_PRINTF("tconnd init succeed.\n");
-    INFO_LOG("tconnd init succeed.\n");
+    INFO_PRINT("tconnd init succeed.");
+    INFO_LOG("tconnd init succeed.");
 	return E_TS_NOERROR;
 free_socket_pool:
     free(self->socket_pool);
