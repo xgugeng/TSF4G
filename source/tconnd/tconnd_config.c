@@ -1,5 +1,4 @@
 #include "tconnd_config.h"
-#include "tconnd/globals.h"
 #include "tcommon/terrno.h"
 
 #include <stdio.h>
@@ -8,6 +7,9 @@
 #include "tconnd/tconnd_config_reader.h"
 #include "tlibc/protocol/tlibc_xml_reader.h"
 #include "tconnd/tlog_instance.h"
+#include "tconnd/tconnd_config_types.h"
+
+tconnd_config_t g_config;
 
 TERROR_CODE tconnd_config_init(const char* config_file)
 {

@@ -1,7 +1,8 @@
-#include "globals.h"
-#include "tdtp_instance.h"
 #include <stdio.h>
 #include <string.h>
+#include "tconnd/tdtp_instance.h"
+
+#define TCONND_VERSION "0.0.1"
 
 void version()
 {
@@ -20,6 +21,7 @@ void help()
 int main(int argc, char **argv)
 {
 	int i, ret;
+	const char* config_file;
 
 	
 	for (i = 1; i < argc; ++i)
@@ -43,13 +45,13 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-		    g_config_file = arg;
+		    config_file = arg;
             break;
 		}
 
 		arg = strtok(NULL, " =");
 	}
-	if (g_config_file == NULL)
+	if (config_file == NULL)
 	{
 		fprintf(stderr, "Missing config file specification\n");
 		help();
@@ -57,15 +59,15 @@ int main(int argc, char **argv)
 	}
 
 
-	ret = tdtp_instance_init(&g_tdtp_instance);
+	ret = tdtp_instance_init(config_file);
 	if(ret != E_TS_NOERROR)
 	{
 		goto ERROR_RET;
 	}   
 
-	tdtp_instance_loop(&g_tdtp_instance);
+	tdtp_instance_loop();
 
-	tdtp_instance_fini(&g_tdtp_instance);
+	tdtp_instance_fini();
 
 	return 0;
 ERROR_RET:

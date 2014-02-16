@@ -15,7 +15,6 @@
 #include "tlibc/core/tlibc_list.h"
 
 
-#include "tconnd/globals.h"
 #include "tconnd/tlog_instance.h"
 #include "tconnd/tconnd_config.h"
 #include "tlog/tlog.h"
@@ -47,10 +46,11 @@
 #include "tconnd/tconnd_signal.h"
 #include "tconnd/tconnd_mempool.h"
 
+int g_tdtp_instance_switch;
 
-TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
+TERROR_CODE tdtp_instance_init(const char* config_file)
 {
-    if(tconnd_config_init(g_config_file) != E_TS_NOERROR)
+    if(tconnd_config_init(config_file) != E_TS_NOERROR)
     {
         goto ERROR_RET;
     }
@@ -68,17 +68,17 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
         goto ERROR_RET;
     }
 
-    if(tconnd_listen_init(self) != E_TS_NOERROR)
+    if(tconnd_listen_init() != E_TS_NOERROR)
     {
         goto ERROR_RET;
     }
 
-    if(tconnd_epoll_init(self) != E_TS_NOERROR)
+    if(tconnd_epoll_init() != E_TS_NOERROR)
     {
         goto close_listenfd;
     }
 
-    if(tconnd_tbus_init(self) != E_TS_NOERROR)
+    if(tconnd_tbus_init() != E_TS_NOERROR)
     {
         goto close_epollfd;
     }    
@@ -96,21 +96,21 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
     INFO_LOG("tconnd init succeed.");
 	return E_TS_NOERROR;
 tbus_fini:
-    tconnd_tbus_fini(self);
+    tconnd_tbus_fini();
 close_epollfd:
-    tconnd_epoll_fini(self);
+    tconnd_epoll_fini();
 close_listenfd:
-    tconnd_listen_fini(self);
+    tconnd_listen_fini();
 ERROR_RET:
 	return E_TS_ERROR;
 }
 
-TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
+TERROR_CODE tdtp_instance_process()
 {
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	TERROR_CODE r;
 
-	r = process_listen(self);
+	r = process_listen();
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
@@ -121,7 +121,7 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		goto done;
 	}
 
-	r = process_epool(self);
+	r = process_epool();
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
@@ -132,7 +132,7 @@ TERROR_CODE tdtp_instance_process(tdtp_instance_t *self)
 		goto done;
 	}
 
-    r = process_input_tbus(self);
+    r = process_input_tbus();
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
@@ -170,7 +170,7 @@ done:
 }
 
 
-void tdtp_instance_loop(tdtp_instance_t *self)
+void tdtp_instance_loop()
 {
     tuint32 idle_count = 0;
     TERROR_CODE ret;
@@ -178,7 +178,7 @@ void tdtp_instance_loop(tdtp_instance_t *self)
     g_tdtp_instance_switch = TRUE;
 	for(;g_tdtp_instance_switch;)
 	{
-		ret = tdtp_instance_process(self);
+		ret = tdtp_instance_process();
 		switch(ret)
 		{
 		case E_TS_NOERROR:
@@ -207,14 +207,14 @@ done:
 	return;	
 }
 
-void tdtp_instance_fini(tdtp_instance_t *self)
+void tdtp_instance_fini()
 {
-    tconnd_mempool_fini(self);
+    tconnd_mempool_fini();
 
-    tconnd_epoll_fini(self);
+    tconnd_epoll_fini();
 
-    tconnd_tbus_fini(self);
+    tconnd_tbus_fini();
 
-    tconnd_listen_fini(self);
+    tconnd_listen_fini();
 }
 

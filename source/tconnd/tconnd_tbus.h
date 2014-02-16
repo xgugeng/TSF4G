@@ -1,13 +1,16 @@
 #ifndef _H_TCONND_TBUS_H
 #define _H_TCONND_TBUS_H
 
-#include "tconnd/tdtp_instance.h"
+#include "tbus/tbus.h"
 
-TERROR_CODE tconnd_tbus_init(tdtp_instance_t *self);
+extern tbus_t              *g_input_tbus;
+extern tbus_t              *g_output_tbus;
 
-TERROR_CODE process_input_tbus(tdtp_instance_t *self);
+TERROR_CODE tconnd_tbus_init();
 
-void tconnd_tbus_fini(tdtp_instance_t *self);
+TERROR_CODE process_input_tbus();
+
+void tconnd_tbus_fini();
 
 #endif//_H_TCONNND_TBUS_H
 

@@ -20,6 +20,8 @@ struct tdgi_req_t
 	uint64          mid;
 	tdgi_size_t     size;
 };
+#头部大小为固定值
+const uint32 TDGI_REQ_HEAD_SIZE = 16;
 
 struct tdgi_rsp_t
 {

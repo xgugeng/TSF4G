@@ -4,7 +4,6 @@
 #include "tconnd/tdtp_socket.h"
 #include "tbus/tbus.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
-#include "globals.h"
 #include <assert.h>
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
@@ -13,55 +12,60 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "tconnd/tconnd_mempool.h"
+#include "tconnd/tconnd_tbus.h"
+#include "tconnd/tconnd_config.h"
 
 
+int g_listenfd;
 
 
-TERROR_CODE tconnd_listen_init(tdtp_instance_t *self)
+TERROR_CODE tconnd_listen_init()
 {
     int nb = 1;
     TERROR_CODE ret = E_TS_NOERROR;
+	struct sockaddr_in  listenaddr;
 
-	self->listenfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(self->listenfd == -1)
+	g_listenfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(g_listenfd == -1)
 	{
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
 
 	
-	if(ioctl(self->listenfd, FIONBIO, &nb) == -1)
+	if(ioctl(g_listenfd, FIONBIO, &nb) == -1)
 	{
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
 
 	
-	memset(&self->listenaddr, 0, sizeof(struct sockaddr_in));
+	memset(&listenaddr, 0, sizeof(struct sockaddr_in));
 
-	self->listenaddr.sin_family=AF_INET;
-	self->listenaddr.sin_addr.s_addr = inet_addr(g_config.ip);
-	self->listenaddr.sin_port = htons(g_config.port);
+	listenaddr.sin_family=AF_INET;
+	listenaddr.sin_addr.s_addr = inet_addr(g_config.ip);
+	listenaddr.sin_port = htons(g_config.port);
 
-	if(bind(self->listenfd,(struct sockaddr *)(&self->listenaddr), sizeof(struct sockaddr_in)) == -1)
+	if(bind(g_listenfd,(struct sockaddr *)(&listenaddr), sizeof(struct sockaddr_in)) == -1)
 	{
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}	
 
-	if(listen(self->listenfd, g_config.backlog) == -1)
+	if(listen(g_listenfd, g_config.backlog) == -1)
 	{
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
 	
 close_listenfd:
-    close(self->listenfd);
+    close(g_listenfd);
 done:
     return ret;
 }
 
-TERROR_CODE process_listen(tdtp_instance_t *self)
+TERROR_CODE process_listen()
 {
 	int ret = E_TS_NOERROR;
 	tdtp_socket_t *conn_socket;
@@ -72,8 +76,8 @@ TERROR_CODE process_listen(tdtp_instance_t *self)
 	TLIBC_BINARY_WRITER writer;
 
 //1, 检查tbus是否能发送新的连接包
-	tbus_writer_size = g_head_size;
-	ret = tbus_send_begin(self->output_tbus, &tbus_writer_ptr, &tbus_writer_size);
+	tbus_writer_size = TDGI_REQ_HEAD_SIZE;
+	ret = tbus_send_begin(g_output_tbus, &tbus_writer_ptr, &tbus_writer_size);
 	if(ret == E_TS_WOULD_BLOCK)
 	{
 		ret = E_TS_WOULD_BLOCK;
@@ -85,14 +89,14 @@ TERROR_CODE process_listen(tdtp_instance_t *self)
 	}
 	
 //2, 检查是否能分配socket
-	conn_socket = tdtp_socket_alloc();
+	conn_socket = tdtp_socket_new();
 	if(conn_socket == NULL)
 	{
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
 
-    ret = tdtp_socket_accept(conn_socket, self->listenfd);
+    ret = tdtp_socket_accept(conn_socket, g_listenfd);
 	if(ret != E_TS_NOERROR)
 	{
     	goto free_socket;
@@ -110,30 +114,31 @@ TERROR_CODE process_listen(tdtp_instance_t *self)
 		ret = E_TS_ERROR;
 		goto free_socket;
 	}
+    assert(writer.offset == TDGI_REQ_HEAD_SIZE);
 	conn_socket->status = e_tdtp_socket_status_syn_sent;
-	tbus_send_end(self->output_tbus, writer.offset);
+	tbus_send_end(g_output_tbus, writer.offset);
 
 done:
 	return ret;
 free_socket:
-    tdtp_socket_free(conn_socket);
+    tdtp_socket_delete(conn_socket);
 	return ret;
 }
 
 
-void tconnd_listen_fini(tdtp_instance_t *self)
+void tconnd_listen_fini()
 {
     int i;
       
-    for(i = self->socket_pool->used_head; i < self->socket_pool->unit_num; )
+    for(i = g_socket_pool->used_head; i < g_socket_pool->unit_num; )
     {
-        tlibc_mempool_block_t *b = TLIBC_MEMPOOL_GET_BLOCK(self->socket_pool, i);
+        tlibc_mempool_block_t *b = TLIBC_MEMPOOL_GET_BLOCK(g_socket_pool, i);
         tdtp_socket_t *s = (tdtp_socket_t *)&b->data;
-        tdtp_socket_free(s);
+        tdtp_socket_delete(s);
 
         i = b->next;
     }
 
-    close(self->listenfd);
+    close(g_listenfd);
 }
 

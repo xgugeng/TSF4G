@@ -1,6 +1,5 @@
 #include "tconnd/tdtp_socket.h"
 #include <assert.h>
-#include "globals.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -14,6 +13,10 @@
 #include "tcommon/tdtp_types.h"
 
 #include "tconnd/tconnd_timer.h"
+#include "tconnd/tconnd_mempool.h"
+#include "tconnd/tconnd_tbus.h"
+#include "tconnd/tconnd_epoll.h"
+#include "tconnd/tconnd_config.h"
 
 #include <sys/ioctl.h>
 
@@ -22,7 +25,7 @@ void tdtp_socket_close_timeout(const tlibc_timer_entry_t *super)
 {
     tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, close_timeout);
 
-    tdtp_socket_free(self);
+    tdtp_socket_delete(self);
 }
 
 
@@ -30,7 +33,7 @@ void tdtp_socket_accept_timeout(const tlibc_timer_entry_t *super)
 {
     tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, accept_timeout);
 
-    tdtp_socket_free(self);
+    tdtp_socket_delete(self);
 }
 
 
@@ -38,13 +41,13 @@ void tdtp_socket_package_timeout(const tlibc_timer_entry_t *super)
 {
     tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, package_timeout);
 
-    tdtp_socket_free(self);
+    tdtp_socket_delete(self);
 }
 
-tdtp_socket_t *tdtp_socket_alloc()
+tdtp_socket_t *tdtp_socket_new()
 {
-    tuint64 mid= tlibc_mempool_alloc(g_tdtp_instance.socket_pool);
-    tdtp_socket_t *socket = tlibc_mempool_get(g_tdtp_instance.socket_pool, mid);
+    tuint64 mid= tconnd_mempool_alloc(e_tconnd_socket);
+    tdtp_socket_t *socket = tconnd_mempool_get(e_tconnd_socket, mid);
 	if(socket != NULL)
 	{
 	    socket->mid = mid;
@@ -64,7 +67,7 @@ tdtp_socket_t *tdtp_socket_alloc()
     return socket;
 }
 
-void tdtp_socket_free(tdtp_socket_t *self)
+void tdtp_socket_delete(tdtp_socket_t *self)
 {
     switch(self->status)
     {
@@ -91,9 +94,9 @@ void tdtp_socket_free(tdtp_socket_t *self)
    
     if(self->package_buff != NULL)
     {
-        tlibc_mempool_free(g_tdtp_instance.package_pool, self->package_buff->mid);
+        tconnd_mempool_free(e_tconnd_package, self->package_buff->mid);
     }
-    tlibc_mempool_free(g_tdtp_instance.socket_pool, self->mid);
+    tconnd_mempool_free(e_tconnd_socket, self->mid);
 }
 
 TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
@@ -163,7 +166,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 
                 ev.events = EPOLLIN | EPOLLET;
                 ev.data.ptr = self;  
-                if(epoll_ctl(g_tdtp_instance.epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
+                if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
                         tconnd_timer_ms, tdtp_socket_close_timeout);
@@ -299,7 +302,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
 
     assert(self->status == e_tdtp_socket_status_established);
     
-    header_size = g_head_size;
+    header_size = TDGI_REQ_HEAD_SIZE;
     if(self->package_buff == NULL)
     {
         package_size = 0;
@@ -312,7 +315,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     
     total_size = header_size + package_size + body_size;
 
-    ret = tbus_send_begin(g_tdtp_instance.output_tbus, &header_ptr, &total_size);
+    ret = tbus_send_begin(g_output_tbus, &header_ptr, &total_size);
     if(ret == E_TS_WOULD_BLOCK)
     {
         goto done;
@@ -327,8 +330,8 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     body_size = total_size - header_size - package_size;
 
     
-    package_buff_mid = tlibc_mempool_alloc(g_tdtp_instance.package_pool);
-    package_buff = tlibc_mempool_get(g_tdtp_instance.package_pool, package_buff_mid);
+    package_buff_mid = tconnd_mempool_alloc(e_tconnd_package);
+    package_buff = tconnd_mempool_get(e_tconnd_package, package_buff_mid);
     if(package_buff == NULL)
     {
         ret = E_TS_WOULD_BLOCK;
@@ -349,18 +352,19 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
             if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
             {
                 assert(0);
-                tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
+                tconnd_mempool_free(e_tconnd_package, package_buff_mid);
                 ret = E_TS_ERROR;
                 goto done;
             }
-            tbus_send_end(g_tdtp_instance.output_tbus, header_size);
+            assert(writer.offset == header_size);
+            tbus_send_end(g_output_tbus, header_size);
             ret = E_TS_CLOSE;
         }
         else
         {
             ret = E_TS_ERRNO;
         }
-        tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
+        tconnd_mempool_free(e_tconnd_package, package_buff_mid);
         goto done;
     }
     
@@ -368,7 +372,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     {
         assert(package_size == self->package_buff->buff_size);
         memcpy(package_ptr, self->package_buff->buff, package_size);
-        tlibc_mempool_free(g_tdtp_instance.package_pool, self->package_buff->mid);
+        tconnd_mempool_free(e_tconnd_package, self->package_buff->mid);
         self->package_buff = NULL;
         tlibc_timer_pop(&self->package_timeout);
     }
@@ -404,7 +408,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     }
     else
     {
-        tlibc_mempool_free(g_tdtp_instance.package_pool, package_buff_mid);
+        tconnd_mempool_free(e_tconnd_package, package_buff_mid);
     }
 
     if(remain_ptr - package_ptr > 0)
@@ -420,7 +424,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
             ret = E_TS_ERROR;
             goto done;
         }
-        tbus_send_end(g_tdtp_instance.output_tbus, writer.offset + pkg.size);
+        tbus_send_end(g_output_tbus, writer.offset + pkg.size);
     }
     
 done:

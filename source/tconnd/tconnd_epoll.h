@@ -1,13 +1,15 @@
 #ifndef _H_TCONND_EPOLL_H
 #define _H_TCONND_EPOLL_H
 
-#include "tconnd/tdtp_instance.h"
+#include "tcommon/terrno.h"
 
-TERROR_CODE tconnd_epoll_init(tdtp_instance_t *self);
+extern int                 g_epollfd;
 
-TERROR_CODE process_epool(tdtp_instance_t *self);
+TERROR_CODE tconnd_epoll_init();
 
-void tconnd_epoll_fini(tdtp_instance_t *self);
+TERROR_CODE process_epool();
+
+void tconnd_epoll_fini();
 
 
 #endif//_H_TCONND_EPOLL_H

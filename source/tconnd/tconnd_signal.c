@@ -1,11 +1,10 @@
 #include "tconnd_signal.h"
 #include "tcommon/terrno.h"
-
+#include "tconnd/tdtp_instance.h"
 #include <string.h>
 #include <stdbool.h>
 #include <signal.h>
 #include <stdlib.h>
-#include "tconnd/globals.h"
 
 static bool sig_term;
 

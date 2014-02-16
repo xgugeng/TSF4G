@@ -1,42 +1,49 @@
 #include "tconnd_tbus.h"
-#include "tconnd/tdtp_instance.h"
 
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_reader.h"
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tcommon/tdtp.h"
 #include "tconnd/tdtp_socket.h"
-#include "globals.h"
+
+#include "tconnd/tconnd_mempool.h"
+#include "tconnd/tconnd_config.h"
+
+#include "tbus/tbus.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
+tbus_t              *g_input_tbus;
+tbus_t              *g_output_tbus;
 
-TERROR_CODE tconnd_tbus_init(tdtp_instance_t *self)
+TERROR_CODE tconnd_tbus_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
+    int input_tbusid;
+    int output_tbusid;
 
-	self->input_tbusid = shmget(g_config.input_tbuskey, 0, 0666);
-	if(self->input_tbusid == -1)
+	input_tbusid = shmget(g_config.input_tbuskey, 0, 0666);
+	if(input_tbusid == -1)
 	{
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
-	self->input_tbus = shmat(self->input_tbusid, NULL, 0);
-	if(self->input_tbus == NULL)
+	g_input_tbus = shmat(input_tbusid, NULL, 0);
+	if(g_input_tbus == NULL)
 	{
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
 
-	self->output_tbusid = shmget(g_config.output_tbuskey, 0, 0666);
-	if(self->output_tbusid == -1)
+	output_tbusid = shmget(g_config.output_tbuskey, 0, 0666);
+	if(output_tbusid == -1)
 	{
 	    ret = E_TS_ERRNO;
 		goto shmdt_input;
 	}
-	self->output_tbus = shmat(self->output_tbusid, NULL, 0);
-	if(self->output_tbus == NULL)
+	g_output_tbus = shmat(output_tbusid, NULL, 0);
+	if(g_output_tbus == NULL)
 	{
 	    ret = E_TS_ERRNO;
 		goto shmdt_input;
@@ -45,14 +52,13 @@ TERROR_CODE tconnd_tbus_init(tdtp_instance_t *self)
 
 	
 shmdt_input:
-    shmdt(self->input_tbus);
+    shmdt(g_input_tbus);
 done:
     return ret;
 }
 
-//tbus中最多一次处理的包的个数
 #define MAX_PACKAGE_LIST_NUM 255
-TERROR_CODE process_input_tbus(tdtp_instance_t *self)
+TERROR_CODE process_input_tbus()
 {
     static tdgi_rsp_t pkg_list[MAX_PACKAGE_LIST_NUM];
     tuint32 pkg_list_num = 0;
@@ -67,7 +73,7 @@ TERROR_CODE process_input_tbus(tdtp_instance_t *self)
     TLIBC_LIST_HEAD *iter, *next;
 
 
-    ret = tbus_read_begin(self->input_tbus, &message, &message_len);
+    ret = tbus_read_begin(g_input_tbus, &message, &message_len);
     if(ret == E_TS_WOULD_BLOCK)
     {
         goto done;
@@ -102,8 +108,8 @@ TERROR_CODE process_input_tbus(tdtp_instance_t *self)
 
         for(i = 0; i < pkg->mid_num; ++i)
         {
-            tdtp_socket_t *socket = (tdtp_socket_t*)tlibc_mempool_get(self->socket_pool, pkg->mid[i]);
-            
+            tdtp_socket_t *socket = (tdtp_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->mid[i]);
+
             if(pkg->cmd == e_tdgi_cmd_send)
             {
                 body_addr = message + reader.offset + pkg->size;
@@ -167,15 +173,15 @@ TERROR_CODE process_input_tbus(tdtp_instance_t *self)
     }
     pkg_list_num = 0;
 
-    tbus_read_end(self->input_tbus, message_len);
+    tbus_read_end(g_input_tbus, message_len);
     
 done:
     return ret;
 }
 
-void tconnd_tbus_fini(tdtp_instance_t *self)
+void tconnd_tbus_fini()
 {
-    shmdt(self->input_tbus);
-    shmdt(self->output_tbus);
+    shmdt(g_input_tbus);
+    shmdt(g_output_tbus);
 }
 

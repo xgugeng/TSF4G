@@ -61,9 +61,9 @@ typedef struct _tdtp_socket_t
     tdtp_socket_op_list op_list;
 }tdtp_socket_t;
 
-tdtp_socket_t *tdtp_socket_alloc();
+tdtp_socket_t *tdtp_socket_new();
 
-void tdtp_socket_free(tdtp_socket_t *self);
+void tdtp_socket_delete(tdtp_socket_t *self);
 
 TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd);
 

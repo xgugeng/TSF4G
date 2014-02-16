@@ -3,13 +3,17 @@
 
 #include "tlibc/platform/tlibc_platform.h"
 #include "tcommon/terrno.h"
+#include "tlibc/core/tlibc_mempool.h"
 
 
 typedef enum _tconnd_mempool_type_e
 {
     e_tconnd_socket,
-    e_tconnd_pakcage,
+    e_tconnd_package,
 }tconnd_mempool_type_e;
+
+tlibc_mempool_t *g_socket_pool;
+tlibc_mempool_t *g_package_pool;
 
 TERROR_CODE tconnd_mempool_init();
 

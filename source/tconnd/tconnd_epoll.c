@@ -3,23 +3,24 @@
 #include "tcommon/terrno.h"
 #include "tconnd/tdtp_instance.h"
 #include "tconnd/tdtp_socket.h"
-
-#include "globals.h"
+#include "tconnd/tconnd_config.h"
 
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
 #include <sys/epoll.h>
 
+int                 g_epollfd;
+static TLIBC_LIST_HEAD     readable_list;
 
-TERROR_CODE tconnd_epoll_init(tdtp_instance_t *self)
+TERROR_CODE tconnd_epoll_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
 
-	tlibc_list_init(&self->readable_list);
+	tlibc_list_init(&readable_list);
 
-	self->epollfd = epoll_create(g_config.connections);
-	if(self->epollfd == -1)
+	g_epollfd = epoll_create(g_config.connections);
+	if(g_epollfd == -1)
 	{
 	    ret = E_TS_ERRNO;
 		goto done;
@@ -29,18 +30,18 @@ done:
 }
 
 #define TDTP_MAX_EVENTS 1024
-TERROR_CODE process_epool(tdtp_instance_t *self)
+TERROR_CODE process_epool()
 {
 	int i;
 	TERROR_CODE ret = E_TS_NOERROR;
 	TLIBC_LIST_HEAD *iter, *next;
 
-	if(tlibc_list_empty(&self->readable_list))
+	if(tlibc_list_empty(&readable_list))
 	{
 		struct epoll_event 	events[TDTP_MAX_EVENTS];
 		int                 events_num;
 		
-		events_num = epoll_wait(self->epollfd, events, TDTP_MAX_EVENTS, 0);
+		events_num = epoll_wait(g_epollfd, events, TDTP_MAX_EVENTS, 0);
 	    if(events_num == -1)
 		{
 		    if(errno == EINTR)
@@ -64,17 +65,17 @@ TERROR_CODE process_epool(tdtp_instance_t *self)
             }
             socket->readable = TRUE;
             tlibc_list_init(&socket->readable_list);
-            tlibc_list_add_tail(&socket->readable_list, &self->readable_list);
+            tlibc_list_add_tail(&socket->readable_list, &readable_list);
 	    }
 	}
 
-	if(tlibc_list_empty(&self->readable_list))
+	if(tlibc_list_empty(&readable_list))
 	{
         ret = E_TS_WOULD_BLOCK;
 	    goto done;
 	}
 	
-    for(iter = self->readable_list.next; iter != &self->readable_list; iter = next)
+    for(iter = readable_list.next; iter != &readable_list; iter = next)
     {
         TERROR_CODE r;
         tdtp_socket_t *socket = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, readable_list);
@@ -106,7 +107,7 @@ TERROR_CODE process_epool(tdtp_instance_t *self)
         {
             socket->readable = FALSE;
             tlibc_list_del(iter);
-            tdtp_socket_free(socket);
+            tdtp_socket_delete(socket);
         }
     }
 
@@ -114,8 +115,8 @@ done:
 	return ret;
 }
 
-void tconnd_epoll_fini(tdtp_instance_t *self)
+void tconnd_epoll_fini()
 {
-    close(self->epollfd);
+    close(g_epollfd);
 }
 
