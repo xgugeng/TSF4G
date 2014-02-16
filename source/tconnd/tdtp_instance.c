@@ -42,19 +42,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-static tuint64 _get_current_ms()
-{
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-
-	return tv.tv_sec*1000 + tv.tv_usec/1000;
-}
-
-tuint64 tdtp_instance_get_time_ms(tdtp_instance_t *self)
-{
-	return _get_current_ms() - self->timer_start_ms;
-}
-
+#include "tconnd/tconnd_timer.h"
 
 TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 {
@@ -141,7 +129,7 @@ TERROR_CODE tdtp_instance_init(tdtp_instance_t *self)
 	}
 
 	tlibc_timer_init(&self->timer, 0);
-	self->timer_start_ms = _get_current_ms();
+	self->timer_start_ms = get_current_ms();
 
 	self->socket_pool = (tlibc_mempool_t*)malloc(
 		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), g_config.connections));
