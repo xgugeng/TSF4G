@@ -12,6 +12,8 @@
 
 #include <unistd.h>
 #include <sched.h>
+#include <errno.h>
+#include <string.h>
 
 int g_tconnd_reactor_switch;
 
@@ -59,7 +61,6 @@ TERROR_CODE tconnd_reactor_init(const char* config_file)
 	
     g_tconnd_reactor_switch = FALSE;
 
-    INFO_LOG("tconnd init succeed.");
     INFO_PRINT("tconnd init succeed.");
 	return E_TS_NOERROR;
 	
@@ -80,7 +81,7 @@ TERROR_CODE tconnd_reactor_process()
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	TERROR_CODE r;
 
-	r = process_listen();
+	r = tconnd_listen_proc();
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
@@ -91,7 +92,7 @@ TERROR_CODE tconnd_reactor_process()
 		goto done;
 	}
 
-	r = process_epool();
+	r = tconnd_epool_proc();
 	if(r == E_TS_NOERROR)
 	{
 		ret = E_TS_NOERROR;
@@ -144,7 +145,8 @@ void tconnd_reactor_loop()
 {
     tuint32 idle_count = 0;
     TERROR_CODE ret;
-    
+
+    INFO_LOG("tconnd_reactor_loop begin");
     g_tconnd_reactor_switch = TRUE;
 	for(;g_tconnd_reactor_switch;)
 	{
@@ -159,22 +161,29 @@ void tconnd_reactor_loop()
     			++idle_count;
     			if(idle_count > 30)
     			{
-    				usleep(1000);
+    				if((usleep(1000) != 0) && (errno != EINTR))
+    				{
+                        ERROR_LOG("usleep errno [%d], %s", errno, strerror(errno));
+    				    goto done;
+    				}
     				idle_count = 0;
     			}
     			else
     			{
-    				sched_yield();
+    				if((sched_yield() != 0) && (errno != EINTR))
+    				{
+    				    ERROR_LOG("sched_yield errno [%d], %s", errno, strerror(errno));
+    				    goto done;
+    				}
     			}
 	    	}
 		    break;
 		default:
             ERROR_PRINT("tconnd_reactor_process error.");
-		    ERROR_LOG("tconnd_reactor_process error.");
         	goto done;
 		}
 	}	
-    
+    INFO_LOG("tconnd_reactor_loop begin");
 done:
 	return;	
 }
@@ -182,7 +191,6 @@ done:
 void tconnd_reactor_fini()
 {
     INFO_PRINT("tconnd_reactor_fini.");
-    INFO_LOG("tconnd_reactor_fini");
     
     tconnd_epoll_fini();
     tconnd_listen_fini();

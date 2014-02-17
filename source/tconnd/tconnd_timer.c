@@ -1,6 +1,7 @@
 #include "tconnd_timer.h"
 #include "tconnd/tconnd_reactor.h"
 #include "tlibc/core/tlibc_timer.h"
+#include "tlog/tlog_instance.h"
 
 #include <sys/time.h>
 
@@ -32,15 +33,17 @@ TERROR_CODE tconnd_timer_process()
     tlibc_ret = tlibc_timer_tick(&g_timer, get_diff_ms());
     if(tlibc_ret == E_TLIBC_NOERROR)
     {
+        DEBUG_LOG("tlibc_timer_tick return E_TS_NOERROR.");
         return E_TS_NOERROR;
     }
     else if(tlibc_ret == E_TLIBC_WOULD_BLOCK)
-    {
+    {    
         return E_TS_WOULD_BLOCK;
     }
     else
     {
-        return E_TS_ERROR;
+        ERROR_LOG("tlibc_timer_tick return %d.", tlibc_ret);
+        return E_TS_ERROR;        
     }    
 }
 

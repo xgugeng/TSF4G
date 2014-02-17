@@ -65,7 +65,7 @@ tconnd_socket_t *tconnd_socket_new();
 
 void tconnd_socket_delete(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self, int listenfd);
+TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_process(tconnd_socket_t *self);
 

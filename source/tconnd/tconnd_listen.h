@@ -7,7 +7,7 @@ extern int g_listenfd;
 
 TERROR_CODE tconnd_listen_init();
 
-TERROR_CODE process_listen();
+TERROR_CODE tconnd_listen_proc();
 
 void tconnd_listen_fini();
 

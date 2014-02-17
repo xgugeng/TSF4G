@@ -7,7 +7,7 @@ extern int                 g_epollfd;
 
 TERROR_CODE tconnd_epoll_init();
 
-TERROR_CODE process_epool();
+TERROR_CODE tconnd_epool_proc();
 
 void tconnd_epoll_fini();
 

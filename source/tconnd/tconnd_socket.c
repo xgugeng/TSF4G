@@ -17,6 +17,7 @@
 #include "tconnd/tconnd_tbus.h"
 #include "tconnd/tconnd_epoll.h"
 #include "tconnd/tconnd_config.h"
+#include "tconnd/tconnd_listen.h"
 #include "tlog/tlog_instance.h"
 
 #include <sys/ioctl.h>
@@ -26,7 +27,7 @@
 static void tconnd_socket_close_timeout(const tlibc_timer_entry_t *super)
 {
     tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, close_timeout);
-
+    DEBUG_LOG("socket [%llu] close_timeout", self->mid);
     tconnd_socket_delete(self);
 }
 
@@ -34,7 +35,7 @@ static void tconnd_socket_close_timeout(const tlibc_timer_entry_t *super)
 static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
 {
     tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
-
+    DEBUG_LOG("socket [%llu] accept_timeout", self->mid);
     tconnd_socket_delete(self);
 }
 
@@ -42,7 +43,7 @@ static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
 static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
 {
     tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, package_timeout);
-
+    DEBUG_LOG("socket [%llu] package_timeout", self->mid);
     tconnd_socket_delete(self);
 }
 
@@ -76,13 +77,22 @@ void tconnd_socket_delete(tconnd_socket_t *self)
     case e_tconnd_socket_status_closed:
         break;
     case e_tconnd_socket_status_syn_sent:
-        close(self->socketfd);
+        if(close(self->socketfd) != 0)
+        {
+            ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
+        }
         break;
     case e_tconnd_socket_status_established:
-        close(self->socketfd);
+        if(close(self->socketfd) != 0)
+        {
+            ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
+        }
         break;
     case e_tconnd_socket_status_closing:
-        close(self->socketfd);
+        if(close(self->socketfd) != 0)
+        {
+            ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
+        }
         break;
     }
 
@@ -101,7 +111,7 @@ void tconnd_socket_delete(tconnd_socket_t *self)
     tconnd_mempool_free(e_tconnd_socket, self->mid);
 }
 
-TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self, int listenfd)
+TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self)
 {
     int nb = 1;
     TERROR_CODE ret = E_TS_NOERROR;
@@ -109,7 +119,7 @@ TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self, int listenfd)
 
     memset(&self->socketaddr, 0, sizeof(struct sockaddr_in));
     cnt_len = sizeof(struct sockaddr_in);
-    self->socketfd = accept(listenfd, (struct sockaddr *)&self->socketaddr, &cnt_len);
+    self->socketfd = accept(g_listenfd, (struct sockaddr *)&self->socketaddr, &cnt_len);
 
     if(self->socketfd == -1)
     {
@@ -131,6 +141,7 @@ TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self, int listenfd)
     
 	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
 	{
+        ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
     	ret = E_TS_ERRNO;
 		goto done;
 	}
@@ -160,6 +171,7 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
                 
                 if(self->status != e_tconnd_socket_status_syn_sent)
                 {
+                    DEBUG_LOG("socket status[%d] != e_tconnd_socket_status_syn_sent", self->status);
                     ++i;
                     continue;
                 }
@@ -170,6 +182,8 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
                 ev.data.ptr = self;  
                 if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
                 {
+                    DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
+                    
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
                         tconnd_timer_ms, tconnd_socket_close_timeout);
                     tlibc_timer_push(&g_timer, &self->close_timeout);
@@ -177,6 +191,8 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
                 }
                 else
                 {
+                    DEBUG_LOG("socket [%llu] established.", self->mid);
+                    
                     self->status = e_tconnd_socket_status_established;
                 }                
                 ++i;
@@ -186,6 +202,7 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
             {
                 if(self->status == e_tconnd_socket_status_closing)
                 {
+                    DEBUG_LOG("socket [%llu] status == e_tconnd_socket_status_closing", self->mid);
                     ++i;
                     break;
                 }
@@ -194,6 +211,7 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
                     tconnd_timer_ms, tconnd_socket_close_timeout);
                 tlibc_timer_push(&g_timer, &self->close_timeout);
                 self->status = e_tconnd_socket_status_closing;
+                DEBUG_LOG("socket [%llu] closing.", self->mid);
 
                 ++i;
                 break;
@@ -205,6 +223,7 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
                 
                 if(self->status != e_tconnd_socket_status_established)
                 {
+                    DEBUG_LOG("socket [%llu] status != e_tconnd_socket_status_established", self->mid);
                     ++i;
                     break;
                 }
@@ -232,6 +251,16 @@ TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
 
                     self->status = e_tconnd_socket_status_closing;
                     ret = E_TS_ERROR;
+
+                    
+                    if(send_size < 0)
+                    {
+                        DEBUG_LOG("socket [%llu] write return [%zi], errno [%d], %s", self->mid, send_size, errno, strerror(errno));
+                    }
+                    else
+                    {
+                        DEBUG_LOG("socket [%llu] writev return [%zi].", self->mid, send_size);
+                    }
                     goto done;
                 }
                 i = j;
@@ -320,10 +349,12 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     ret = tbus_send_begin(g_output_tbus, &header_ptr, &total_size);
     if(ret == E_TS_WOULD_BLOCK)
     {
+        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
         goto done;
     }
     else if(ret != E_TS_NOERROR)
     {
+        ERROR_LOG("tbus_send_begin return [%d]", ret);
         goto done;
     }
 
@@ -336,6 +367,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     package_buff = tconnd_mempool_get(e_tconnd_package, package_buff_mid);
     if(package_buff == NULL)
     {
+        WARN_LOG("tconnd_mempool_alloc(e_tconnd_package) return NULL");
         ret = E_TS_WOULD_BLOCK;
         goto done;
     }
@@ -346,7 +378,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     if(r <= 0)
     {
         if((r == 0) || ((errno != EAGAIN) && (errno != EINTR)))
-        {        
+        {
             tlibc_binary_writer_init(&writer, header_ptr, header_size);
             pkg.cmd = e_tdgi_cmd_recv;
             pkg.mid = self->mid;
@@ -355,15 +387,18 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             {
                 assert(0);
                 tconnd_mempool_free(e_tconnd_package, package_buff_mid);
+                ERROR_LOG("tlibc_write_tdgi_req_t failed.");
                 ret = E_TS_ERROR;
                 goto done;
             }
             assert(writer.offset == header_size);
             tbus_send_end(g_output_tbus, header_size);
             ret = E_TS_CLOSE;
+            DEBUG_LOG("socket [%llu] closed by client.", self->mid);
         }
         else
         {
+            DEBUG_LOG("socket [%llu] closed with errno [%d], %s", self->mid, errno, strerror(errno));
             ret = E_TS_ERRNO;
         }
         tconnd_mempool_free(e_tconnd_package, package_buff_mid);
@@ -372,6 +407,8 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     
     if(self->package_buff != NULL)
     {
+        DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->mid, self->package_buff->buff_size);
+        
         assert(package_size == self->package_buff->buff_size);
         memcpy(package_ptr, self->package_buff->buff, package_size);
         tconnd_mempool_free(e_tconnd_package, self->package_buff->mid);
@@ -424,9 +461,11 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         {
             assert(0);
             ret = E_TS_ERROR;
+            ERROR_LOG("tlibc_write_tdgi_req_t failed.");
             goto done;
         }
         tbus_send_end(g_output_tbus, writer.offset + pkg.size);
+        DEBUG_LOG("e_tdgi_cmd_recv mid[%llu] size[%u]", pkg.mid, pkg.size);
     }
     
 done:

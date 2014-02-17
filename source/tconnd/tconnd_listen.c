@@ -63,13 +63,19 @@ TERROR_CODE tconnd_listen_init()
 		goto close_listenfd;
 	}
 	DEBUG_LOG("tconnd_listen_init succeed.");
+	
+	goto done;
 close_listenfd:
-    close(g_listenfd);
+    if(close(g_listenfd) != 0)
+    {
+        ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
+    }
+
 done:
     return ret;
 }
 
-TERROR_CODE process_listen()
+TERROR_CODE tconnd_listen_proc()
 {
 	int ret = E_TS_NOERROR;
 	tconnd_socket_t *conn_socket;
@@ -84,11 +90,13 @@ TERROR_CODE process_listen()
 	ret = tbus_send_begin(g_output_tbus, &tbus_writer_ptr, &tbus_writer_size);
 	if(ret == E_TS_WOULD_BLOCK)
 	{
+	    WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
 	else if(ret != E_TS_NOERROR)
 	{
+        ERROR_LOG("tbus_send_begin return [%d]", ret);
 	    goto done;
 	}
 	
@@ -96,12 +104,18 @@ TERROR_CODE process_listen()
 	conn_socket = tconnd_socket_new();
 	if(conn_socket == NULL)
 	{
+        DEBUG_LOG("tconnd_socket_new return NULL");
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
 
-    ret = tconnd_socket_accept(conn_socket, g_listenfd);
-	if(ret != E_TS_NOERROR)
+    ret = tconnd_socket_accept(conn_socket);
+    if(ret == E_TS_WOULD_BLOCK)
+    {
+        DEBUG_LOG("tconnd_socket_accept return E_TS_WOULD_BLOCK");
+        goto done;
+    }
+	else if(ret != E_TS_NOERROR)
 	{
     	goto free_socket;
 	}	
@@ -116,6 +130,7 @@ TERROR_CODE process_listen()
 	{
 	    assert(0);
 		ret = E_TS_ERROR;
+        ERROR_LOG("tlibc_write_tdgi_req_t failed assert(0)!");
 		goto free_socket;
 	}
     assert(writer.offset == TDGI_REQ_HEAD_SIZE);
@@ -143,6 +158,9 @@ void tconnd_listen_fini()
         i = b->next;
     }
 
-    close(g_listenfd);
+    if(close(g_listenfd) != 0)
+    {
+        ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
+    }
 }
 

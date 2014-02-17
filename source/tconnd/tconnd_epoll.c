@@ -36,8 +36,8 @@ done:
     return ret;
 }
 
-#define TDTP_MAX_EVENTS 1024
-TERROR_CODE process_epool()
+#define TCONND_EPOLL_MAX_EVENTS 1024
+TERROR_CODE tconnd_epool_proc()
 {
 	int i;
 	TERROR_CODE ret = E_TS_NOERROR;
@@ -45,18 +45,20 @@ TERROR_CODE process_epool()
 
 	if(tlibc_list_empty(&readable_list))
 	{
-		struct epoll_event 	events[TDTP_MAX_EVENTS];
+		struct epoll_event 	events[TCONND_EPOLL_MAX_EVENTS];
 		int                 events_num;
 		
-		events_num = epoll_wait(g_epollfd, events, TDTP_MAX_EVENTS, 0);
+		events_num = epoll_wait(g_epollfd, events, TCONND_EPOLL_MAX_EVENTS, 0);
 	    if(events_num == -1)
 		{
 		    if(errno == EINTR)
 		    {
 		        ret = E_TS_WOULD_BLOCK;
+		        DEBUG_LOG("tconnd_epool_proc reutrn E_TS_WOULD_BLOCK");
 		    }
 		    else
 		    {
+                ERROR_LOG("epoll_wait errno[%d], %s.", errno, strerror(errno));
 		        ret = E_TS_ERRNO;
 		    }
 			goto done;
@@ -67,8 +69,10 @@ TERROR_CODE process_epool()
             tconnd_socket_t *socket = events[i].data.ptr;
             if(socket->readable)
             {
+                ERROR_LOG("socket [%llu] already readable.", socket->mid);
                 assert(0);
-                continue;
+                ret = E_TS_ERROR;
+                goto done;
             }
             socket->readable = TRUE;
             tlibc_list_init(&socket->readable_list);
@@ -78,6 +82,7 @@ TERROR_CODE process_epool()
 
 	if(tlibc_list_empty(&readable_list))
 	{
+        DEBUG_LOG("tconnd_epool_proc reutrn E_TS_WOULD_BLOCK");
         ret = E_TS_WOULD_BLOCK;
 	    goto done;
 	}
@@ -107,6 +112,7 @@ TERROR_CODE process_epool()
         }
         else if(r == E_TS_WOULD_BLOCK)
         {
+            //tbus¬˙¡À
             ret = E_TS_WOULD_BLOCK;
             break;
         }        
@@ -124,6 +130,9 @@ done:
 
 void tconnd_epoll_fini()
 {
-    close(g_epollfd);
+    if(close(g_epollfd) != 0)
+    {
+        ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
+    }
 }
 

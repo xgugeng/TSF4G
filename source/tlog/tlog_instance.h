@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>
+#include <sys/uio.h>
 
 
 extern tlog_t g_tlog_instance;
@@ -71,13 +72,17 @@ extern tlog_t g_tlog_instance;
 #define INFO_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_info, __VA_ARGS__)
 #define DEBUG_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_debug, __VA_ARGS__)
 
-#include <sys/uio.h>
-#include <string.h>
+#define TLOG_ERROR_COLOR "\033[;31m"
+#define TLOG_WARN_COLOR "\033[;33m"
+#define TLOG_INFO_COLOR "\033[;37m"
+#define TLOG_DEBUG_COLOR "\033[;32m"
+#define TLOG_COLOR_LEN 6
 
+#define TLOG_RST_COLOR "\033[0m"
+#define TLOG_RST_COLOR_LEN 4
 
 #define TLOG_PRINT(fout, lv, ...)\
 {\
-    const char* color;\
     struct iovec iov[3];\
     char message[TLOG_MESSAGE_LENGTH];\
     size_t message_len;\
@@ -85,24 +90,23 @@ extern tlog_t g_tlog_instance;
     switch(lv)\
     {\
     case e_tlog_error:\
-        color = "\033[;31m";\
+        iov[0].iov_base = TLOG_ERROR_COLOR;\
         break;\
     case e_tlog_warn:\
-        color = "\033[;33m";\
+        iov[0].iov_base = TLOG_WARN_COLOR;\
         break;\
     case e_tlog_info:\
-        color = "\033[;37m";\
+        iov[0].iov_base = TLOG_INFO_COLOR;\
         break;\
     case e_tlog_debug:\
-        color = "\033[;32m";\
+        iov[0].iov_base = TLOG_DEBUG_COLOR;\
         break;\
     }\
-    iov[0].iov_base = (void*)color;\
-    iov[0].iov_len = 6;\
+    iov[0].iov_len = TLOG_COLOR_LEN;\
     iov[1].iov_base = message;\
     iov[1].iov_len = message_len;\
-    iov[2].iov_base = "\033[0m";\
-    iov[2].iov_len = 4;\
+    iov[2].iov_base = TLOG_RST_COLOR;\
+    iov[2].iov_len = TLOG_RST_COLOR_LEN;\
     writev(1, iov, 3);\
 }
 

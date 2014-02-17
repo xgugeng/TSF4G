@@ -83,10 +83,12 @@ TERROR_CODE process_input_tbus()
     ret = tbus_read_begin(g_input_tbus, &message, &message_len);
     if(ret == E_TS_WOULD_BLOCK)
     {
+        DEBUG_LOG("tbus_read_begin return E_TS_WOULD_BLOCK");
         goto done;
     }
     else if(ret != E_TS_NOERROR)
     {
+        ERROR_LOG("tbus_read_begin return %d", ret);
         goto done;
     }
 
@@ -104,11 +106,13 @@ TERROR_CODE process_input_tbus()
         if(r != E_TLIBC_NOERROR)
         {
             ret = E_TS_ERROR;
+            ERROR_LOG("tlibc_read_tdgi_rsp_t failed.");
             goto done;
         }
         pkg_size = reader.offset;
         if(pkg->size > TDTP_SIZE_T_MAX)
         {
+            ERROR_LOG("tdgi_rsp.size >= TDTP_SIZE_T_MAX[%u].", TDTP_SIZE_T_MAX);
             ret = E_TS_ERROR;
             goto done;
         }
@@ -141,6 +145,7 @@ TERROR_CODE process_input_tbus()
                 {
                     socket->writable = TRUE;
                     tlibc_list_add_tail(&socket->writable_list, &writable_list);
+                    DEBUG_LOG("socket [%llu] marked as writeable.", socket->mid);
                 }
                 
                 if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
@@ -173,6 +178,7 @@ TERROR_CODE process_input_tbus()
         tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
         ret = tconnd_socket_process(s);
         s->writable = FALSE;
+        DEBUG_LOG("socket [%llu] marked as unwriteable.", s->mid);
         if(ret != E_TS_NOERROR)
         {
             goto done;
@@ -188,7 +194,15 @@ done:
 
 void tconnd_tbus_fini()
 {
-    shmdt(g_input_tbus);
-    shmdt(g_output_tbus);
+    if(shmdt(g_input_tbus) != 0)
+    {
+        ERROR_LOG("shmdt errno [%d], %s", errno, strerror(errno));
+    }
+    
+    
+    if(shmdt(g_output_tbus) != 0)
+    {
+        ERROR_LOG("shmdt errno [%d], %s", errno, strerror(errno));
+    }    
 }
 
