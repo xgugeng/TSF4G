@@ -19,6 +19,8 @@ int g_tconnd_reactor_switch;
 
 TERROR_CODE tconnd_reactor_init(const char* config_file)
 {
+    tconnd_timer_init();
+
     if(tconnd_config_init(config_file) != E_TS_NOERROR)
     {
         goto ERROR_RET;
@@ -56,9 +58,6 @@ TERROR_CODE tconnd_reactor_init(const char* config_file)
         goto listen_fini;
     }
 
-
-    tconnd_timer_init();    
-	
     g_tconnd_reactor_switch = FALSE;
 
     INFO_PRINT("tconnd init succeed.");
@@ -183,7 +182,7 @@ void tconnd_reactor_loop()
         	goto done;
 		}
 	}	
-    INFO_LOG("tconnd_reactor_loop begin");
+    INFO_LOG("tconnd_reactor_loop end");
 done:
 	return;	
 }

@@ -56,7 +56,7 @@ TERROR_CODE tconnd_tbus_init()
 		goto shmdt_input;
 	}
 	
-    DEBUG_LOG("tconnd_tbus_init succeed.");
+
 	goto done;	
 shmdt_input:
     shmdt(g_input_tbus);
@@ -83,7 +83,6 @@ TERROR_CODE process_input_tbus()
     ret = tbus_read_begin(g_input_tbus, &message, &message_len);
     if(ret == E_TS_WOULD_BLOCK)
     {
-        DEBUG_LOG("tbus_read_begin return E_TS_WOULD_BLOCK");
         goto done;
     }
     else if(ret != E_TS_NOERROR)

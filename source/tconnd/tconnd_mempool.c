@@ -4,9 +4,35 @@
 #include <assert.h>
 #include "tconnd/tconnd_config.h"
 #include "tlog/tlog_instance.h"
+#include "tconnd/tconnd_timer.h"
+
 
 tlibc_mempool_t *g_socket_pool;
 tlibc_mempool_t *g_package_pool;
+
+static tlibc_timer_entry_t mempool_log_timeout;
+static int last_s_total_used;
+static int last_p_total_used;
+
+#define TCONND_MEMPOOL_LOG_INTEVAL_MS 10000
+static void tconnd_mempool_log(const tlibc_timer_entry_t *super)
+{
+    TLIBC_UNUSED(super);
+    
+    if((g_socket_pool->total_used != last_s_total_used) || (g_package_pool->total_used != last_p_total_used))
+    {
+        last_s_total_used = g_socket_pool->total_used;
+        last_p_total_used = g_package_pool->total_used;        
+        
+        INFO_LOG("g_socket_pool total_used [%d], g_package_pool total_used [%d].", 
+            last_s_total_used, last_p_total_used);
+    }
+
+    
+	TIMER_ENTRY_BUILD(&mempool_log_timeout, 
+	    tconnd_timer_ms + TCONND_MEMPOOL_LOG_INTEVAL_MS, tconnd_mempool_log);
+	tlibc_timer_push(&g_timer, &mempool_log_timeout);
+}
 
 TERROR_CODE tconnd_mempool_init()
 {
@@ -42,7 +68,15 @@ TERROR_CODE tconnd_mempool_init()
         , sizeof(package_buff_t));
 	assert(package_pool_size == MAX_PACKAGE_NUM);
 
-    DEBUG_LOG("tconnd_mempool_init succeed.");	
+
+	TIMER_ENTRY_BUILD(&mempool_log_timeout, 
+	    tconnd_timer_ms + TCONND_MEMPOOL_LOG_INTEVAL_MS, tconnd_mempool_log);
+	tlibc_timer_push(&g_timer, &mempool_log_timeout);
+
+    last_s_total_used = -1;
+    last_p_total_used = -1;
+
+
 done:
     return ret;
 }

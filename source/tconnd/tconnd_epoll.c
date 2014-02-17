@@ -31,7 +31,6 @@ TERROR_CODE tconnd_epoll_init()
 	}
 
 
-    DEBUG_LOG("tconnd_epoll_init succeed.");
 done:
     return ret;
 }
@@ -82,7 +81,6 @@ TERROR_CODE tconnd_epool_proc()
 
 	if(tlibc_list_empty(&readable_list))
 	{
-        DEBUG_LOG("tconnd_epool_proc reutrn E_TS_WOULD_BLOCK");
         ret = E_TS_WOULD_BLOCK;
 	    goto done;
 	}

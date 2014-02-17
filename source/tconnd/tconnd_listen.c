@@ -62,7 +62,7 @@ TERROR_CODE tconnd_listen_init()
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
-	DEBUG_LOG("tconnd_listen_init succeed.");
+
 	
 	goto done;
 close_listenfd:
@@ -112,8 +112,7 @@ TERROR_CODE tconnd_listen_proc()
     ret = tconnd_socket_accept(conn_socket);
     if(ret == E_TS_WOULD_BLOCK)
     {
-        DEBUG_LOG("tconnd_socket_accept return E_TS_WOULD_BLOCK");
-        goto done;
+        goto free_socket;
     }
 	else if(ret != E_TS_NOERROR)
 	{

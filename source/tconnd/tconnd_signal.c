@@ -40,7 +40,7 @@ TERROR_CODE signal_processing_init()
         ERROR_LOG("sigaction error[%d], %s.", errno, strerror(errno));
 	    goto ERROR_RET;
 	}
-    DEBUG_LOG("signal_processing_init succeed.");
+
     sig_term = false;
 	return E_TS_NOERROR;
 ERROR_RET:
