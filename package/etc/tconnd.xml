@@ -8,4 +8,14 @@
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>
+
+	<sndbuf>10000000</sndbuf>
+	<rcvbuf>10000000</rcvbuf>
+	<nodelay>1</nodelay>
+	<cork>0</cork>
+	<quickack>1</quickack>
+	<keepalive>1</keepalive>
+	<keepidle>14400</keepidle>
+	<keepintvl>150</keepintvl>
+	<keepcnt>8</keepcnt>
 </tconnd_config_t>

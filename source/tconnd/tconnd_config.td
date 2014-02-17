@@ -15,5 +15,18 @@ struct tconnd_config_t
 	int32 								tdgi_pass;		#转发的tdgi服务器
 	int32 								input_tbuskey;	#输入tbuskey
 	int32								output_tbuskey; #输出tbuskey
+
+	uint32								sndbuf;			#SO_SNDBUF
+	uint32								rcvbuf;			#SO_RCVBUF
+	uint32								nodelay;		#TCP_NODELAY
+	uint32								cork;			#TCP_CORK
+	uint32								quickack;		#TCP_QUICKACK
+	uint32								keepalive;		#SO_KEEPALIVE
+if(keepalive == 1)
+	uint32								keepidle;		#TCP_KEEPIDLE
+if(keepalive == 1)
+	uint32								keepintvl;		#TCP_KEEPINTVL
+if(keepalive == 1)
+	uint32								keepcnt;		#TCP_KEEPCNT
 };
 

@@ -4,19 +4,23 @@
 #include "tconnd/tconnd_socket.h"
 #include "tbus/tbus.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
-#include <assert.h>
 #include "tcommon/tdgi_types.h"
 #include "tcommon/tdgi_writer.h"
+
+
+#include "tconnd/tconnd_mempool.h"
+#include "tconnd/tconnd_tbus.h"
+#include "tconnd/tconnd_config.h"
+#include "tlog/tlog_instance.h"
 
 #include <sys/ioctl.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include "tconnd/tconnd_mempool.h"
-#include "tconnd/tconnd_tbus.h"
-#include "tconnd/tconnd_config.h"
-#include "tlog/tlog_instance.h"
+#include <netinet/tcp.h>
+#include <assert.h>
 #include <errno.h>
+
 int g_listenfd;
 
 
@@ -41,7 +45,6 @@ TERROR_CODE tconnd_listen_init()
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
-
 	
 	memset(&listenaddr, 0, sizeof(struct sockaddr_in));
 
@@ -62,6 +65,87 @@ TERROR_CODE tconnd_listen_init()
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
+	
+	if(ioctl(g_listenfd, FIONBIO, &nb) == -1)
+	{
+        ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+		goto close_listenfd;
+	}
+
+    if (setsockopt(g_listenfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, (int[]){1}, sizeof(int)))
+    {
+        ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+		goto close_listenfd;
+    }
+
+
+
+    if(setsockopt(g_listenfd, SOL_SOCKET, SO_SNDBUF, &g_config.sndbuf, sizeof(g_config.sndbuf)) == -1)
+	{	
+        ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+        goto close_listenfd;
+	}
+
+    if(setsockopt(g_listenfd, SOL_SOCKET, SO_RCVBUF, &g_config.rcvbuf, sizeof(g_config.rcvbuf)) == -1)
+	{	
+        ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+        goto close_listenfd;
+	}
+
+	
+
+	
+    if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_NODELAY, &g_config.nodelay, sizeof(g_config.nodelay)) == -1)
+    {    
+        ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+        goto close_listenfd;
+    }
+
+    if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_CORK, &g_config.cork, sizeof(g_config.cork)) == -1)
+    {    
+        ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+        goto close_listenfd;
+    }
+
+    
+    if(setsockopt(g_listenfd, SOL_SOCKET, SO_KEEPALIVE, &g_config.keepalive, sizeof(g_config.keepalive)) == -1)
+    {   
+        ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+        goto close_listenfd;
+    }
+
+	if(g_config.keepalive)
+	{
+	    if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_KEEPIDLE, &g_config.keepidle, sizeof(g_config.keepidle)) == -1)
+    	{	
+            ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+            ret = E_TS_ERRNO;
+            goto close_listenfd;
+    	} 
+
+    	if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_KEEPINTVL, &g_config.keepintvl, sizeof(g_config.keepintvl)) == -1)
+    	{	
+            ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+            ret = E_TS_ERRNO;
+            goto close_listenfd;
+    	}
+
+    	
+    	if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_KEEPCNT, &g_config.keepcnt, sizeof(g_config.keepcnt)) == -1)
+    	{	
+            ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
+            ret = E_TS_ERRNO;
+            goto close_listenfd;
+    	}
+	}
+    
 
 	
 	goto done;

@@ -134,11 +134,7 @@ TERROR_CODE process_input_tbus()
             if(socket != NULL)
             {
                 ++pkg_list_num;
-                ret = tconnd_socket_push_pkg(socket, pkg, body_addr, body_size);
-                if(ret != E_TS_NOERROR)
-                {
-                    goto done;
-                }
+                tconnd_socket_push_pkg(socket, pkg, body_addr, body_size);                
 
                 if(!socket->writable)
                 {
@@ -154,12 +150,8 @@ TERROR_CODE process_input_tbus()
                         tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
                         next = iter->next;
                         
-                        ret = tconnd_socket_process(s);
-                        s->writable = FALSE;
-                        if(ret != E_TS_NOERROR)
-                        {
-                            goto done;
-                        }
+                        tconnd_socket_process(s);
+                        s->writable = FALSE;                        
                         tlibc_list_del(iter);
                         tlibc_list_init(&s->writable_list);
                     }
@@ -175,13 +167,9 @@ TERROR_CODE process_input_tbus()
     for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
     {        
         tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-        ret = tconnd_socket_process(s);
+        tconnd_socket_process(s);
         s->writable = FALSE;
         DEBUG_LOG("socket [%llu] marked as unwriteable.", s->mid);
-        if(ret != E_TS_NOERROR)
-        {
-            goto done;
-        }
     }
     pkg_list_num = 0;
 

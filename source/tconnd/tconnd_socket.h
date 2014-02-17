@@ -66,9 +66,9 @@ void tconnd_socket_delete(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_process(tconnd_socket_t *self);
+void tconnd_socket_process(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
+void tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
 
 TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self);
 
