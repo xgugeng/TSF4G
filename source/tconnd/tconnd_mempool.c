@@ -81,7 +81,7 @@ done:
     return ret;
 }
 
-tuint64 tconnd_mempool_alloc(tconnd_mempool_type_e type)
+void* tconnd_mempool_alloc(tconnd_mempool_type_e type)
 {
     switch(type)
     {
@@ -90,7 +90,7 @@ tuint64 tconnd_mempool_alloc(tconnd_mempool_type_e type)
         case e_tconnd_package:
             return tlibc_mempool_alloc(g_package_pool);
         default:
-            return TLIBC_MEMPOOL_INVALID_INDEX;
+            return NULL;
     }
 }
 
@@ -99,23 +99,23 @@ void* tconnd_mempool_get(tconnd_mempool_type_e type, tuint64 mid)
     switch(type)
     {
         case e_tconnd_socket:
-            return tlibc_mempool_get(g_socket_pool, mid);
+            return tlibc_mempool_mid2ptr(g_socket_pool, mid);
         case e_tconnd_package:
-            return tlibc_mempool_get(g_package_pool, mid);
+            return tlibc_mempool_mid2ptr(g_package_pool, mid);
         default:
             return NULL;
     }
 }
 
-void tconnd_mempool_free(tconnd_mempool_type_e type, tuint64 mid)
+void tconnd_mempool_free(tconnd_mempool_type_e type, void* ptr)
 {
     switch(type)
     {
         case e_tconnd_socket:
-            tlibc_mempool_free(g_socket_pool, mid);
+            tlibc_mempool_free(g_socket_pool, ptr);
             break;
         case e_tconnd_package:
-            tlibc_mempool_free(g_package_pool, mid);
+            tlibc_mempool_free(g_package_pool, ptr);
             break;
         default:
             return;

@@ -49,11 +49,10 @@ static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
 
 tconnd_socket_t *tconnd_socket_new()
 {
-    tuint64 mid= tconnd_mempool_alloc(e_tconnd_socket);
-    tconnd_socket_t *socket = tconnd_mempool_get(e_tconnd_socket, mid);
+    tconnd_socket_t *socket= tconnd_mempool_alloc(e_tconnd_socket);
 	if(socket != NULL)
 	{
-	    socket->mid = mid;
+	    socket->mid = tlibc_mempool_ptr2mid(socket);
 	    socket->status = e_tconnd_socket_status_closed;
 	    socket->op_list.num = 0;
 	    socket->package_buff = NULL;
@@ -106,9 +105,9 @@ void tconnd_socket_delete(tconnd_socket_t *self)
    
     if(self->package_buff != NULL)
     {
-        tconnd_mempool_free(e_tconnd_package, self->package_buff->mid);
+        tconnd_mempool_free(e_tconnd_package, self->package_buff);
     }
-    tconnd_mempool_free(e_tconnd_socket, self->mid);
+    tconnd_mempool_free(e_tconnd_socket, self);
 }
 
 TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self)
@@ -326,7 +325,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     TLIBC_BINARY_WRITER writer;
     size_t total_size;
     ssize_t r;
-    tuint64 package_buff_mid;
     package_buff_t *package_buff = NULL;
     char *iter;
 
@@ -363,15 +361,13 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     body_size = total_size - header_size - package_size;
 
     
-    package_buff_mid = tconnd_mempool_alloc(e_tconnd_package);
-    package_buff = tconnd_mempool_get(e_tconnd_package, package_buff_mid);
+    package_buff = tconnd_mempool_alloc(e_tconnd_package);
     if(package_buff == NULL)
     {
 //        WARN_LOG("tconnd_mempool_alloc(e_tconnd_package) return NULL");
         ret = E_TS_WOULD_BLOCK;
         goto done;
     }
-    package_buff->mid = package_buff_mid;
 
     
 
@@ -387,7 +383,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
             {
                 assert(0);
-                tconnd_mempool_free(e_tconnd_package, package_buff_mid);
+                tconnd_mempool_free(e_tconnd_package, package_buff);
                 ERROR_LOG("tlibc_write_tdgi_req_t failed.");
                 ret = E_TS_ERROR;
                 goto done;
@@ -401,7 +397,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         {
             ret = E_TS_ERRNO;
         }
-        tconnd_mempool_free(e_tconnd_package, package_buff_mid);
+        tconnd_mempool_free(e_tconnd_package, package_buff);
         goto done;
     }
     
@@ -411,7 +407,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         
         assert(package_size == self->package_buff->buff_size);
         memcpy(package_ptr, self->package_buff->buff, package_size);
-        tconnd_mempool_free(e_tconnd_package, self->package_buff->mid);
+        tconnd_mempool_free(e_tconnd_package, self->package_buff);
         self->package_buff = NULL;
         tlibc_timer_pop(&self->package_timeout);
     }
@@ -447,7 +443,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     else
     {
-        tconnd_mempool_free(e_tconnd_package, package_buff_mid);
+        tconnd_mempool_free(e_tconnd_package, package_buff);
     }
 
     if(remain_ptr - package_ptr > 0)

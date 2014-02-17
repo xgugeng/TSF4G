@@ -19,7 +19,6 @@
 
 typedef struct _package_buff_t
 {
-    tuint64 mid;
     char buff[TDTP_SIZE_T_MAX];
     tdtp_size_t buff_size;
 }package_buff_t;

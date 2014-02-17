@@ -17,11 +17,11 @@ tlibc_mempool_t *g_package_pool;
 
 TERROR_CODE tconnd_mempool_init();
 
-tuint64 tconnd_mempool_alloc(tconnd_mempool_type_e type);
+void* tconnd_mempool_alloc(tconnd_mempool_type_e type);
 
 void* tconnd_mempool_get(tconnd_mempool_type_e type, tuint64 mid);
 
-void tconnd_mempool_free(tconnd_mempool_type_e type, tuint64 mid);
+void tconnd_mempool_free(tconnd_mempool_type_e type, void* ptr);
 
 void tconnd_mempool_fini();
 
