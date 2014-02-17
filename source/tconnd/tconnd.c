@@ -59,15 +59,15 @@ int main(int argc, char **argv)
 	}
 
 
-	ret = tdtp_instance_init(config_file);
+	ret = tconnd_reactor_init(config_file);
 	if(ret != E_TS_NOERROR)
 	{
 		goto ERROR_RET;
 	}   
 
-	tdtp_instance_loop();
+	tconnd_reactor_loop();
 
-	tdtp_instance_fini();
+	tconnd_reactor_fini();
 
 	return 0;
 ERROR_RET:

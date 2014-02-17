@@ -71,19 +71,44 @@ extern tlog_t g_tlog_instance;
 #define INFO_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_info, __VA_ARGS__)
 #define DEBUG_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_debug, __VA_ARGS__)
 
+#include <sys/uio.h>
+#include <string.h>
 
 
 #define TLOG_PRINT(fout, lv, ...)\
 {\
+    const char* color;\
+    struct iovec iov[3];\
     char message[TLOG_MESSAGE_LENGTH];\
     size_t message_len;\
     TLOG_MAKE_MESSAGE(message, TLOG_MESSAGE_LENGTH, message_len, lv, __VA_ARGS__)\
-    fwrite(message, 1, message_len, fout);\
+    switch(lv)\
+    {\
+    case e_tlog_error:\
+        color = "\033[;31m";\
+        break;\
+    case e_tlog_warn:\
+        color = "\033[;33m";\
+        break;\
+    case e_tlog_info:\
+        color = "\033[;37m";\
+        break;\
+    case e_tlog_debug:\
+        color = "\033[;32m";\
+        break;\
+    }\
+    iov[0].iov_base = (void*)color;\
+    iov[0].iov_len = 6;\
+    iov[1].iov_base = message;\
+    iov[1].iov_len = message_len;\
+    iov[2].iov_base = "\033[0m";\
+    iov[2].iov_len = 4;\
+    writev(1, iov, 3);\
 }
 
 #define ERROR_PRINT(...) TLOG_PRINT(stderr, e_tlog_error, __VA_ARGS__)
 #define WARN_PRINT(...) TLOG_PRINT(stderr, e_tlog_warn, __VA_ARGS__)
-#define INFO_PRINT(...) TLOG_PRINT(stderr, e_tlog_info, __VA_ARGS__)
+#define INFO_PRINT(...) TLOG_PRINT(stdout, e_tlog_info, __VA_ARGS__)
 #define DEBUG_PRINT(...) TLOG_PRINT(stdout, e_tlog_debug, __VA_ARGS__)
 
 

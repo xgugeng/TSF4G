@@ -17,42 +17,43 @@
 #include "tconnd/tconnd_tbus.h"
 #include "tconnd/tconnd_epoll.h"
 #include "tconnd/tconnd_config.h"
+#include "tlog/tlog_instance.h"
 
 #include <sys/ioctl.h>
 #include <sys/epoll.h>
 
 
-void tdtp_socket_close_timeout(const tlibc_timer_entry_t *super)
+static void tconnd_socket_close_timeout(const tlibc_timer_entry_t *super)
 {
-    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, close_timeout);
+    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, close_timeout);
 
-    tdtp_socket_delete(self);
+    tconnd_socket_delete(self);
 }
 
 
-void tdtp_socket_accept_timeout(const tlibc_timer_entry_t *super)
+static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
 {
-    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, accept_timeout);
+    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
 
-    tdtp_socket_delete(self);
+    tconnd_socket_delete(self);
 }
 
 
-void tdtp_socket_package_timeout(const tlibc_timer_entry_t *super)
+static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
 {
-    tdtp_socket_t *self = TLIBC_CONTAINER_OF(super, tdtp_socket_t, package_timeout);
+    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, package_timeout);
 
-    tdtp_socket_delete(self);
+    tconnd_socket_delete(self);
 }
 
-tdtp_socket_t *tdtp_socket_new()
+tconnd_socket_t *tconnd_socket_new()
 {
     tuint64 mid= tconnd_mempool_alloc(e_tconnd_socket);
-    tdtp_socket_t *socket = tconnd_mempool_get(e_tconnd_socket, mid);
+    tconnd_socket_t *socket = tconnd_mempool_get(e_tconnd_socket, mid);
 	if(socket != NULL)
 	{
 	    socket->mid = mid;
-	    socket->status = e_tdtp_socket_status_closed;
+	    socket->status = e_tconnd_socket_status_closed;
 	    socket->op_list.num = 0;
 	    socket->package_buff = NULL;
 	    tlibc_list_init(&socket->readable_list);
@@ -68,19 +69,19 @@ tdtp_socket_t *tdtp_socket_new()
     return socket;
 }
 
-void tdtp_socket_delete(tdtp_socket_t *self)
+void tconnd_socket_delete(tconnd_socket_t *self)
 {
     switch(self->status)
     {
-    case e_tdtp_socket_status_closed:
+    case e_tconnd_socket_status_closed:
         break;
-    case e_tdtp_socket_status_syn_sent:
+    case e_tconnd_socket_status_syn_sent:
         close(self->socketfd);
         break;
-    case e_tdtp_socket_status_established:
+    case e_tconnd_socket_status_established:
         close(self->socketfd);
         break;
-    case e_tdtp_socket_status_closing:
+    case e_tconnd_socket_status_closing:
         close(self->socketfd);
         break;
     }
@@ -100,7 +101,7 @@ void tdtp_socket_delete(tdtp_socket_t *self)
     tconnd_mempool_free(e_tconnd_socket, self->mid);
 }
 
-TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
+TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self, int listenfd)
 {
     int nb = 1;
     TERROR_CODE ret = E_TS_NOERROR;
@@ -121,7 +122,7 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
                 ret = E_TS_WOULD_BLOCK;
                 break;
             default:
-                fprintf(stderr, "%s.%d: accept failed: %s, errno(%d)\n", __FILE__, __LINE__, strerror(errno), errno);
+                ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
                 ret = E_TS_ERRNO;
                 break;
         }
@@ -135,15 +136,15 @@ TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd)
 	}
     
 	TIMER_ENTRY_BUILD(&self->accept_timeout, 
-	    tconnd_timer_ms + TDTP_TIMER_ACCEPT_TIME_MS, tdtp_socket_accept_timeout);
+	    tconnd_timer_ms + TDTP_TIMER_ACCEPT_TIME_MS, tconnd_socket_accept_timeout);
 	tlibc_timer_push(&g_timer, &self->accept_timeout);
 	
-	self->status = e_tdtp_socket_status_syn_sent;
+	self->status = e_tconnd_socket_status_syn_sent;
 done:
     return ret;
 }
 
-TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
+TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
 {
     TERROR_CODE ret = E_TS_NOERROR;
 
@@ -157,7 +158,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
             {
                 struct epoll_event 	ev;
                 
-                if(self->status != e_tdtp_socket_status_syn_sent)
+                if(self->status != e_tconnd_socket_status_syn_sent)
                 {
                     ++i;
                     continue;
@@ -170,29 +171,29 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
-                        tconnd_timer_ms, tdtp_socket_close_timeout);
+                        tconnd_timer_ms, tconnd_socket_close_timeout);
                     tlibc_timer_push(&g_timer, &self->close_timeout);
-                    self->status = e_tdtp_socket_status_closing;
+                    self->status = e_tconnd_socket_status_closing;
                 }
                 else
                 {
-                    self->status = e_tdtp_socket_status_established;
+                    self->status = e_tconnd_socket_status_established;
                 }                
                 ++i;
                 break;
             }
         case e_tdgi_cmd_close:
             {
-                if(self->status == e_tdtp_socket_status_closing)
+                if(self->status == e_tconnd_socket_status_closing)
                 {
                     ++i;
                     break;
                 }
                 
                 TIMER_ENTRY_BUILD(&self->close_timeout, 
-                    tconnd_timer_ms, tdtp_socket_close_timeout);
+                    tconnd_timer_ms, tconnd_socket_close_timeout);
                 tlibc_timer_push(&g_timer, &self->close_timeout);
-                self->status = e_tdtp_socket_status_closing;
+                self->status = e_tconnd_socket_status_closing;
 
                 ++i;
                 break;
@@ -202,7 +203,7 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 ssize_t total_size;
                 ssize_t send_size;
                 
-                if(self->status != e_tdtp_socket_status_established)
+                if(self->status != e_tconnd_socket_status_established)
                 {
                     ++i;
                     break;
@@ -224,12 +225,12 @@ TERROR_CODE tdtp_socket_process(tdtp_socket_t *self)
                 if(send_size != total_size)
                 {
                     TIMER_ENTRY_BUILD(&self->close_timeout, 
-                        tconnd_timer_ms, tdtp_socket_close_timeout);
+                        tconnd_timer_ms, tconnd_socket_close_timeout);
                 
                 
                     tlibc_timer_push(&g_timer, &self->close_timeout);
 
-                    self->status = e_tdtp_socket_status_closing;
+                    self->status = e_tconnd_socket_status_closing;
                     ret = E_TS_ERROR;
                     goto done;
                 }
@@ -246,13 +247,13 @@ done:
     return ret;
 }
 
-TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size)
+TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size)
 {
     TERROR_CODE ret = E_TS_NOERROR;
 
     if(self->op_list.num >= g_config.iovmax)
     {
-        ret = tdtp_socket_process(self);
+        ret = tconnd_socket_process(self);
         if(ret != E_TS_NOERROR)
         {
             goto done;
@@ -278,7 +279,7 @@ done:
     return ret;
 }
 
-TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
+TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 {
     TERROR_CODE ret = E_TS_NOERROR;
     char *header_ptr;
@@ -301,7 +302,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
     char *iter;
 
 
-    assert(self->status == e_tdtp_socket_status_established);
+    assert(self->status == e_tconnd_socket_status_established);
     
     header_size = TDGI_REQ_HEAD_SIZE;
     if(self->package_buff == NULL)
@@ -403,7 +404,7 @@ TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self)
 
         
         TIMER_ENTRY_BUILD(&self->package_timeout, 
-            tconnd_timer_ms + TDTP_TIMER_PACKAGE_TIME_MS, tdtp_socket_package_timeout);
+            tconnd_timer_ms + TDTP_TIMER_PACKAGE_TIME_MS, tconnd_socket_package_timeout);
         tlibc_timer_push(&g_timer, &self->package_timeout);
         assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
     }

@@ -3,6 +3,7 @@
 #include "tconnd/tconnd_socket.h"
 #include <assert.h>
 #include "tconnd/tconnd_config.h"
+#include "tlog/tlog_instance.h"
 
 tlibc_mempool_t *g_socket_pool;
 tlibc_mempool_t *g_package_pool;
@@ -14,15 +15,16 @@ TERROR_CODE tconnd_mempool_init()
     tuint32 package_pool_size;
 
 	g_socket_pool = (tlibc_mempool_t*)malloc(
-		TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), g_config.connections));
+		TLIBC_MEMPOOL_SIZE(sizeof(tconnd_socket_t), g_config.connections));
 	if(g_socket_pool == NULL)
 	{
+	    ERROR_LOG("malloc return NULL.");
 	    ret = E_TS_ERROR;
         goto done;
 	}
 	socket_pool_size = tlibc_mempool_init(g_socket_pool, 
-        TLIBC_MEMPOOL_SIZE(sizeof(tdtp_socket_t), g_config.connections)
-        , sizeof(tdtp_socket_t));
+        TLIBC_MEMPOOL_SIZE(sizeof(tconnd_socket_t), g_config.connections)
+        , sizeof(tconnd_socket_t));
 	assert(socket_pool_size == g_config.connections);
 
 
@@ -31,6 +33,7 @@ TERROR_CODE tconnd_mempool_init()
 		TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM));
 	if(g_package_pool == NULL)
 	{
+        ERROR_LOG("malloc return NULL.");
     	ret = E_TS_ERROR;
 		goto done;
 	}
@@ -38,7 +41,8 @@ TERROR_CODE tconnd_mempool_init()
         TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM)
         , sizeof(package_buff_t));
 	assert(package_pool_size == MAX_PACKAGE_NUM);
-	
+
+    DEBUG_LOG("tconnd_mempool_init succeed.");	
 done:
     return ret;
 }

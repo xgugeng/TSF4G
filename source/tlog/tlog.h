@@ -43,4 +43,6 @@ TERROR_CODE tlog_init(tlog_t *self, const char *config_file);
 
 void tlog_write(tlog_t *self, const char *message, size_t message_size);
 
+void tlog_fini(tlog_t *self);
+
 #endif//_H_TLOG

@@ -4,11 +4,14 @@
 #include "tconnd/tconnd_reactor.h"
 #include "tconnd/tconnd_socket.h"
 #include "tconnd/tconnd_config.h"
+#include "tlog/tlog_instance.h"
 
 #include <unistd.h>
 #include <assert.h>
-#include <errno.h>
 #include <sys/epoll.h>
+
+#include <errno.h>
+#include <string.h>
 
 int                 g_epollfd;
 static TLIBC_LIST_HEAD     readable_list;
@@ -22,9 +25,13 @@ TERROR_CODE tconnd_epoll_init()
 	g_epollfd = epoll_create(g_config.connections);
 	if(g_epollfd == -1)
 	{
+        ERROR_LOG("epoll_create errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
+
+
+    DEBUG_LOG("tconnd_epoll_init succeed.");
 done:
     return ret;
 }
@@ -57,7 +64,7 @@ TERROR_CODE process_epool()
 
 	    for(i = 0; i < events_num; ++i)
 	    {
-            tdtp_socket_t *socket = events[i].data.ptr;
+            tconnd_socket_t *socket = events[i].data.ptr;
             if(socket->readable)
             {
                 assert(0);
@@ -78,10 +85,10 @@ TERROR_CODE process_epool()
     for(iter = readable_list.next; iter != &readable_list; iter = next)
     {
         TERROR_CODE r;
-        tdtp_socket_t *socket = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, readable_list);
+        tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, readable_list);
         next = iter->next;
         
-        r = tdtp_socket_recv(socket);
+        r = tconnd_socket_recv(socket);
         if(r == E_TS_ERRNO)
         {
             switch(errno)
@@ -107,7 +114,7 @@ TERROR_CODE process_epool()
         {
             socket->readable = FALSE;
             tlibc_list_del(iter);
-            tdtp_socket_delete(socket);
+            tconnd_socket_delete(socket);
         }
     }
 

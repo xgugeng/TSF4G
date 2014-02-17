@@ -15,8 +15,8 @@
 #include "tconnd/tconnd_mempool.h"
 #include "tconnd/tconnd_tbus.h"
 #include "tconnd/tconnd_config.h"
-
-
+#include "tlog/tlog_instance.h"
+#include <errno.h>
 int g_listenfd;
 
 
@@ -29,6 +29,7 @@ TERROR_CODE tconnd_listen_init()
 	g_listenfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(g_listenfd == -1)
 	{
+	    ERROR_LOG("socket errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
@@ -36,6 +37,7 @@ TERROR_CODE tconnd_listen_init()
 	
 	if(ioctl(g_listenfd, FIONBIO, &nb) == -1)
 	{
+        ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
@@ -49,16 +51,18 @@ TERROR_CODE tconnd_listen_init()
 
 	if(bind(g_listenfd,(struct sockaddr *)(&listenaddr), sizeof(struct sockaddr_in)) == -1)
 	{
+    	ERROR_LOG("bind errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}	
 
 	if(listen(g_listenfd, g_config.backlog) == -1)
 	{
+        ERROR_LOG("listen errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
-	
+	DEBUG_LOG("tconnd_listen_init succeed.");
 close_listenfd:
     close(g_listenfd);
 done:
@@ -68,7 +72,7 @@ done:
 TERROR_CODE process_listen()
 {
 	int ret = E_TS_NOERROR;
-	tdtp_socket_t *conn_socket;
+	tconnd_socket_t *conn_socket;
 	
 	char *tbus_writer_ptr;
 	size_t tbus_writer_size;	
@@ -89,14 +93,14 @@ TERROR_CODE process_listen()
 	}
 	
 //2, 检查是否能分配socket
-	conn_socket = tdtp_socket_new();
+	conn_socket = tconnd_socket_new();
 	if(conn_socket == NULL)
 	{
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
 
-    ret = tdtp_socket_accept(conn_socket, g_listenfd);
+    ret = tconnd_socket_accept(conn_socket, g_listenfd);
 	if(ret != E_TS_NOERROR)
 	{
     	goto free_socket;
@@ -115,13 +119,13 @@ TERROR_CODE process_listen()
 		goto free_socket;
 	}
     assert(writer.offset == TDGI_REQ_HEAD_SIZE);
-	conn_socket->status = e_tdtp_socket_status_syn_sent;
+	conn_socket->status = e_tconnd_socket_status_syn_sent;
 	tbus_send_end(g_output_tbus, writer.offset);
 
 done:
 	return ret;
 free_socket:
-    tdtp_socket_delete(conn_socket);
+    tconnd_socket_delete(conn_socket);
 	return ret;
 }
 
@@ -133,8 +137,8 @@ void tconnd_listen_fini()
     for(i = g_socket_pool->used_head; i < g_socket_pool->unit_num; )
     {
         tlibc_mempool_block_t *b = TLIBC_MEMPOOL_GET_BLOCK(g_socket_pool, i);
-        tdtp_socket_t *s = (tdtp_socket_t *)&b->data;
-        tdtp_socket_delete(s);
+        tconnd_socket_t *s = (tconnd_socket_t *)&b->data;
+        tconnd_socket_delete(s);
 
         i = b->next;
     }

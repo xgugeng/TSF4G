@@ -69,12 +69,22 @@ static void rolling_file_log(tlog_rolling_file_instance_t *self,
 		}
 		fseek(self->fout, 0, SEEK_END);		
 	}
-
+	
 	fwrite(message, 1, message_size, self->fout);
 	fflush(self->fout);
 	
 done:
 	return;
+}
+
+static void rolling_file_fini(tlog_rolling_file_instance_t *self)
+{
+	if(self->fout != NULL)
+	{
+	    fclose(self->fout);
+        self->fout = NULL;
+        self->index = 0;
+	}
 }
 
 
@@ -127,4 +137,20 @@ void tlog_write(tlog_t *self, const char *message, size_t message_size)
 		}
 	}
 }
+
+void tlog_fini(tlog_t *self)
+{
+	tuint32 i;
+	
+	for(i = 0; i < self->config.appender_num; ++i)	
+	{
+		switch(self->config.appender[i].type)
+		{
+			case e_tlog_rolling_file:
+				rolling_file_fini(&self->instance.appender_instance[i].rolling_file);
+				break;
+		}
+	}
+}
+
 

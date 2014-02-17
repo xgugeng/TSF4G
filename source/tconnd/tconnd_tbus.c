@@ -8,11 +8,14 @@
 
 #include "tconnd/tconnd_mempool.h"
 #include "tconnd/tconnd_config.h"
-
+#include "tlog/tlog_instance.h"
 #include "tbus/tbus.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
+
+#include <string.h>
+#include <errno.h>
 
 tbus_t              *g_input_tbus;
 tbus_t              *g_output_tbus;
@@ -26,12 +29,14 @@ TERROR_CODE tconnd_tbus_init()
 	input_tbusid = shmget(g_config.input_tbuskey, 0, 0666);
 	if(input_tbusid == -1)
 	{
+	    ERROR_LOG("shmget errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
 	g_input_tbus = shmat(input_tbusid, NULL, 0);
 	if(g_input_tbus == NULL)
 	{
+        ERROR_LOG("shmat errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
@@ -39,18 +44,20 @@ TERROR_CODE tconnd_tbus_init()
 	output_tbusid = shmget(g_config.output_tbuskey, 0, 0666);
 	if(output_tbusid == -1)
 	{
+        ERROR_LOG("shmget errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
 		goto shmdt_input;
 	}
 	g_output_tbus = shmat(output_tbusid, NULL, 0);
 	if(g_output_tbus == NULL)
 	{
+        ERROR_LOG("shmat errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
 		goto shmdt_input;
 	}
-	goto done;
-
 	
+    DEBUG_LOG("tconnd_tbus_init succeed.");
+	goto done;	
 shmdt_input:
     shmdt(g_input_tbus);
 done:
@@ -108,7 +115,7 @@ TERROR_CODE process_input_tbus()
 
         for(i = 0; i < pkg->mid_num; ++i)
         {
-            tdtp_socket_t *socket = (tdtp_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->mid[i]);
+            tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->mid[i]);
 
             if(pkg->cmd == e_tdgi_cmd_send)
             {
@@ -124,7 +131,7 @@ TERROR_CODE process_input_tbus()
             if(socket != NULL)
             {
                 ++pkg_list_num;
-                ret = tdtp_socket_push_pkg(socket, pkg, body_addr, body_size);
+                ret = tconnd_socket_push_pkg(socket, pkg, body_addr, body_size);
                 if(ret != E_TS_NOERROR)
                 {
                     goto done;
@@ -140,10 +147,10 @@ TERROR_CODE process_input_tbus()
                 {
                     for(iter = writable_list.next; iter != &writable_list; iter = next)
                     {
-                        tdtp_socket_t *s = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, writable_list);
+                        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
                         next = iter->next;
                         
-                        ret = tdtp_socket_process(s);
+                        ret = tconnd_socket_process(s);
                         s->writable = FALSE;
                         if(ret != E_TS_NOERROR)
                         {
@@ -163,8 +170,8 @@ TERROR_CODE process_input_tbus()
     
     for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
     {        
-        tdtp_socket_t *s = TLIBC_CONTAINER_OF(iter, tdtp_socket_t, writable_list);
-        ret = tdtp_socket_process(s);
+        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
+        ret = tconnd_socket_process(s);
         s->writable = FALSE;
         if(ret != E_TS_NOERROR)
         {

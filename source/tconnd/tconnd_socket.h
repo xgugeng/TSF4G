@@ -25,25 +25,25 @@ typedef struct _package_buff_t
 }package_buff_t;
 
 
-typedef enum _tdtp_socket_status_t
+typedef enum _tconnd_socket_status_t
 {
-	e_tdtp_socket_status_closed = 1,
-	e_tdtp_socket_status_syn_sent = 2,
-	e_tdtp_socket_status_established = 3,
-	e_tdtp_socket_status_closing = 4,
-}tdtp_socket_status_t;
+	e_tconnd_socket_status_closed = 1,
+	e_tconnd_socket_status_syn_sent = 2,
+	e_tconnd_socket_status_established = 3,
+	e_tconnd_socket_status_closing = 4,
+}tconnd_socket_status_t;
 
-typedef struct _tdtp_socket_op_list
+typedef struct _tconnd_socket_op_list
 {
     tuint32 num;
     const tdgi_rsp_t *head[IOV_MAX];
     struct iovec iov[IOV_MAX];
-}tdtp_socket_op_list;
+}tconnd_socket_op_list;
 
-typedef struct _tdtp_socket_t
+typedef struct _tconnd_socket_t
 {
     tuint64 mid;
-	tdtp_socket_status_t status;
+	tconnd_socket_status_t status;
 	int socketfd;
 	struct sockaddr_in socketaddr;
 
@@ -58,20 +58,20 @@ typedef struct _tdtp_socket_t
     int readable;
 
 
-    tdtp_socket_op_list op_list;
-}tdtp_socket_t;
+    tconnd_socket_op_list op_list;
+}tconnd_socket_t;
 
-tdtp_socket_t *tdtp_socket_new();
+tconnd_socket_t *tconnd_socket_new();
 
-void tdtp_socket_delete(tdtp_socket_t *self);
+void tconnd_socket_delete(tconnd_socket_t *self);
 
-TERROR_CODE tdtp_socket_accept(tdtp_socket_t *self, int listenfd);
+TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self, int listenfd);
 
-TERROR_CODE tdtp_socket_process(tdtp_socket_t *self);
+TERROR_CODE tconnd_socket_process(tconnd_socket_t *self);
 
-TERROR_CODE tdtp_socket_push_pkg(tdtp_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
+TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
 
-TERROR_CODE tdtp_socket_recv(tdtp_socket_t *self);
+TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self);
 
 
 

@@ -13,16 +13,16 @@
 #include <sys/epoll.h>
 #include <netinet/in.h>
 
-extern int g_tdtp_instance_switch;
+extern int g_tconnd_reactor_switch;
 
 
-TERROR_CODE tdtp_instance_init(const char* config_file);
+TERROR_CODE tconnd_reactor_init(const char* config_file);
 
-TERROR_CODE tdtp_instance_process();
+TERROR_CODE tconnd_reactor_process();
 
-void tdtp_instance_loop();
+void tconnd_reactor_loop();
 
-void tdtp_instance_fini();
+void tconnd_reactor_fini();
 
 #endif //_H_TCONND_REACTOR_H
 
