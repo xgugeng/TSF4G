@@ -349,7 +349,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     ret = tbus_send_begin(g_output_tbus, &header_ptr, &total_size);
     if(ret == E_TS_WOULD_BLOCK)
     {
-        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
+//        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
         goto done;
     }
     else if(ret != E_TS_NOERROR)
@@ -367,10 +367,11 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     package_buff = tconnd_mempool_get(e_tconnd_package, package_buff_mid);
     if(package_buff == NULL)
     {
-        WARN_LOG("tconnd_mempool_alloc(e_tconnd_package) return NULL");
+//        WARN_LOG("tconnd_mempool_alloc(e_tconnd_package) return NULL");
         ret = E_TS_WOULD_BLOCK;
         goto done;
     }
+    package_buff->mid = package_buff_mid;
 
     
 
@@ -398,7 +399,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         }
         else
         {
-            DEBUG_LOG("socket [%llu] closed with errno [%d], %s", self->mid, errno, strerror(errno));
             ret = E_TS_ERRNO;
         }
         tconnd_mempool_free(e_tconnd_package, package_buff_mid);

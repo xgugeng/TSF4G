@@ -90,7 +90,7 @@ TERROR_CODE tconnd_listen_proc()
 	ret = tbus_send_begin(g_output_tbus, &tbus_writer_ptr, &tbus_writer_size);
 	if(ret == E_TS_WOULD_BLOCK)
 	{
-	    WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
+//	    WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}
@@ -104,7 +104,8 @@ TERROR_CODE tconnd_listen_proc()
 	conn_socket = tconnd_socket_new();
 	if(conn_socket == NULL)
 	{
-        DEBUG_LOG("tconnd_socket_new return NULL");
+//到达连接数上线
+//        DEBUG_LOG("tconnd_socket_new return NULL");
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	}

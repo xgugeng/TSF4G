@@ -95,7 +95,7 @@ TERROR_CODE tconnd_epool_proc()
         if(r == E_TS_ERRNO)
         {
             switch(errno)
-            {
+            {            
                 case EAGAIN:
                     socket->readable = FALSE;
                     tlibc_list_del(iter);
