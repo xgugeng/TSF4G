@@ -33,13 +33,20 @@ TERROR_CODE signal_processing_init()
 	    ERROR_LOG("sigemptyset errno[%d], %s.", errno, strerror(errno));
 		goto ERROR_RET;
 	}
-	
+
 	if((sigaction(SIGTERM, &sa, NULL) != 0)
 	 ||(sigaction(SIGINT, &sa, NULL) != 0))
 	{
         ERROR_LOG("sigaction error[%d], %s.", errno, strerror(errno));
 	    goto ERROR_RET;
 	}
+
+	sa.sa_handler = SIG_IGN;
+    if(sigaction(SIGPIPE, &sa, NULL) != 0)
+    {
+        ERROR_LOG("sigaction error[%d], %s.", errno, strerror(errno));
+	    goto ERROR_RET;
+    }
 
     sig_term = false;
 	return E_TS_NOERROR;

@@ -7,18 +7,19 @@
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
 
-
+#define TLOG_INSTANCE_LEVEL e_tlog_error
+#include "tlog/tlog_instance.h"
 
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
-
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
+#include <signal.h>
+#include <errno.h>
 
 
 #define iSHM_KEY 10002
@@ -95,24 +96,24 @@ tdgi_size_t process_pkg(const tdgi_req_t *req,  const char* body_ptr)
         rsp.mid[0] = req->mid;
         rsp.size = 0;
         block_send_pkg(otb, &rsp, NULL, 0);
-        printf("connect\n");
+        INFO_PRINT("[%llu] connect.", req->mid);
         break;
     case e_tdgi_cmd_recv:
         if(req->size == 0)
         {
-            printf("client close\n");
+            INFO_PRINT("[%llu] client close.", req->mid);
             return 0;
         }
         else
         {
-            if(rand() % 100 < 5)
+            if(rand() % 100 < 0)
             {
                 rsp.cmd = e_tdgi_cmd_close;
                 rsp.mid_num = 1;
                 rsp.mid[0] = req->mid;
                 rsp.size = 0;
                 block_send_pkg(otb, &rsp, NULL, 0);
-                printf("server close\n");
+                INFO_PRINT("[%llu] server close.", req->mid);
             }
             else
             {
@@ -122,15 +123,13 @@ tdgi_size_t process_pkg(const tdgi_req_t *req,  const char* body_ptr)
                 rsp.mid[0] = req->mid;            
                 rsp.size = req->size;
                 block_send_pkg(otb, &rsp, body_ptr, req->size);
-                printf("recv: %u bytes\n", req->size);
                 limit = body_ptr + req->size;
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
                     tdtp_size_t pkg_size = *(tdtp_size_t*)iter;
                     const char* pkg_content = iter + sizeof(tdtp_size_t);
-                    next = iter + sizeof(tdtp_size_t) + pkg_size;
-                    printf("\t pkg_size: %u\n", pkg_size);
-                    printf("\t pkg_content: %s\n", pkg_content);
+                    next = iter + sizeof(tdtp_size_t) + pkg_size;                    
+                    INFO_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->mid, pkg_size, pkg_content);
                 }
             }
             return req->size;
@@ -141,6 +140,17 @@ tdgi_size_t process_pkg(const tdgi_req_t *req,  const char* body_ptr)
     return 0;
 }
 
+int g_sig_term = FALSE;
+static void on_signal(int sig)
+{
+    switch(sig)
+    {
+        case SIGINT:
+        case SIGTERM:
+            g_sig_term = true;
+            break;
+    }
+}
 
 
 int main()
@@ -150,9 +160,28 @@ int main()
 	size_t len;
 	size_t message_len;
 	TERROR_CODE ret;
-	tuint32 i;
 	TLIBC_BINARY_READER reader;
 	TLIBC_ERROR_CODE r;
+    struct sigaction  sa;
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	sa.sa_handler = SIG_IGN;
+    if(sigaction(SIGPIPE, &sa, NULL) != 0)
+    {
+        ERROR_PRINT("sigaction error[%d], %s.", errno, strerror(errno));
+        exit(1);
+    }
+
+    sa.sa_handler = on_signal;
+    if((sigaction(SIGTERM, &sa, NULL) != 0)
+        ||(sigaction(SIGINT, &sa, NULL) != 0))
+    {
+        ERROR_PRINT("sigaction error[%d], %s.", errno, strerror(errno));
+        exit(1);
+    }
+
+
+    
 	ishm_id = shmget(iSHM_KEY, 0, 0666);
     itb = shmat(ishm_id , NULL, 0);
 
@@ -163,7 +192,7 @@ int main()
     srand(time(0));
 
 
-	for(i = 0;; ++i)
+	for(;!g_sig_term;)
 	{
 		ret = tbus_read_begin(itb, &message, &message_len);
 		if(ret == E_TS_NOERROR)
@@ -177,7 +206,7 @@ int main()
 	    		r = tlibc_read_tdgi_req_t(&reader.super, &pkg);
 	    		if(r != E_TLIBC_NOERROR)
 	    		{
-    	    		printf("error\n");
+    	    		ERROR_PRINT("tlibc_read_tdgi_req_t error");
 	    		    exit(1);
 	    		}		
                 body_size = process_pkg(&pkg, message + reader.offset);
@@ -193,7 +222,7 @@ int main()
 		}
 		else
 		{
-			printf("error.\n");
+			ERROR_PRINT("tbus_read_begin error.");
 			exit(1);
 		}
 	}

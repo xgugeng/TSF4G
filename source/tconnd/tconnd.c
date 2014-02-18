@@ -21,7 +21,7 @@ void help()
 int main(int argc, char **argv)
 {
 	int i, ret;
-	const char* config_file;
+	const char* config_file = NULL;
 
 	
 	for (i = 1; i < argc; ++i)

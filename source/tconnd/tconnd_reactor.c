@@ -158,16 +158,17 @@ void tconnd_reactor_loop()
 		case E_TS_WOULD_BLOCK:
     		{
     			++idle_count;
-    			if(idle_count > 30)
+    			if(idle_count > 10)
     			{
-    				if((usleep(1000) != 0) && (errno != EINTR))
+    				if((usleep(10 * 1000) != 0) && (errno != EINTR))
     				{
                         ERROR_LOG("usleep errno [%d], %s", errno, strerror(errno));
     				    goto done;
     				}
-    				idle_count = 0;
+    				idle_count = 0;    				
     			}
-    			else
+    		
+    			/*else
     			{
     				if((sched_yield() != 0) && (errno != EINTR))
     				{
@@ -175,6 +176,7 @@ void tconnd_reactor_loop()
     				    goto done;
     				}
     			}
+    			*/
 	    	}
 		    break;
 		default:

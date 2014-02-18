@@ -29,7 +29,6 @@ typedef enum _tconnd_socket_status_t
 	e_tconnd_socket_status_closed = 1,
 	e_tconnd_socket_status_syn_sent = 2,
 	e_tconnd_socket_status_established = 3,
-	e_tconnd_socket_status_closing = 4,
 }tconnd_socket_status_t;
 
 typedef struct _tconnd_socket_op_list
@@ -66,9 +65,9 @@ void tconnd_socket_delete(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self);
 
-void tconnd_socket_process(tconnd_socket_t *self);
+TERROR_CODE tconnd_socket_process(tconnd_socket_t *self);
 
-void tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
+TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
 
 TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self);
 

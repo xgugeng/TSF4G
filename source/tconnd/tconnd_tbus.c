@@ -13,7 +13,7 @@
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
-
+#include <assert.h>
 #include <string.h>
 #include <errno.h>
 
@@ -77,7 +77,7 @@ TERROR_CODE process_input_tbus()
 	TLIBC_ERROR_CODE r;
 	tuint32 i;
     TLIBC_LIST_HEAD writable_list;
-    TLIBC_LIST_HEAD *iter, *next;
+    TLIBC_LIST_HEAD *iter;
 
 
     ret = tbus_read_begin(g_input_tbus, &message, &message_len);
@@ -95,10 +95,32 @@ TERROR_CODE process_input_tbus()
     tlibc_list_init(&writable_list);
     while(len > 0)
     {
-        tdgi_rsp_t *pkg = &pkg_list[pkg_list_num];
-        size_t pkg_size;
-        const char* body_addr;
-        size_t body_size;
+        tdgi_rsp_t *pkg = NULL;
+        size_t pkg_size = 0;
+        const char* body_addr = NULL;
+        size_t body_size = 0;
+
+        if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
+        {
+            for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
+            {
+                tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
+                TERROR_CODE r = tconnd_socket_process(socket);
+                
+                socket->writable = FALSE;
+                DEBUG_LOG("socket [%llu] marked as unwriteable.", socket->mid);
+                
+                if(r == E_TS_CLOSE)
+                {
+                    tconnd_socket_delete(socket);
+                }        
+            }
+            pkg_list_num = 0;
+        }
+        assert(pkg_list_num < MAX_PACKAGE_LIST_NUM);
+
+        pkg = &pkg_list[pkg_list_num];
+        ++pkg_list_num;
         
         tlibc_binary_reader_init(&reader, message, len);
         r = tlibc_read_tdgi_rsp_t(&reader.super, pkg);
@@ -116,65 +138,66 @@ TERROR_CODE process_input_tbus()
             goto done;
         }
 
+        
+        if(pkg->cmd == e_tdgi_cmd_send)
+        {
+            body_addr = message + reader.offset + pkg->size;
+            body_size = pkg->size;
+        }
+        else
+        {
+            body_addr = NULL;
+            body_size = 0;
+        }
+
+        
+        message += pkg_size + body_size;
+        len -= pkg_size + body_size;
+
         for(i = 0; i < pkg->mid_num; ++i)
         {
             tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->mid[i]);
-
-            if(pkg->cmd == e_tdgi_cmd_send)
+            if(socket == NULL)
             {
-                body_addr = message + reader.offset + pkg->size;
-                body_size = pkg->size;
+                continue;
+            }
+            
+            if(tconnd_socket_push_pkg(socket, pkg, body_addr, body_size) == E_TS_CLOSE)
+            {
+                if(socket->writable)
+                {
+                    socket->writable = FALSE;                
+                    tlibc_list_del(&socket->writable_list);
+                }
+                tconnd_socket_delete(socket);
             }
             else
             {
-                body_addr = NULL;
-                body_size = 0;
-            }
-            
-            if(socket != NULL)
-            {
-                ++pkg_list_num;
-                tconnd_socket_push_pkg(socket, pkg, body_addr, body_size);                
-
                 if(!socket->writable)
                 {
                     socket->writable = TRUE;
                     tlibc_list_add_tail(&socket->writable_list, &writable_list);
                     DEBUG_LOG("socket [%llu] marked as writeable.", socket->mid);
                 }
-                
-                if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
-                {
-                    for(iter = writable_list.next; iter != &writable_list; iter = next)
-                    {
-                        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-                        next = iter->next;
-                        
-                        tconnd_socket_process(s);
-                        s->writable = FALSE;                        
-                        tlibc_list_del(iter);
-                        tlibc_list_init(&s->writable_list);
-                    }
-                    pkg_list_num = 0;
-                }
             }
         }
-        
-        message += pkg_size + body_size;
-        len -= pkg_size + body_size;
     }
     
     for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
-    {        
-        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-        tconnd_socket_process(s);
-        s->writable = FALSE;
-        DEBUG_LOG("socket [%llu] marked as unwriteable.", s->mid);
+    {
+        tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
+        TERROR_CODE r = tconnd_socket_process(socket);
+        
+        socket->writable = FALSE;
+        DEBUG_LOG("socket [%llu] marked as unwriteable.", socket->mid);
+        
+        if(r == E_TS_CLOSE)
+        {
+            tconnd_socket_delete(socket);
+        }        
     }
-    pkg_list_num = 0;
 
-    tbus_read_end(g_input_tbus, message_len);
-    
+    tbus_read_end(g_input_tbus, message_len);    
 done:
     return ret;
 }

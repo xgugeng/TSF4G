@@ -81,33 +81,41 @@ extern tlog_t g_tlog_instance;
 #define TLOG_RST_COLOR "\033[0m"
 #define TLOG_RST_COLOR_LEN 4
 
+#ifndef TLOG_INSTANCE_LEVEL
+#define TLOG_INSTANCE_LEVEL e_tlog_debug
+#endif//TLOG_INSTANCE_LEVEL
+
+#include <string.h>
 #define TLOG_PRINT(fout, lv, ...)\
 {\
-    struct iovec iov[3];\
-    char message[TLOG_MESSAGE_LENGTH];\
-    size_t message_len;\
-    TLOG_MAKE_MESSAGE(message, TLOG_MESSAGE_LENGTH, message_len, lv, __VA_ARGS__)\
-    switch(lv)\
+    if(lv <= TLOG_INSTANCE_LEVEL)\
     {\
-    case e_tlog_error:\
-        iov[0].iov_base = TLOG_ERROR_COLOR;\
-        break;\
-    case e_tlog_warn:\
-        iov[0].iov_base = TLOG_WARN_COLOR;\
-        break;\
-    case e_tlog_info:\
-        iov[0].iov_base = TLOG_INFO_COLOR;\
-        break;\
-    case e_tlog_debug:\
-        iov[0].iov_base = TLOG_DEBUG_COLOR;\
-        break;\
+        struct iovec iov[3];\
+        char message[TLOG_MESSAGE_LENGTH];\
+        size_t message_len;\
+        TLOG_MAKE_MESSAGE(message, TLOG_MESSAGE_LENGTH, message_len, lv, __VA_ARGS__)\
+        switch(lv)\
+        {\
+        case e_tlog_error:\
+            iov[0].iov_base = TLOG_ERROR_COLOR;\
+            break;\
+        case e_tlog_warn:\
+            iov[0].iov_base = TLOG_WARN_COLOR;\
+            break;\
+        case e_tlog_info:\
+            iov[0].iov_base = TLOG_INFO_COLOR;\
+            break;\
+        case e_tlog_debug:\
+            iov[0].iov_base = TLOG_DEBUG_COLOR;\
+            break;\
+        }\
+        iov[0].iov_len = TLOG_COLOR_LEN;\
+        iov[1].iov_base = message;\
+        iov[1].iov_len = message_len;\
+        iov[2].iov_base = TLOG_RST_COLOR;\
+        iov[2].iov_len = TLOG_RST_COLOR_LEN;\
+        writev(1, iov, 3);\
     }\
-    iov[0].iov_len = TLOG_COLOR_LEN;\
-    iov[1].iov_base = message;\
-    iov[1].iov_len = message_len;\
-    iov[2].iov_base = TLOG_RST_COLOR;\
-    iov[2].iov_len = TLOG_RST_COLOR_LEN;\
-    writev(1, iov, 3);\
 }
 
 #define ERROR_PRINT(...) TLOG_PRINT(stderr, e_tlog_error, __VA_ARGS__)

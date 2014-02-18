@@ -4,6 +4,7 @@
 #include "tlog/tlog_instance.h"
 
 #include <sys/time.h>
+#include <assert.h>
 
 tlibc_timer_t       g_timer;
 static tuint64      timer_start_ms;
@@ -18,7 +19,16 @@ static tuint64 get_sys_ms()
 
 static tuint64 get_diff_ms()
 {
-	return get_sys_ms() - timer_start_ms;
+    tuint64 current_sys_ms = get_sys_ms();
+    if(current_sys_ms >= timer_start_ms)
+    {
+        return current_sys_ms - timer_start_ms;
+    }
+    else
+    {
+        assert(0);
+        return tconnd_timer_ms;
+    }
 }
 
 void tconnd_timer_init()
@@ -30,9 +40,12 @@ void tconnd_timer_init()
 TERROR_CODE tconnd_timer_process()
 {
     TLIBC_ERROR_CODE tlibc_ret;
-    tlibc_ret = tlibc_timer_tick(&g_timer, get_diff_ms());
+    tuint64 current_time_ms = get_diff_ms();    
+
+    tlibc_ret = tlibc_timer_tick(&g_timer, current_time_ms);
     if(tlibc_ret == E_TLIBC_NOERROR)
     {
+        DEBUG_LOG("tlibc_timer_tick E_TLIBC_NOERROR [%llu]", current_time_ms);
         return E_TS_NOERROR;
     }
     else if(tlibc_ret == E_TLIBC_WOULD_BLOCK)
