@@ -108,10 +108,11 @@ TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self)
     int nb = 1;
     TERROR_CODE ret = E_TS_NOERROR;
     socklen_t cnt_len;
+    struct sockaddr_in sockaddr;
 
-    memset(&self->socketaddr, 0, sizeof(struct sockaddr_in));
+    memset(&sockaddr, 0, sizeof(struct sockaddr_in));
     cnt_len = sizeof(struct sockaddr_in);
-    self->socketfd = accept(g_listenfd, (struct sockaddr *)&self->socketaddr, &cnt_len);
+    self->socketfd = accept(g_listenfd, (struct sockaddr *)&sockaddr, &cnt_len);
 
     if(self->socketfd == -1)
     {
@@ -260,7 +261,7 @@ TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head
 {
     TERROR_CODE ret;
 
-    if((self->op_list.num >= g_config.iovmax) || (self->op_list.num >= IOV_MAX))
+    if((self->op_list.num >= g_config.iovmax) || (self->op_list.num >= TCONND_SOCKET_OP_LIST_MAX))
     {
         ret = tconnd_socket_process(self);
         if(ret != E_TS_NOERROR)
@@ -269,7 +270,7 @@ TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head
         }
     }
 
-    assert(self->op_list.num < IOV_MAX);
+    assert(self->op_list.num < TCONND_SOCKET_OP_LIST_MAX);
     
 
 

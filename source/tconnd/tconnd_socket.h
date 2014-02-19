@@ -31,11 +31,21 @@ typedef enum _tconnd_socket_status_t
 	e_tconnd_socket_status_established = 3,
 }tconnd_socket_status_t;
 
+#ifndef IOV_MAX
+    #error "IOV_MAX not define."
+#endif
+
+#define TCONND_SOCKET_OP_LIST_MAX 16
+#if TCONND_SOCKET_OP_LIST_MAX > IOV_MAX
+        #error "TCONND_SOCKET_OP_LIST_MAX > IOV_MAX"
+#endif
+
+
 typedef struct _tconnd_socket_op_list
 {
     tuint32 num;
-    const tdgi_rsp_t *head[IOV_MAX];
-    struct iovec iov[IOV_MAX];
+    const tdgi_rsp_t *head[TCONND_SOCKET_OP_LIST_MAX];
+    struct iovec iov[TCONND_SOCKET_OP_LIST_MAX];
 }tconnd_socket_op_list;
 
 typedef struct _tconnd_socket_t
@@ -43,7 +53,6 @@ typedef struct _tconnd_socket_t
     tuint64 mid;
 	tconnd_socket_status_t status;
 	int socketfd;
-	struct sockaddr_in socketaddr;
 
 	tlibc_timer_entry_t accept_timeout;
     tlibc_timer_entry_t package_timeout;

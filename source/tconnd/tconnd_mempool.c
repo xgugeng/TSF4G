@@ -39,34 +39,34 @@ TERROR_CODE tconnd_mempool_init()
     TERROR_CODE ret = E_TS_NOERROR;
     tuint32 socket_pool_size;
     tuint32 package_pool_size;
+    size_t size;
 
-	g_socket_pool = (tlibc_mempool_t*)malloc(
-		TLIBC_MEMPOOL_SIZE(sizeof(tconnd_socket_t), g_config.connections));
+    size = TLIBC_MEMPOOL_SIZE(sizeof(tconnd_socket_t), g_config.connections);
+
+	g_socket_pool = (tlibc_mempool_t*)malloc(size);
 	if(g_socket_pool == NULL)
 	{
-	    ERROR_LOG("malloc return NULL.");
+	    ERROR_LOG("malloc(%zu) return NULL.", size);
 	    ret = E_TS_ERROR;
         goto done;
-	}
-	socket_pool_size = tlibc_mempool_init(g_socket_pool, 
-        TLIBC_MEMPOOL_SIZE(sizeof(tconnd_socket_t), g_config.connections)
-        , sizeof(tconnd_socket_t));
+	}	
+	socket_pool_size = tlibc_mempool_init(g_socket_pool, size, sizeof(tconnd_socket_t));
 	assert(socket_pool_size == g_config.connections);
+	INFO_LOG("size = %zu g_socket_pool->unit_size = [%zu] g_socket_pool->unit_num = [%d]", size, g_socket_pool->unit_size, g_socket_pool->unit_num);
 
 
 
-	g_package_pool = (tlibc_mempool_t*)malloc(
-		TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM));
+    size = TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM);
+	g_package_pool = (tlibc_mempool_t*)malloc(size);
 	if(g_package_pool == NULL)
 	{
-        ERROR_LOG("malloc return NULL.");
+        ERROR_LOG("malloc(%zu) return NULL.", size);
     	ret = E_TS_ERROR;
 		goto done;
 	}
-	package_pool_size = tlibc_mempool_init(g_package_pool, 
-        TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM)
-        , sizeof(package_buff_t));
+	package_pool_size = tlibc_mempool_init(g_package_pool, size, sizeof(package_buff_t));
 	assert(package_pool_size == MAX_PACKAGE_NUM);
+	INFO_LOG("size = %zu g_package_pool->unit_size = [%zu] g_package_pool->unit_num = [%d]", size, g_package_pool->unit_size, g_package_pool->unit_num);
 
 
 	TIMER_ENTRY_BUILD(&mempool_log_timeout, 

@@ -37,9 +37,13 @@
 int g_epollfd;
 tlibc_timer_t g_timer;
 
+
+#define ROBOT_NUM 5000
+#define ROBOT_MAX_EVENTS 1024
+
 tuint64 g_start_ms;
 tuint32 g_total = 0;
-tuint32 g_limit = 100 * 1000000;
+tuint32 g_limit = 500 * 1000000;
 tuint32 g_server_close_connections;
 tuint32 g_client_close_connections;
 
@@ -103,6 +107,7 @@ void robot_on_establish(robot_s *self)
         if((send_size < 0) && (errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
         {
             ERROR_PRINT("robot [%d] send errno [%d], %s\n", self->id, errno, strerror(errno));
+            exit(1);
         }
         ++g_client_close_connections;
         WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
@@ -317,8 +322,6 @@ static void on_signal(int sig)
 }
 
 
-#define ROBOT_NUM 1000
-#define ROBOT_MAX_EVENTS ROBOT_NUM
 robot_s robot[ROBOT_NUM];
 
 struct epoll_event  events[ROBOT_MAX_EVENTS];
