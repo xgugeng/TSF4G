@@ -7,7 +7,7 @@
 #include "tlibc/protocol/tlibc_binary_reader.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
 
-#define TLOG_INSTANCE_LEVEL e_tlog_error
+#define TLOG_INSTANCE_LEVEL e_tlog_info
 #include "tlog/tlog_instance.h"
 
 
@@ -20,6 +20,7 @@
 #include <time.h>
 #include <signal.h>
 #include <errno.h>
+#include <assert.h>
 
 
 #define iSHM_KEY 10002
@@ -31,6 +32,7 @@ const char *message = NULL;
 tbus_t *itb;
 tbus_t *otb;
 
+#define TBUS_MTU 65536
 void block_send_pkg(tbus_t *tb, const tdgi_rsp_t *pkg, const char* data, size_t data_size)
 {
     char *addr;
@@ -40,30 +42,37 @@ void block_send_pkg(tbus_t *tb, const tdgi_rsp_t *pkg, const char* data, size_t 
     int idle = 0;
 
     TLIBC_BINARY_WRITER writer;
-    len = 0;
-    ret = tbus_send_begin(tb, &addr, &len);
+    char buff[TBUS_MTU];
+    size_t buff_len;
 
+    DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.mid_num = %u, pkg.mid[0]=%llu pkg.size = %u data_size = %zu"
+        , pkg->cmd, pkg->mid_num, pkg->mid[0], pkg->size, data_size);
+        
+    tlibc_binary_writer_init(&writer, buff, TBUS_MTU);    
+    r = tlibc_write_tdgi_rsp_t(&writer.super, pkg);
+    if(r != E_TLIBC_NOERROR)
+    {
+        ERROR_PRINT("tlibc_write_tdgi_rsp_t return [%d]", r);
+        exit(1);
+    }
+    buff_len = writer.offset;
+
+    len = buff_len + data_size;
     for(;;)
     {
+        ret = tbus_send_begin(tb, &addr, &len);
         if(ret == E_TS_NOERROR)
         {
-        	tlibc_binary_writer_init(&writer, addr, len);
-            r = tlibc_write_tdgi_rsp_t(&writer.super, pkg);
-            if((r != E_TLIBC_NOERROR) || (len - writer.offset < data_size))
+            assert(len >= buff_len);
+            memcpy(addr, buff, buff_len);
+            addr += buff_len;
+            if(data)
             {
-                ++len;
-                ret = tbus_send_begin(tb, &addr, &len);
-                continue;
+                memcpy(addr, data, data_size);
             }
-            else
-            {
-                if(data != NULL)
-                {
-                    memcpy(addr + writer.offset, data, data_size);
-                }
-                tbus_send_end(tb, writer.offset + data_size);
-                break;
-            }
+            
+            tbus_send_end(tb, buff_len + data_size);
+            break;
         }
         else if(ret == E_TS_WOULD_BLOCK)
         {
@@ -75,10 +84,9 @@ void block_send_pkg(tbus_t *tb, const tdgi_rsp_t *pkg, const char* data, size_t 
         }
         else
         {
+            ERROR_PRINT("tbus_send_begin return [%d]", ret);
             exit(1);
         }        
-        len = 0;
-        ret = tbus_send_begin(tb, &addr, &len);
     }
 }
 
@@ -120,16 +128,19 @@ tdgi_size_t process_pkg(const tdgi_req_t *req,  const char* body_ptr)
                 const char *iter, *limit, *next;
                 rsp.cmd = e_tdgi_cmd_send;
                 rsp.mid_num = 1;
-                rsp.mid[0] = req->mid;            
-                rsp.size = req->size;
-                block_send_pkg(otb, &rsp, body_ptr, req->size);
+                rsp.mid[0] = req->mid;
+                
                 limit = body_ptr + req->size;
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
                     tdtp_size_t pkg_size = *(tdtp_size_t*)iter;
                     const char* pkg_content = iter + sizeof(tdtp_size_t);
                     next = iter + sizeof(tdtp_size_t) + pkg_size;                    
-                    INFO_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->mid, pkg_size, pkg_content);
+                    DEBUG_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->mid, pkg_size, pkg_content);
+
+                    rsp.size = pkg_size;
+
+                    block_send_pkg(otb, &rsp, pkg_content, pkg_size);
                 }
             }
             return req->size;

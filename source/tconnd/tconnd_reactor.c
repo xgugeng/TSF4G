@@ -160,7 +160,7 @@ void tconnd_reactor_loop()
     			++idle_count;
     			if(idle_count > 10)
     			{
-    				if((usleep(10 * 1000) != 0) && (errno != EINTR))
+    				if((usleep(1 * 1000) != 0) && (errno != EINTR))
     				{
                         ERROR_LOG("usleep errno [%d], %s", errno, strerror(errno));
     				    goto done;

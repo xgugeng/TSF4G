@@ -39,7 +39,7 @@ tlibc_timer_t g_timer;
 
 tuint64 g_start_ms;
 tuint32 g_total = 0;
-tuint32 g_limit = 1000 * 1000000;
+tuint32 g_limit = 100 * 1000000;
 tuint32 g_server_close_connections;
 tuint32 g_client_close_connections;
 
@@ -102,8 +102,7 @@ void robot_on_establish(robot_s *self)
         self->state = e_closed;
         if((send_size < 0) && (errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
         {
-            ERROR_PRINT("send errno [%d], %s\n", errno, strerror(errno));
-            exit(1);
+            ERROR_PRINT("robot [%d] send errno [%d], %s\n", self->id, errno, strerror(errno));
         }
         ++g_client_close_connections;
         WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
@@ -132,26 +131,26 @@ void robot_on_closed(robot_s *self)
     self->socketfd = socket(AF_INET, SOCK_STREAM, 0);
     if(self->socketfd == -1)
     {
-        ERROR_PRINT("socket errno [%d], %s.", errno, strerror(errno));
+        ERROR_PRINT("robot [%d] socket errno [%d], %s.", self->id, errno, strerror(errno));
         exit(1);
     }
     
   	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
 	{
-        ERROR_PRINT("socket errno [%d], %s.", errno, strerror(errno));
+        ERROR_PRINT("robot [%d] socket errno [%d], %s.", self->id, errno, strerror(errno));
 		exit(1);
 	}
 
 	
     if(setsockopt(self->socketfd, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf)) == -1)
 	{	
-        ERROR_PRINT("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ERROR_PRINT("robot [%d] setsockopt errno[%d], %s.", self->id, errno, strerror(errno));
         exit(1);    
 	}
 
     if(setsockopt(self->socketfd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)) == -1)
 	{	
-        ERROR_PRINT("setsockopt errno[%d], %s.", errno, strerror(errno));
+        ERROR_PRINT("robot [%d] setsockopt errno[%d], %s.", self->id, errno, strerror(errno));
         exit(1);
 	}
 
@@ -183,7 +182,7 @@ void robot_on_connected(robot_s *self)
 
             if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
         	{
-                ERROR_PRINT("epoll_ctl errno [%d], %s", errno, strerror(errno));
+                ERROR_PRINT("robot [%d] epoll_ctl errno [%d], %s", self->id, errno, strerror(errno));
         	    exit(1);
         	}
         	self->state = e_connecting;
@@ -230,7 +229,7 @@ void robot_timeout(const tlibc_timer_entry_t *super)
         }
         else
         {
-            TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies, robot_timeout);
+            TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies + 250, robot_timeout);
         }
         tlibc_timer_push(&g_timer, &self->entry);
         break;
@@ -318,7 +317,7 @@ static void on_signal(int sig)
 }
 
 
-#define ROBOT_NUM 10000
+#define ROBOT_NUM 1000
 #define ROBOT_MAX_EVENTS ROBOT_NUM
 robot_s robot[ROBOT_NUM];
 

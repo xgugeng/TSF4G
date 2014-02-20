@@ -45,7 +45,6 @@ TERROR_CODE tconnd_timer_process()
     tlibc_ret = tlibc_timer_tick(&g_timer, current_time_ms);
     if(tlibc_ret == E_TLIBC_NOERROR)
     {
-        DEBUG_LOG("tlibc_timer_tick E_TLIBC_NOERROR [%llu]", current_time_ms);
         return E_TS_NOERROR;
     }
     else if(tlibc_ret == E_TLIBC_WOULD_BLOCK)

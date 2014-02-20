@@ -133,7 +133,7 @@ TERROR_CODE process_input_tbus()
         pkg_size = reader.offset;
         if(pkg->size > TDTP_SIZE_T_MAX)
         {
-            ERROR_LOG("tdgi_rsp.size >= TDTP_SIZE_T_MAX[%u].", TDTP_SIZE_T_MAX);
+            ERROR_LOG("tdgi_rsp.size[%u] >= TDTP_SIZE_T_MAX[%u].", pkg->size, TDTP_SIZE_T_MAX);
             ret = E_TS_ERROR;
             goto done;
         }
@@ -177,7 +177,6 @@ TERROR_CODE process_input_tbus()
                 {
                     socket->writable = TRUE;
                     tlibc_list_add_tail(&socket->writable_list, &writable_list);
-                    DEBUG_LOG("socket [%llu] marked as writeable.", socket->mid);
                 }
             }
         }
@@ -189,7 +188,6 @@ TERROR_CODE process_input_tbus()
         TERROR_CODE r = tconnd_socket_process(socket);
         
         socket->writable = FALSE;
-        DEBUG_LOG("socket [%llu] marked as unwriteable.", socket->mid);
         
         if(r == E_TS_CLOSE)
         {
