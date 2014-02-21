@@ -1,11 +1,11 @@
 <tlog_config_t>
-	<level>e_tlog_info</level>
+	<level>e_tlog_debug</level>
 	<vector>
 		<appender>
 			<type>e_tlog_rolling_file</type>
 			<rolling_file>
 				<file_name>logs/tconnd.log</file_name>
-				<max_file_size>65536</max_file_size>
+				<max_file_size>1000000</max_file_size>
 				<max_backup_index>10</max_backup_index>
 			</rolling_file>
 		</appender>

@@ -1,9 +1,7 @@
 #include "tconnd_tbus.h"
 
-#include "tcommon/tdgi_types.h"
-#include "tcommon/tdgi_reader.h"
-#include "tlibc/protocol/tlibc_binary_reader.h"
-#include "tcommon/tdtp.h"
+#include "tcommon/sip.h"
+#include "tcommon/bscp.h"
 
 #include "tconnd/tconnd_socket.h"
 #include "tconnd/tconnd_mempool.h"
@@ -67,17 +65,16 @@ done:
 #define MAX_PACKAGE_LIST_NUM 255
 TERROR_CODE process_input_tbus()
 {
-    static tdgi_rsp_t pkg_list[MAX_PACKAGE_LIST_NUM];
+    static sip_rsp_t pkg_list[MAX_PACKAGE_LIST_NUM];
     tuint32 pkg_list_num = 0;
 	TERROR_CODE ret = E_TS_NOERROR;
 	const char*message;
 	size_t message_len;
-	TLIBC_BINARY_READER reader;
 	size_t len;
-	TLIBC_ERROR_CODE r;
 	tuint32 i;
     TLIBC_LIST_HEAD writable_list;
     TLIBC_LIST_HEAD *iter;
+    bscp16_head_t head_size;
 
 
     ret = tbus_read_begin(g_input_tbus, &message, &message_len);
@@ -95,7 +92,7 @@ TERROR_CODE process_input_tbus()
     tlibc_list_init(&writable_list);
     while(len > 0)
     {
-        tdgi_rsp_t *pkg = NULL;
+        sip_rsp_t *pkg = NULL;
         size_t pkg_size = 0;
         const char* body_addr = NULL;
         size_t body_size = 0;
@@ -108,7 +105,7 @@ TERROR_CODE process_input_tbus()
                 TERROR_CODE r = tconnd_socket_process(socket);
                 
                 socket->writable = FALSE;
-                DEBUG_LOG("socket [%llu] marked as unwriteable.", socket->mid);
+                DEBUG_LOG("socket [%llu] marked as unwriteable.", socket->sn);
                 
                 if(r == E_TS_CLOSE)
                 {
@@ -121,27 +118,21 @@ TERROR_CODE process_input_tbus()
 
         pkg = &pkg_list[pkg_list_num];
         ++pkg_list_num;
-        
-        tlibc_binary_reader_init(&reader, message, len);
-        r = tlibc_read_tdgi_rsp_t(&reader.super, pkg);
-        if(r != E_TLIBC_NOERROR)
+        pkg = (sip_rsp_t*)message;
+        pkg_size = (char*)&pkg->cid_list[pkg->cid_list_num] - (char*)pkg;
+
+        head_size = pkg_size;        
+        if(pkg->size != head_size)
         {
-            ret = E_TS_ERROR;
-            ERROR_LOG("tlibc_read_tdgi_rsp_t failed.");
-            goto done;
-        }
-        pkg_size = reader.offset;
-        if(pkg->size > TDTP_SIZE_T_MAX)
-        {
-            ERROR_LOG("tdgi_rsp.size[%u] >= TDTP_SIZE_T_MAX[%u].", pkg->size, TDTP_SIZE_T_MAX);
+            ERROR_LOG("tdgi_rsp.size[%u] follow over.", pkg->size);
             ret = E_TS_ERROR;
             goto done;
         }
 
         
-        if(pkg->cmd == e_tdgi_cmd_send)
+        if(pkg->cmd == e_sip_rsp_cmd_send)
         {
-            body_addr = message + reader.offset + pkg->size;
+            body_addr = message + pkg_size + pkg->size;
             body_size = pkg->size;
         }
         else
@@ -154,10 +145,10 @@ TERROR_CODE process_input_tbus()
         message += pkg_size + body_size;
         len -= pkg_size + body_size;
 
-        for(i = 0; i < pkg->mid_num; ++i)
+        for(i = 0; i < pkg->cid_list_num; ++i)
         {
-            tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->mid[i]);
-            if(socket == NULL)
+            tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->cid_list[i].id);
+            if((socket == NULL) || (socket->sn != pkg->cid_list[i].sn))
             {
                 continue;
             }

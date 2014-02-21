@@ -4,8 +4,8 @@
 #include "tconnd/tconnd_socket.h"
 #include "tbus/tbus.h"
 #include "tlibc/protocol/tlibc_binary_writer.h"
-#include "tcommon/tdgi_types.h"
-#include "tcommon/tdgi_writer.h"
+#include "tcommon/sip.h"
+#include "tlibc/core/tlibc_list.h"
 
 
 #include "tconnd/tconnd_mempool.h"
@@ -164,14 +164,12 @@ TERROR_CODE tconnd_listen_proc()
 	int ret = E_TS_NOERROR;
 	tconnd_socket_t *conn_socket;
 	
-	char *tbus_writer_ptr;
-	size_t tbus_writer_size;	
-	tdgi_req_t pkg;
-	TLIBC_BINARY_WRITER writer;
+	size_t tbus_writer_size;
+	sip_req_t *pkg;
 
 //1, 检查tbus是否能发送新的连接包
-	tbus_writer_size = TDGI_REQ_HEAD_SIZE;
-	ret = tbus_send_begin(g_output_tbus, &tbus_writer_ptr, &tbus_writer_size);
+	tbus_writer_size = sizeof(sip_req_t);
+	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, &tbus_writer_size);
 	if(ret == E_TS_WOULD_BLOCK)
 	{
 //	    WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
@@ -205,21 +203,13 @@ TERROR_CODE tconnd_listen_proc()
 	}	
 
 //5, 发送连接的通知	
-	pkg.cmd = e_tdgi_cmd_connect;
-	pkg.mid = conn_socket->mid;
-	pkg.size = 0;
+	pkg->cmd = e_sip_req_cmd_connect;
+    pkg->cid.sn = 0;
+	pkg->cid.id = tlibc_mempool_ptr2id(g_socket_pool, conn_socket);
+	pkg->size = 0;
 	
-	tlibc_binary_writer_init(&writer, tbus_writer_ptr, tbus_writer_size);
-	if(tlibc_write_tdgi_req_t(&writer.super, &pkg) != E_TLIBC_NOERROR)
-	{
-	    assert(0);
-		ret = E_TS_ERROR;
-        ERROR_LOG("tlibc_write_tdgi_req_t failed assert(0)!");
-		goto free_socket;
-	}
-    assert(writer.offset == TDGI_REQ_HEAD_SIZE);
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
-	tbus_send_end(g_output_tbus, writer.offset);
+	tbus_send_end(g_output_tbus, sizeof(pkg));
 
 done:
 	return ret;
@@ -231,15 +221,15 @@ free_socket:
 
 void tconnd_listen_fini()
 {
-    int i;
-      
-    for(i = g_socket_pool->used_head; i < g_socket_pool->unit_num; )
-    {
-        tlibc_mempool_block_t *b = TLIBC_MEMPOOL_GET_BLOCK(g_socket_pool, i);
+    TLIBC_LIST_HEAD *iter, *next;
+    
+
+    for(iter = g_socket_pool->used_list.next; iter != &g_socket_pool->used_list; iter = next)
+    {        
+        tlibc_mempool_block_t *b = TLIBC_CONTAINER_OF(iter, tlibc_mempool_block_t, used_list);
+        next = iter->next;
         tconnd_socket_t *s = (tconnd_socket_t *)&b->data;
         tconnd_socket_delete(s);
-
-        i = b->next;
     }
 
     if(close(g_listenfd) != 0)

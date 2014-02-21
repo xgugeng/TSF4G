@@ -4,17 +4,17 @@
 	<port>7001</port>
 	<backlog>128</backlog>
 	<iovmax>64</iovmax>
-	<connections>65536</connections>
+	<connections>1000</connections>
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>
 
 	<sndbuf>10000000</sndbuf>
 	<rcvbuf>10000000</rcvbuf>
-	<nodelay>0</nodelay>
-	<cork>1</cork>
-	<quickack>0</quickack>
-	<keepalive>0</keepalive>
+	<nodelay>1</nodelay>
+	<cork>0</cork>
+	<quickack>1</quickack>
+	<keepalive>1</keepalive>
 	<keepidle>14400</keepidle>
 	<keepintvl>150</keepintvl>
 	<keepcnt>8</keepcnt>

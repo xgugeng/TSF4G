@@ -4,10 +4,8 @@
 #include "tlibc/platform/tlibc_platform.h"
 #include <netinet/in.h>
 #include "tlibc/core/tlibc_timer.h"
-#include "tcommon/tdgi_types.h"
 #include "tcommon/terrno.h"
-#include "tcommon/tdtp.h"
-
+#include "tcommon/sip.h"
 #include <sys/uio.h>
 #include <limits.h>
 
@@ -17,10 +15,13 @@
 
 #define MAX_PACKAGE_NUM 1024
 
+///warning 这玩意分包的时候要注意啊
+#define PACKAG_BUFF_SIZE 65536
+
 typedef struct _package_buff_t
 {
-    char buff[TDTP_SIZE_T_MAX];
-    tdtp_size_t buff_size;
+    char buff[PACKAG_BUFF_SIZE];
+    size_t buff_size;
 }package_buff_t;
 
 
@@ -31,26 +32,24 @@ typedef enum _tconnd_socket_status_t
 	e_tconnd_socket_status_established = 3,
 }tconnd_socket_status_t;
 
-#ifndef IOV_MAX
-    #error "IOV_MAX not define."
-#endif
-
-#define TCONND_SOCKET_OP_LIST_MAX 16
-#if TCONND_SOCKET_OP_LIST_MAX > IOV_MAX
+#ifdef IOV_MAX
+    #define TCONND_SOCKET_OP_LIST_MAX 16
+    #if TCONND_SOCKET_OP_LIST_MAX > IOV_MAX
         #error "TCONND_SOCKET_OP_LIST_MAX > IOV_MAX"
+    #endif
 #endif
-
 
 typedef struct _tconnd_socket_op_list
 {
     tuint32 num;
-    const tdgi_rsp_t *head[TCONND_SOCKET_OP_LIST_MAX];
+    const sip_rsp_t *head[TCONND_SOCKET_OP_LIST_MAX];
     struct iovec iov[TCONND_SOCKET_OP_LIST_MAX];
 }tconnd_socket_op_list;
 
 typedef struct _tconnd_socket_t
 {
-    tuint64 mid;
+    uint32_t id;
+    uint64_t sn;
 	tconnd_socket_status_t status;
 	int socketfd;
 
@@ -76,7 +75,7 @@ TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_process(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const tdgi_rsp_t *head, const char* body, size_t body_size);
+TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, const char* body, size_t body_size);
 
 TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self);
 

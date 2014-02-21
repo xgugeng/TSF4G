@@ -11,20 +11,20 @@ tlibc_mempool_t *g_socket_pool;
 tlibc_mempool_t *g_package_pool;
 
 static tlibc_timer_entry_t mempool_log_timeout;
-static int last_s_total_used;
-static int last_p_total_used;
+static size_t last_s_total_used;
+static size_t last_p_total_used;
 
 #define TCONND_MEMPOOL_LOG_INTEVAL_MS 10000
 static void tconnd_mempool_log(const tlibc_timer_entry_t *super)
 {
     TLIBC_UNUSED(super);
     
-    if((g_socket_pool->total_used != last_s_total_used) || (g_package_pool->total_used != last_p_total_used))
+    if((g_socket_pool->used_list_num != last_s_total_used) || (g_package_pool->used_list_num != last_p_total_used))
     {
-        last_s_total_used = g_socket_pool->total_used;
-        last_p_total_used = g_package_pool->total_used;        
+        last_s_total_used = g_socket_pool->used_list_num;
+        last_p_total_used = g_package_pool->used_list_num;        
         
-        INFO_LOG("g_socket_pool total_used [%d], g_package_pool total_used [%d].", 
+        INFO_LOG("g_socket_pool used_list_num [%d], g_package_pool used_list_num [%d].", 
             last_s_total_used, last_p_total_used);
     }
 
@@ -99,9 +99,9 @@ void* tconnd_mempool_get(tconnd_mempool_type_e type, tuint64 mid)
     switch(type)
     {
         case e_tconnd_socket:
-            return tlibc_mempool_mid2ptr(g_socket_pool, mid);
+            return tlibc_mempool_id2ptr(g_socket_pool, mid);
         case e_tconnd_package:
-            return tlibc_mempool_mid2ptr(g_package_pool, mid);
+            return tlibc_mempool_id2ptr(g_package_pool, mid);
         default:
             return NULL;
     }

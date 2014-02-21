@@ -30,7 +30,7 @@
 
 
 
-#include "tcommon/tdtp.h"
+#include "tcommon/sip.h"
 
 #define PORT 7001
 #define BUFF_SIZE 1024
@@ -38,14 +38,21 @@ int g_epollfd;
 tlibc_timer_t g_timer;
 
 
-#define ROBOT_NUM 5000
+#define ROBOT_NUM 1000
 #define ROBOT_MAX_EVENTS 1024
 
 tuint64 g_start_ms;
+tuint64 g_connected_ms;
 tuint32 g_total = 0;
-tuint32 g_limit = 500 * 1000000;
+tuint32 g_limit = 1000 * 1000000;
 tuint32 g_server_close_connections;
 tuint32 g_client_close_connections;
+tuint32 g_total_connection;
+tuint32 g_max_connection;
+tuint32 g_cur_connection;
+
+
+
 
 
 typedef enum _robot_state
@@ -75,28 +82,32 @@ tuint64 get_current_ms()
 
 void robot_halt()
 {
-    tuint64 used_time_ms = get_current_ms() - g_start_ms;
+    tuint64 current_time_ms = get_current_ms();
+    tuint64 connect_time_ms = g_connected_ms - g_start_ms;
+    tuint64 send_and_recv_time_ms = current_time_ms - g_connected_ms;
 
     ERROR_PRINT("summary:");    
+    INFO_PRINT("g_total_connect %u", g_total_connection);
+    INFO_PRINT("g_max_connection %u", g_max_connection);
     INFO_PRINT("g_server_close_connections %u", g_server_close_connections);
     INFO_PRINT("g_client_close_connections %u", g_client_close_connections);
     INFO_PRINT("g_total_mb %.2lf", (double)g_total / (1024 * 1024));
-    INFO_PRINT("used_time %.2lf", (double)used_time_ms / 1000);
+    INFO_PRINT("connect_time_s %.2lf", (double)connect_time_ms / 1000);
+    INFO_PRINT("send_and_recv_time_s %.2lf", (double)send_and_recv_time_ms / 1000);
     exit(0);
 }
 
 void robot_on_establish(robot_s *self)
 {
     char buff[BUFF_SIZE];
-    tdtp_size_t *pkg_ptr = (tdtp_size_t *)buff;
-    char *data_ptr = buff + TDTP_SIZEOF_SIZE_T;
+    sip_size_t *pkg_ptr = (sip_size_t *)buff;
+    char *data_ptr = buff + sizeof(sip_req_t);
     int len;
     ssize_t total_size;
     ssize_t send_size;
-    snprintf(data_ptr, BUFF_SIZE - TDTP_SIZEOF_SIZE_T, "hello %ld", time(0));
+    snprintf(data_ptr, BUFF_SIZE - sizeof(sip_req_t), "hello %ld", time(0));
     len = 1024;
     *pkg_ptr = len;
-    TDTP_SIZE2LITTLE(*pkg_ptr);
     total_size = len + 2;
 
     send_size = send(self->socketfd, buff, total_size, 0);
@@ -104,14 +115,14 @@ void robot_on_establish(robot_s *self)
     {
         close(self->socketfd);
         self->state = e_closed;
+        --g_cur_connection;
         if((send_size < 0) && (errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
         {
-            ERROR_PRINT("robot [%d] send errno [%d], %s\n", self->id, errno, strerror(errno));
-            exit(1);
+//            ERROR_PRINT("robot [%d] send errno [%d], %s\n", self->id, errno, strerror(errno));
         }
         ++g_client_close_connections;
-        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
-        , self->id, total_size, send_size, g_total);
+//        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
+//        , self->id, total_size, send_size, g_total);
     }
     else
     {
@@ -195,6 +206,7 @@ void robot_on_connected(robot_s *self)
         else
         {
             self->state = e_closed;
+            --g_cur_connection;
             close(self->socketfd);            
             ERROR_PRINT("robot [%d] connect errno [%d], %s", self->id, errno, strerror(errno));
             exit(1);
@@ -202,11 +214,23 @@ void robot_on_connected(robot_s *self)
     }
     else
     {
+        assert(0);
+        ERROR_LOG("oh~ my god~~~");
+        exit(1);
+        /*
         DEBUG_PRINT("robot [%d] connect to server.", self->id);
+        ++g_total_connection;
+        ++g_cur_connection;
+        if(g_cur_connection > g_max_connection)
+        {
+            g_max_connection = g_cur_connection;
+        }
     	self->state = e_establish;
+    	*/
     }
 }
 
+int g_connected = FALSE;
 void robot_timeout(const tlibc_timer_entry_t *super)
 {
     robot_s *self = TLIBC_CONTAINER_OF(super, robot_s, entry);
@@ -234,7 +258,7 @@ void robot_timeout(const tlibc_timer_entry_t *super)
         }
         else
         {
-            TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies + 250, robot_timeout);
+            TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies, robot_timeout);
         }
         tlibc_timer_push(&g_timer, &self->entry);
         break;
@@ -245,33 +269,56 @@ void robot_timeout(const tlibc_timer_entry_t *super)
 
 }
 
+robot_s g_robot[ROBOT_NUM];
+
+
 void robot_on_connect(robot_s *self)
 {
-/*
-
-	struct epoll_event 	ev;
-
-    ev.events = EPOLLOUT | EPOLLET;
-    if(epoll_ctl(g_epollfd, EPOLL_CTL_DEL, self->socketfd, &ev) == -1)
-    {
-        ERROR_PRINT("epoll_ctl errno [%d], %s", errno, strerror(errno));
-        exit(1);
-    }
-
-
-    ev.events = EPOLLIN | EPOLLET;
-    ev.data.ptr = self;
-    if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
-    {
-        ERROR_PRINT("epoll_ctl errno [%d], %s", errno, strerror(errno));
-        exit(1);
-    }
-    */    
+    int i;
+    
     DEBUG_PRINT("robot [%d] connect to server.", self->id);
     self->state = e_establish;
-    
-    TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies, robot_timeout);
-    tlibc_timer_push(&g_timer, &self->entry);
+    ++g_total_connection;
+    ++g_cur_connection;
+    if(g_cur_connection > g_max_connection)
+    {
+        g_max_connection = g_cur_connection;
+    }
+
+    if(!g_connected)
+    {
+        if(g_cur_connection % 10 == 0)
+        {
+            INFO_PRINT("g_cur_connection = %u", g_cur_connection);
+        }
+        
+        if(g_cur_connection == ROBOT_NUM)
+        {
+            g_connected = TRUE;
+            g_connected_ms = get_current_ms();
+
+
+            for(i = 0;i < ROBOT_NUM; ++i)
+            {
+                if(g_robot[i].state != e_establish)
+                {
+                    assert(0);
+                    ERROR_LOG("robot [%d] not establish.", g_robot[i].id);
+                    exit(1);
+                }
+                
+                TIMER_ENTRY_BUILD(&g_robot[i].entry, g_timer.jiffies, robot_timeout);
+                tlibc_timer_push(&g_timer, &g_robot[i].entry);
+            }
+
+            INFO_PRINT("All the robots connection established.");
+        }
+    }
+    else
+    {    
+        TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies, robot_timeout);
+        tlibc_timer_push(&g_timer, &self->entry);
+    }
 }
 
 
@@ -280,10 +327,19 @@ void robot_init(robot_s *self, int id)
 	self->state = e_closed;
 	self->id = id;
 	
-	TIMER_ENTRY_BUILD(&self->entry, 
-	    g_timer.jiffies, robot_timeout);
-
-	tlibc_timer_push(&g_timer, &self->entry);
+    robot_on_closed(self);
+    if(self->state != e_connected)
+    {
+        ERROR_PRINT("robot [%d] state error [%d]", self->id, self->state);
+        exit(1);
+    }
+    
+    robot_on_connected(self);    
+    if(self->state != e_connecting)
+    {
+        ERROR_PRINT("robot [%d] state error %d", self->id, self->state);
+        exit(1);
+    }
 }
 
 
@@ -304,6 +360,7 @@ void robot_on_recv(robot_s *self)
             self->state= e_closed;
             DEBUG_PRINT("robot [%d] close by server.", self->id);
             ++g_server_close_connections;
+            --g_cur_connection;
             break;
         }
     }
@@ -322,8 +379,6 @@ static void on_signal(int sig)
 }
 
 
-robot_s robot[ROBOT_NUM];
-
 struct epoll_event  events[ROBOT_MAX_EVENTS];
 int                 events_num;
 
@@ -333,6 +388,14 @@ int main()
     size_t idle_times = 0;
     int busy = FALSE;
     struct sigaction  sa;
+
+    
+    g_cur_connection = 0;
+    g_max_connection = 0;
+    g_total_connection = 0;
+    g_server_close_connections = 0;
+    g_start_ms = get_current_ms();
+    tlibc_timer_init(&g_timer, 0);
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
@@ -349,13 +412,8 @@ int main()
         ERROR_PRINT("sigaction error[%d], %s.", errno, strerror(errno));
         exit(1);
     }
-    
 
 
-    g_server_close_connections = 0;
-    g_start_ms = get_current_ms();
-
-    tlibc_timer_init(&g_timer, 0);
 
     g_epollfd = epoll_create(ROBOT_NUM);
     if(g_epollfd == -1)
@@ -365,7 +423,7 @@ int main()
 
     for(i = 0;i < ROBOT_NUM; ++i)
     {        
-        robot_init(&robot[i], i);
+        robot_init(&g_robot[i], i);
     }
 
 

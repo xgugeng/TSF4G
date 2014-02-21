@@ -68,7 +68,7 @@ TERROR_CODE tconnd_epool_proc()
             tconnd_socket_t *socket = events[i].data.ptr;
             if(socket->readable)
             {
-                ERROR_LOG("socket [%llu] already readable.", socket->mid);
+                ERROR_LOG("socket [%llu] already readable.", socket->sn);
                 assert(0);
                 ret = E_TS_ERROR;
                 goto done;
