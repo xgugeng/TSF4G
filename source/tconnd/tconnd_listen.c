@@ -168,7 +168,7 @@ TERROR_CODE tconnd_listen_proc()
 	sip_req_t *pkg;
 
 //1, 检查tbus是否能发送新的连接包
-	tbus_writer_size = sizeof(sip_req_t);
+	tbus_writer_size = SIP_REQ_SIZE;
 	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, &tbus_writer_size);
 	if(ret == E_TS_WOULD_BLOCK)
 	{
@@ -207,6 +207,7 @@ TERROR_CODE tconnd_listen_proc()
     pkg->cid.sn = 0;
 	pkg->cid.id = tlibc_mempool_ptr2id(g_socket_pool, conn_socket);
 	pkg->size = 0;
+	sip_req_t_code(pkg);
 	
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
 	tbus_send_end(g_output_tbus, sizeof(pkg));

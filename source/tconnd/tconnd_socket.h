@@ -42,8 +42,7 @@ typedef enum _tconnd_socket_status_t
 typedef struct _tconnd_socket_op_list
 {
     tuint32 num;
-    const sip_rsp_t *head[TCONND_SOCKET_OP_LIST_MAX];
-    struct iovec iov[TCONND_SOCKET_OP_LIST_MAX];
+
 }tconnd_socket_op_list;
 
 typedef struct _tconnd_socket_t
@@ -64,7 +63,9 @@ typedef struct _tconnd_socket_t
     int readable;
 
 
-    tconnd_socket_op_list op_list;
+    size_t iov_total_size;
+    struct iovec iov[TCONND_SOCKET_OP_LIST_MAX];
+    size_t iov_num;
 }tconnd_socket_t;
 
 tconnd_socket_t *tconnd_socket_new();
@@ -73,7 +74,7 @@ void tconnd_socket_delete(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_process(tconnd_socket_t *self);
+TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, const char* body, size_t body_size);
 

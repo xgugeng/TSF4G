@@ -1,6 +1,6 @@
 
 #include "tbus/tbus.h"
-
+#include "tcommon/bscp.h"
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
@@ -100,14 +100,15 @@ void robot_halt()
 void robot_on_establish(robot_s *self)
 {
     char buff[BUFF_SIZE];
-    sip_size_t *pkg_ptr = (sip_size_t *)buff;
-    char *data_ptr = buff + sizeof(sip_req_t);
+    bscp_head_t *pkg_ptr = (bscp_head_t *)buff;
+    char *data_ptr = buff + sizeof(bscp_head_t);
     int len;
     ssize_t total_size;
     ssize_t send_size;
-    snprintf(data_ptr, BUFF_SIZE - sizeof(sip_req_t), "hello %ld", time(0));
+    snprintf(data_ptr, BUFF_SIZE - sizeof(bscp_head_t), "hello %ld", time(0));
     len = 1024;
     *pkg_ptr = len;
+    bscp_head_t_code(*pkg_ptr);
     total_size = len + 2;
 
     send_size = send(self->socketfd, buff, total_size, 0);

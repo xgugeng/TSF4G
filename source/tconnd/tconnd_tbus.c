@@ -62,11 +62,8 @@ done:
     return ret;
 }
 
-#define MAX_PACKAGE_LIST_NUM 255
 TERROR_CODE process_input_tbus()
 {
-    static sip_rsp_t pkg_list[MAX_PACKAGE_LIST_NUM];
-    tuint32 pkg_list_num = 0;
 	TERROR_CODE ret = E_TS_NOERROR;
 	const char*message;
 	size_t message_len;
@@ -74,7 +71,6 @@ TERROR_CODE process_input_tbus()
 	tuint32 i;
     TLIBC_LIST_HEAD writable_list;
     TLIBC_LIST_HEAD *iter;
-    bscp16_head_t head_size;
 
 
     ret = tbus_read_begin(g_input_tbus, &message, &message_len);
@@ -92,48 +88,19 @@ TERROR_CODE process_input_tbus()
     tlibc_list_init(&writable_list);
     while(len > 0)
     {
-        sip_rsp_t *pkg = NULL;
-        size_t pkg_size = 0;
+        sip_rsp_t *head = NULL;
+        size_t head_size = 0;
         const char* body_addr = NULL;
         size_t body_size = 0;
 
-        if(pkg_list_num >= MAX_PACKAGE_LIST_NUM)
-        {
-            for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
-            {
-                tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-                TERROR_CODE r = tconnd_socket_process(socket);
-                
-                socket->writable = FALSE;
-                DEBUG_LOG("socket [%llu] marked as unwriteable.", socket->sn);
-                
-                if(r == E_TS_CLOSE)
-                {
-                    tconnd_socket_delete(socket);
-                }        
-            }
-            pkg_list_num = 0;
-        }
-        assert(pkg_list_num < MAX_PACKAGE_LIST_NUM);
-
-        pkg = &pkg_list[pkg_list_num];
-        ++pkg_list_num;
-        pkg = (sip_rsp_t*)message;
-        pkg_size = (char*)&pkg->cid_list[pkg->cid_list_num] - (char*)pkg;
-
-        head_size = pkg_size;        
-        if(pkg->size != head_size)
-        {
-            ERROR_LOG("tdgi_rsp.size[%u] follow over.", pkg->size);
-            ret = E_TS_ERROR;
-            goto done;
-        }
-
+        head = (sip_rsp_t*)message;
+        sip_rsp_t_decode(head);
+        head_size = SIP_RSP_T_SIZE(head);
         
-        if(pkg->cmd == e_sip_rsp_cmd_send)
+        if(head->cmd == e_sip_rsp_cmd_send)
         {
-            body_addr = message + pkg_size + pkg->size;
-            body_size = pkg->size;
+            body_size = head->size;
+            body_addr = message + head_size;
         }
         else
         {
@@ -142,18 +109,18 @@ TERROR_CODE process_input_tbus()
         }
 
         
-        message += pkg_size + body_size;
-        len -= pkg_size + body_size;
+        message += head_size + body_size;
+        len -= head_size + body_size;
 
-        for(i = 0; i < pkg->cid_list_num; ++i)
+        for(i = 0; i < head->cid_list_num; ++i)
         {
-            tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, pkg->cid_list[i].id);
-            if((socket == NULL) || (socket->sn != pkg->cid_list[i].sn))
+            tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, head->cid_list[i].id);
+            if((socket == NULL) || (socket->sn != head->cid_list[i].sn))
             {
                 continue;
             }
             
-            if(tconnd_socket_push_pkg(socket, pkg, body_addr, body_size) == E_TS_CLOSE)
+            if(tconnd_socket_push_pkg(socket, head, body_addr, body_size) == E_TS_CLOSE)
             {
                 if(socket->writable)
                 {
@@ -176,7 +143,7 @@ TERROR_CODE process_input_tbus()
     for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
     {
         tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-        TERROR_CODE r = tconnd_socket_process(socket);
+        TERROR_CODE r = tconnd_socket_flush(socket);
         
         socket->writable = FALSE;
         

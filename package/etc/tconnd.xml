@@ -3,7 +3,6 @@
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
 	<backlog>128</backlog>
-	<iovmax>64</iovmax>
 	<connections>1000</connections>
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>

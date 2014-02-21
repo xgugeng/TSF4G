@@ -34,30 +34,28 @@ void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t d
     size_t len = 0;
     TERROR_CODE ret;
     int idle = 0;
+    size_t head_size;
 
-    char buff[TBUS_MTU];
-    size_t buff_len;
 
     DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.mid_num = %u, pkg.mid[0]=%llu pkg.size = %u data_size = %zu"
         , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].sn, pkg->size, data_size);
-    buff_len = (char*)&pkg->cid_list[pkg->cid_list_num] - (char*)pkg;
-    memcpy(buff, pkg, buff_len);
 
-    len = buff_len + data_size;
+    head_size = SIP_RSP_T_SIZE(pkg);
+    len = head_size + data_size;
     for(;;)
     {
         ret = tbus_send_begin(tb, &addr, &len);
         if(ret == E_TS_NOERROR)
         {
-            assert(len >= buff_len);
-            memcpy(addr, buff, buff_len);
-            addr += buff_len;
+            memcpy(addr, pkg, head_size);         
+            sip_rsp_t_code((sip_rsp_t*)addr);
+            addr += head_size;
             if(data)
             {
                 memcpy(addr, data, data_size);
             }
             
-            tbus_send_end(tb, buff_len + data_size);
+            tbus_send_end(tb, head_size + data_size);
             break;
         }
         else if(ret == E_TS_WOULD_BLOCK)
@@ -119,9 +117,12 @@ sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 limit = body_ptr + req->size;
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
-                    bscp16_head_t pkg_size = *(bscp16_head_t*)iter;
-                    const char* pkg_content = iter + sizeof(bscp16_head_t);
-                    next = iter + sizeof(bscp16_head_t) + pkg_size;                    
+                    bscp_head_t pkg_size = *(bscp_head_t*)iter;
+                    const char* pkg_content = iter + sizeof(bscp_head_t);
+
+                    bscp_head_t_decode(pkg_size);
+                    
+                    next = iter + sizeof(bscp_head_t) + pkg_size;                    
                     DEBUG_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
 
                     rsp.size = pkg_size;
@@ -152,7 +153,7 @@ static void on_signal(int sig)
 
 int main()
 {
-    sip_req_t pkg;
+    sip_req_t *pkg;
 	int ishm_id, oshm_id;
 	size_t len;
 	size_t message_len;
@@ -201,9 +202,11 @@ int main()
                     ERROR_PRINT("tlibc_read_tdgi_req_t error");
 		            exit(1);
 		        }
-		        memcpy(&pkg, message, sizeof(sip_req_t));
+		        pkg = (sip_req_t*)message;
+		        sip_req_t_decode(pkg);
+
 		        
-                body_size = process_pkg(&pkg, message + sizeof(sip_req_t));
+                body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
                 len -= sizeof(sip_req_t) + body_size;
                 message += sizeof(sip_req_t) + body_size;
 	    	}			

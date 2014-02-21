@@ -5,6 +5,7 @@
 */
 
 #include <stdint.h>
+#include "tlibc/core/tlibc_util.h"
 
 #pragma pack(push,1)
 typedef uint32_t sip_size_t;
@@ -27,9 +28,27 @@ typedef enum _sip_req_cmd_t
 typedef struct _sip_req_t
 {
 	sip_req_cmd_t	cmd;            //指令
+    sip_size_t      size;           //包体长度
 	sip_cid_t       cid;            //连接id
-	sip_size_t      size;           //包体长度
 }sip_req_t;
+#define SIP_REQ_SIZE sizeof(sip_req_t)
+
+#define sip_req_t_code(h) \
+{\
+    tlibc_host16_to_little((h)->cmd)\
+    tlibc_host64_to_little((h)->cid.sn)\
+    tlibc_host32_to_little((h)->cid.id)\
+    tlibc_host32_to_little((h)->size)\
+}
+
+#define sip_req_t_decode(h) \
+{\
+    tlibc_little_to_host16((h)->cmd)\
+    tlibc_little_to_host32((h)->size)\
+    tlibc_little_to_host64((h)->cid.sn)\
+    tlibc_little_to_host32((h)->cid.id)\
+}
+
 
 typedef enum _sip_rsp_cmd_t
 {
@@ -43,10 +62,39 @@ typedef enum _sip_rsp_cmd_t
 typedef struct _sip_rsp_t
 {
 	sip_rsp_cmd_t		cmd;                                //指令
+    sip_size_t          size;                               //包体长度
 	uint32_t            cid_list_num;                       //连接id个数
 	sip_cid_t           cid_list[SIP_BROADCAST_NUM];        //连接id数组
-    sip_size_t         size;                               //包体长度
 }sip_rsp_t;
+#define SIP_RSP_T_SIZE(h) (sizeof(sip_rsp_t) - sizeof(sip_cid_t) * (SIP_BROADCAST_NUM - (h)->cid_list_num))
+
+#define sip_rsp_t_code(h) \
+{\
+    size_t i;\
+    tlibc_host16_to_little((h)->cmd)\
+    tlibc_host32_to_little((h)->size)\
+    tlibc_host32_to_little((h)->cid_list_num)\
+    for(i = 0; i < (h)->cid_list_num; ++i)\
+    {\
+        tlibc_host64_to_little((h)->cid_list[i].sn)\
+        tlibc_host32_to_little((h)->cid_list[i].id)\
+    }\
+}
+
+#define sip_rsp_t_decode(h) \
+{\
+    size_t i;\
+    tlibc_little_to_host16((h)->cmd)\
+    tlibc_little_to_host32((h)->size)\
+    tlibc_little_to_host32((h)->cid_list_num)\
+    for(i = 0; i < (h)->cid_list_num; ++i)\
+    {\
+        tlibc_little_to_host64((h)->cid_list[i].sn)\
+        tlibc_little_to_host32((h)->cid_list[i].id)\
+    }\
+}
+
+
 #pragma pack(pop)
 
 

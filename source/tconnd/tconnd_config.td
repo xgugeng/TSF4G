@@ -10,7 +10,6 @@ struct tconnd_config_t
 	string<TSERVER_IP_LENGTH> 			ip;				#监听ip
 	uint16 								port;			#监听端口
 	uint32 								backlog;		#未处理的连接数
-	uint32                              iovmax;			#最大合并处理的包的个数
 	uint32 								connections;	#最多可以接入的连接数
 	int32 								tdgi_pass;		#转发的tdgi服务器
 	int32 								input_tbuskey;	#输入tbuskey

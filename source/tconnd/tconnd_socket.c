@@ -51,7 +51,8 @@ tconnd_socket_t *tconnd_socket_new()
 	{
 	    socket->id = tlibc_mempool_ptr2id(g_socket_pool, socket);
 	    socket->status = e_tconnd_socket_status_closed;
-	    socket->op_list.num = 0;
+	    socket->iov_num = 0;
+	    socket->iov_total_size = 0;
 	    socket->package_buff = NULL;
 	    tlibc_list_init(&socket->readable_list);
 	    tlibc_list_init(&socket->writable_list);
@@ -167,107 +168,98 @@ done:
     return ret;
 }
 
-TERROR_CODE tconnd_socket_process(tconnd_socket_t *self)
+TERROR_CODE tconnd_socket_on_head(tconnd_socket_t *self, const sip_rsp_t* head)
 {
-	tuint32 i, j;
-	TERROR_CODE ret = E_TS_NOERROR;
-	    
-    for(i = 0; i < self->op_list.num;)
-    {
-        const sip_rsp_t *pkg = self->op_list.head[i];
-        switch(pkg->cmd)
-        {
-        case e_sip_rsp_cmd_accept:
-            {
-                struct epoll_event 	ev;
-                
-                if(self->status != e_tconnd_socket_status_syn_sent)
-                {
-                    DEBUG_LOG("socket status[%d] != e_tconnd_socket_status_syn_sent", self->status);
-                    ++i;
-                    break;
-                }
-                tlibc_timer_pop(&self->accept_timeout);
+    TERROR_CODE ret = E_TS_NOERROR;
 
-                
-                ev.events = EPOLLIN | EPOLLET;
-                ev.data.ptr = self;  
-                if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
-                {
-                    DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
-                    ret = E_TS_CLOSE;
-                    goto done;
-                }
-                else
-                {
-                    DEBUG_LOG("socket [%llu] established.", self->sn);
-                    
-                    self->status = e_tconnd_socket_status_established;
-                }                
-                ++i;
-                break;
-            }
-        case e_sip_rsp_cmd_close:
+    switch(head->cmd)
+    {
+    case e_sip_rsp_cmd_accept:
+        {
+            struct epoll_event  ev;
+            
+            if(self->status != e_tconnd_socket_status_syn_sent)
             {
-                DEBUG_LOG("socket [%llu] closing.", self->sn);
+                DEBUG_LOG("socket status[%d] != e_tconnd_socket_status_syn_sent", self->status);
                 ret = E_TS_CLOSE;
                 goto done;
-            };
-        case e_sip_rsp_cmd_send:
-            {
-                ssize_t total_size;
-                ssize_t send_size;
-                
-                if(self->status != e_tconnd_socket_status_established)
-                {
-                    DEBUG_LOG("socket [%llu] status != e_tconnd_socket_status_established", self->sn);
-                    ++i;
-                    break;
-                }
-                
-                total_size = 0;
-                j= i;
-                while((j < self->op_list.num) && (self->op_list.head[j]->cmd == e_sip_rsp_cmd_send))
-                {
-                    //在push的时候检查过self->op_list.head[j]->size小于SSIZE_MAX
-                    if((unsigned)total_size > SSIZE_MAX - self->op_list.head[j]->size)
-                    {
-                        break;
-                    }
-                    total_size += self->op_list.head[j]->size;
-                    ++j;
-                }
-                send_size = writev(self->socketfd, self->op_list.iov + i, j - i);
-                if(send_size != total_size)
-                {                    
-                    if(send_size < 0)
-                    {
-                        if((errno != EINTR) && (errno != EAGAIN) && (errno != EPIPE))
-                        {
-                            WARN_LOG("socket [%llu] writev return [%zi], errno [%d], %s", self->sn, send_size, errno, strerror(errno));
-                        }
-                        else
-                        {
-                            DEBUG_LOG("socket [%llu] writev return [%zi], errno [%d], %s", self->sn, send_size, errno, strerror(errno));                            
-                        }
-                    }
-                    else
-                    {
-                        DEBUG_LOG("socket [%llu] writev return [%zi].", self->sn, send_size);
-                    }
-
-                    ret = E_TS_CLOSE;
-                    goto done;
-                }
-                i = j;
-                break;
             }
-        default:
+            tlibc_timer_pop(&self->accept_timeout);
+    
+            
+            ev.events = EPOLLIN | EPOLLET;
+            ev.data.ptr = self;  
+            if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
+            {
+                DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
+                ret = E_TS_CLOSE;
+                goto done;
+            }
+            else
+            {
+                DEBUG_LOG("socket [%llu] established.", self->sn);
+                
+                self->status = e_tconnd_socket_status_established;
+            }                
             break;
         }
+    case e_sip_rsp_cmd_close:
+        {
+            DEBUG_LOG("socket [%llu] closing.", self->sn);
+            ret = E_TS_CLOSE;
+            goto done;
+        };
+    default:
+        ret = E_TS_CLOSE;
+        ERROR_LOG("tbus receive invalid cmd [%d].", head->cmd);
+        goto done;
     }
 
-    self->op_list.num = 0;
+done:
+    return ret;
+}
+
+TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
+{
+	TERROR_CODE ret = E_TS_NOERROR;
+    ssize_t send_size;
+    
+    if(self->status != e_tconnd_socket_status_established)
+    {
+        DEBUG_LOG("socket [%llu] status != e_tconnd_socket_status_established", self->sn);
+        ret = E_TS_CLOSE;
+        goto done;
+    }
+
+    if(self->iov_num == 0)
+    {
+        goto done;
+    }
+    
+    send_size = writev(self->socketfd, self->iov, self->iov_num);
+    if(send_size < 0)
+    {    
+        if((errno == EINTR) || (errno == EAGAIN)|| (errno == EPIPE))
+        {
+            DEBUG_LOG("socket [%llu] writev return [%zi], errno [%d], %s", self->sn, send_size, errno, strerror(errno));
+        }
+        else
+        {
+            WARN_LOG("socket [%llu] writev return [%zi], errno [%d], %s", self->sn, send_size, errno, strerror(errno));
+        }
+    }
+    else if((size_t)send_size != self->iov_total_size)
+    {
+     
+        DEBUG_LOG("socket [%llu] writev return [%zi].", self->sn, send_size);
+        
+        ret = E_TS_CLOSE;
+        goto done;
+    }
+
+    self->iov_num = 0;
+    self->iov_total_size = 0;
+
     
 done:
     return ret;
@@ -276,24 +268,41 @@ done:
 TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, const char* body, size_t body_size)
 {
     TERROR_CODE ret;
-
-    if((self->op_list.num >= g_config.iovmax) || (self->op_list.num >= TCONND_SOCKET_OP_LIST_MAX))
+    if(head->cmd == e_sip_rsp_cmd_send)
     {
-        ret = tconnd_socket_process(self);
+        if((body_size > SSIZE_MAX) || (body_size == 0))
+        {
+            ERROR_LOG("socket [%llu] send invalid buff, size = [%zu].", self->sn, body_size);
+            ret = E_TS_CLOSE;
+            goto done;
+        }
+
+        if((self->iov_num >= TCONND_SOCKET_OP_LIST_MAX) || (self->iov_total_size > SSIZE_MAX - body_size))
+        {
+            ret = tconnd_socket_flush(self);
+            if(ret != E_TS_NOERROR)
+            {
+                goto done;
+            }
+        }
+        assert(self->iov_num = 0);
+        assert(self->iov_total_size == 0);
+        
+        self->iov_total_size += body_size;
+        self->iov[self->iov_num].iov_base = (void*)body;
+        self->iov[self->iov_num].iov_len = body_size;
+        ++self->iov_num;
+    }
+    else
+    {
+        ret = tconnd_socket_flush(self);
         if(ret != E_TS_NOERROR)
         {
             goto done;
         }
+        tconnd_socket_on_head(self, head);
     }
 
-    assert(self->op_list.num < TCONND_SOCKET_OP_LIST_MAX);
-    
-
-
-    self->op_list.head[self->op_list.num] = head;
-    self->op_list.iov[self->op_list.num].iov_base = (void*)body;
-    self->op_list.iov[self->op_list.num].iov_len = body_size;
-    ++self->op_list.num;
 done:
     return ret;
 }
@@ -310,7 +319,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     char *limit_ptr;
 
     char* remain_ptr = NULL;
-    bscp16_head_t remain_size;
+
     
     sip_req_t *pkg;
     TLIBC_BINARY_WRITER writer;
@@ -322,7 +331,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     assert(self->status == e_tconnd_socket_status_established);
     
-    header_size = sizeof(bscp16_head_t);
+    header_size = sizeof(bscp_head_t);
     if(self->package_buff == NULL)
     {
         package_size = 0;
@@ -380,6 +389,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             pkg->cid.id = self->id;
             pkg->cid.sn = self->sn;
             pkg->size = 0;
+            sip_req_t_code(pkg);
             tbus_send_end(g_output_tbus, header_size);
             ret = E_TS_CLOSE;
             DEBUG_LOG("socket [%llu] closed by client.", self->sn);
@@ -404,18 +414,20 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     limit_ptr = body_ptr + r;
     
-    if(limit_ptr < package_ptr + sizeof(bscp16_head_t))
+    if(limit_ptr < package_ptr + sizeof(bscp_head_t))
     {
         remain_ptr = package_ptr;
-        remain_size = limit_ptr - package_ptr;
     }
     else
     {
         for(iter = package_ptr; iter < limit_ptr;)
         {
-            remain_size = *(bscp16_head_t*)iter;
+            bscp_head_t remain_size;
+            
+            remain_size = *(bscp_head_t*)iter;
+            bscp_head_t_decode(remain_size);
             remain_ptr = iter;
-            iter += sizeof(bscp16_head_t) + remain_size;
+            iter += sizeof(bscp_head_t) + remain_size;
         }
     }
     
