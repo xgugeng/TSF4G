@@ -14,7 +14,7 @@ struct tconnd_config_t
 	int32 								tdgi_pass;		#转发的tdgi服务器
 	int32 								input_tbuskey;	#输入tbuskey
 	int32								output_tbuskey; #输出tbuskey
-
+	int32                               defer_accept;   #TCP_DEFER_ACCEPT
 	uint32								sndbuf;			#SO_SNDBUF
 	uint32								rcvbuf;			#SO_RCVBUF
 	uint32								nodelay;		#TCP_NODELAY

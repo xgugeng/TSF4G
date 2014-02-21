@@ -2,7 +2,7 @@
 #include "tcommon/sip.h"
 #include "tcommon/bscp.h"
 
-#define TLOG_INSTANCE_LEVEL e_tlog_info
+#define TLOG_INSTANCE_LEVEL e_tlog_error
 #include "tlog/tlog_instance.h"
 
 
@@ -37,8 +37,8 @@ void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t d
     size_t head_size;
 
 
-    DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.mid_num = %u, pkg.mid[0]=%llu pkg.size = %u data_size = %zu"
-        , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].sn, pkg->size, data_size);
+    DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%llu pkg.size = %u data_size = %zu."
+        , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
 
     head_size = SIP_RSP_T_SIZE(pkg);
     len = head_size + data_size;
@@ -88,7 +88,7 @@ sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
         rsp.cid_list[0] = req->cid;
         rsp.size = 0;
         block_send_pkg(otb, &rsp, NULL, 0);
-        INFO_PRINT("[%llu] connect.", req->cid.sn);
+        INFO_PRINT("[%u, %llu] accept.", req->cid.id, req->cid.sn);
         break;
     case e_sip_req_cmd_recv:
         if(req->size == 0)
@@ -122,7 +122,7 @@ sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 
                     bscp_head_t_decode(pkg_size);
                     
-                    next = iter + sizeof(bscp_head_t) + pkg_size;                    
+                    next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
                     DEBUG_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
 
                     rsp.size = pkg_size;
@@ -197,7 +197,7 @@ int main()
 		    while(len > 0)
 		    {
 		        sip_size_t body_size;
-		        if(len < sizeof(sip_req_t))
+		        if(len < SIP_REQ_SIZE)
 		        {
                     ERROR_PRINT("tlibc_read_tdgi_req_t error");
 		            exit(1);
@@ -207,8 +207,8 @@ int main()
 
 		        
                 body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
-                len -= sizeof(sip_req_t) + body_size;
-                message += sizeof(sip_req_t) + body_size;
+                len -= SIP_REQ_SIZE + body_size;
+                message += SIP_REQ_SIZE + body_size;
 	    	}			
 			tbus_read_end(itb, message_len);
 			continue;

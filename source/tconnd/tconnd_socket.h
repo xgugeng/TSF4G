@@ -68,6 +68,8 @@ typedef struct _tconnd_socket_t
     size_t iov_num;
 }tconnd_socket_t;
 
+#define TCONND_SOCKET_INVALID_SN 0
+
 tconnd_socket_t *tconnd_socket_new();
 
 void tconnd_socket_delete(tconnd_socket_t *self);

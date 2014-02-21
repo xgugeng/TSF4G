@@ -26,9 +26,10 @@ int g_listenfd;
 
 TERROR_CODE tconnd_listen_init()
 {
-    int nb = 1;
     TERROR_CODE ret = E_TS_NOERROR;
 	struct sockaddr_in  listenaddr;
+    TLIBC_LIST_HEAD *iter, *next;
+    int value;
 
 	g_listenfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(g_listenfd == -1)
@@ -38,8 +39,8 @@ TERROR_CODE tconnd_listen_init()
 		goto done;
 	}
 
-	
-	if(ioctl(g_listenfd, FIONBIO, &nb) == -1)
+	value = 1;
+	if(ioctl(g_listenfd, FIONBIO, &value) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -66,14 +67,14 @@ TERROR_CODE tconnd_listen_init()
 		goto close_listenfd;
 	}
 	
-	if(ioctl(g_listenfd, FIONBIO, &nb) == -1)
+	if(ioctl(g_listenfd, FIONBIO, &value) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
 
-    if (setsockopt(g_listenfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, (int[]){1}, sizeof(int)))
+    if (setsockopt(g_listenfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &g_config.defer_accept, sizeof(g_config.defer_accept)))
     {
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -147,7 +148,15 @@ TERROR_CODE tconnd_listen_init()
 	}
     
 
-	
+ 
+
+    for(iter = g_socket_pool->unused_list.next; iter != &g_socket_pool->unused_list; iter = next)
+    {
+        tlibc_mempool_block_t *b = TLIBC_CONTAINER_OF(iter, tlibc_mempool_block_t, used_list);
+        next = iter->next;
+        tconnd_socket_t *s = (tconnd_socket_t *)&b->data;
+        s->sn = TCONND_SOCKET_INVALID_SN;
+    }
 	goto done;
 close_listenfd:
     if(close(g_listenfd) != 0)
@@ -204,13 +213,14 @@ TERROR_CODE tconnd_listen_proc()
 
 //5, 发送连接的通知	
 	pkg->cmd = e_sip_req_cmd_connect;
-    pkg->cid.sn = 0;
-	pkg->cid.id = tlibc_mempool_ptr2id(g_socket_pool, conn_socket);
+    pkg->cid.sn = conn_socket->sn;
+	pkg->cid.id = conn_socket->id;
 	pkg->size = 0;
 	sip_req_t_code(pkg);
 	
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
-	tbus_send_end(g_output_tbus, sizeof(pkg));
+	tbus_send_end(g_output_tbus, SIP_REQ_SIZE);
+    DEBUG_LOG("[%u, %llu] connect.", pkg->cid.id, pkg->cid.sn);
 
 done:
 	return ret;

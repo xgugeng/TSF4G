@@ -19,6 +19,8 @@ typedef uint16_t bscp_head_t;
 
 #define bscp_head_t_decode(head) {tlibc_little_to_host16(head);}
 
+#define BSCP_HEAD_T_SIZE sizeof(bscp_head_t)
+
 
 #endif//_H_BSCP_H
 

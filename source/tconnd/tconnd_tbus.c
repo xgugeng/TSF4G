@@ -115,8 +115,15 @@ TERROR_CODE process_input_tbus()
         for(i = 0; i < head->cid_list_num; ++i)
         {
             tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, head->cid_list[i].id);
-            if((socket == NULL) || (socket->sn != head->cid_list[i].sn))
+            if(socket == NULL)
             {
+                continue;
+            }
+            
+            if(head->cid_list[i].sn != socket->sn)
+            {
+                WARN_LOG("socket [%u, %llu] head->cmd = %d [%u, %llu] mismatch."
+                    , socket->id, socket->sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
                 continue;
             }
             

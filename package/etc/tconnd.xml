@@ -3,16 +3,17 @@
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
 	<backlog>128</backlog>
-	<connections>1000</connections>
+	<connections>2000</connections>
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>
 
+	<defer_accept>0</defer_accept>
 	<sndbuf>10000000</sndbuf>
 	<rcvbuf>10000000</rcvbuf>
-	<nodelay>1</nodelay>
-	<cork>0</cork>
-	<quickack>1</quickack>
+	<nodelay>0</nodelay>
+	<cork>1</cork>
+	<quickack>0</quickack>
 	<keepalive>1</keepalive>
 	<keepidle>14400</keepidle>
 	<keepintvl>150</keepintvl>

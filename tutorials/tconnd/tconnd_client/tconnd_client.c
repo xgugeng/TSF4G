@@ -38,13 +38,15 @@ int g_epollfd;
 tlibc_timer_t g_timer;
 
 
-#define ROBOT_NUM 1000
+#define ROBOT_NUM 2000
 #define ROBOT_MAX_EVENTS 1024
 
 tuint64 g_start_ms;
 tuint64 g_connected_ms;
 tuint32 g_total = 0;
 tuint32 g_limit = 1000 * 1000000;
+
+
 tuint32 g_server_close_connections;
 tuint32 g_client_close_connections;
 tuint32 g_total_connection;
@@ -101,11 +103,11 @@ void robot_on_establish(robot_s *self)
 {
     char buff[BUFF_SIZE];
     bscp_head_t *pkg_ptr = (bscp_head_t *)buff;
-    char *data_ptr = buff + sizeof(bscp_head_t);
+    char *data_ptr = buff + BSCP_HEAD_T_SIZE;
     int len;
     ssize_t total_size;
     ssize_t send_size;
-    snprintf(data_ptr, BUFF_SIZE - sizeof(bscp_head_t), "hello %ld", time(0));
+    snprintf(data_ptr, BUFF_SIZE - BSCP_HEAD_T_SIZE, "hello %ld", time(0));
     len = 1024;
     *pkg_ptr = len;
     bscp_head_t_code(*pkg_ptr);
@@ -334,13 +336,17 @@ void robot_init(robot_s *self, int id)
         ERROR_PRINT("robot [%d] state error [%d]", self->id, self->state);
         exit(1);
     }
-    
+
+
     robot_on_connected(self);    
     if(self->state != e_connecting)
     {
         ERROR_PRINT("robot [%d] state error %d", self->id, self->state);
         exit(1);
     }
+
+    //如果服务器设置了TCP_DEFER_ACCEPT， 不发数据的话连接的建立会很慢.
+    robot_on_establish(self);
 }
 
 
@@ -359,7 +365,7 @@ void robot_on_recv(robot_s *self)
             }
             close(self->socketfd);
             self->state= e_closed;
-            DEBUG_PRINT("robot [%d] close by server.", self->id);
+            WARN_PRINT("robot [%d] close by server.", self->id);
             ++g_server_close_connections;
             --g_cur_connection;
             break;
