@@ -7,54 +7,49 @@
 #include <assert.h>
 
 tlibc_timer_t       g_timer;
-static tuint64      timer_start_ms;
-
-static tuint64 get_sys_ms()
-{
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-
-	return tv.tv_sec*1000 + tv.tv_usec/1000;
-}
-
-static tuint64 get_diff_ms()
-{
-    tuint64 current_sys_ms = get_sys_ms();
-    if(current_sys_ms >= timer_start_ms)
-    {
-        return current_sys_ms - timer_start_ms;
-    }
-    else
-    {
-        assert(0);
-        return tconnd_timer_ms;
-    }
-}
+static struct timeval      start_tv;
 
 void tconnd_timer_init()
 {
-	tlibc_timer_init(&g_timer, 0);
-	timer_start_ms = get_sys_ms();
+	tlibc_timer_init(&g_timer);
+    gettimeofday(&start_tv, NULL);
 }
 
 TERROR_CODE tconnd_timer_process()
 {
-    TLIBC_ERROR_CODE tlibc_ret;
-    tuint64 current_time_ms = get_diff_ms();    
-
-    tlibc_ret = tlibc_timer_tick(&g_timer, current_time_ms);
-    if(tlibc_ret == E_TLIBC_NOERROR)
+    bool busy = false;
+    tuint64      current_time_ms;
+    struct timeval      cur_tv;
+    gettimeofday(&cur_tv, NULL);
+    if(cur_tv.tv_sec >= start_tv.tv_sec)
     {
-        return E_TS_NOERROR;
-    }
-    else if(tlibc_ret == E_TLIBC_WOULD_BLOCK)
-    {    
-        return E_TS_WOULD_BLOCK;
+        current_time_ms = (cur_tv.tv_sec - start_tv.tv_sec) * 1000;
     }
     else
     {
-        ERROR_LOG("tlibc_timer_tick return %d.", tlibc_ret);
-        return E_TS_ERROR;        
+        current_time_ms = 0;
+    }
+
+    if(cur_tv.tv_usec >= start_tv.tv_usec)
+    {
+        current_time_ms += (cur_tv.tv_usec - start_tv.tv_usec) /1000;
     }    
+
+    while(tconnd_timer_ms <= current_time_ms)
+    {
+        if(tlibc_timer_tick(&g_timer) == E_TLIBC_NOERROR)
+        {
+            busy = true;
+        }
+    }
+    
+    if(busy)
+    {
+        return E_TS_NOERROR;
+    }
+    else
+    {
+        return E_TS_WOULD_BLOCK;
+    }
 }
 

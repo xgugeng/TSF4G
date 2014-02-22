@@ -167,16 +167,6 @@ void tconnd_reactor_loop()
     				}
     				idle_count = 0;    				
     			}
-    		
-    			/*else
-    			{
-    				if((sched_yield() != 0) && (errno != EINTR))
-    				{
-    				    ERROR_LOG("sched_yield errno [%d], %s", errno, strerror(errno));
-    				    goto done;
-    				}
-    			}
-    			*/
 	    	}
 		    break;
 		default:

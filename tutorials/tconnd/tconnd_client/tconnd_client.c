@@ -435,7 +435,7 @@ int main()
     g_total_connection = 0;
     g_server_close_connections = 0;
     g_start_ms = get_current_ms();
-    tlibc_timer_init(&g_timer, 0);
+    tlibc_timer_init(&g_timer);
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
@@ -471,6 +471,7 @@ int main()
     for(;!g_sig_term;)
     {
         busy = FALSE;
+        tuint64 g_cur_ms;
         
         events_num = epoll_wait(g_epollfd, events, ROBOT_MAX_EVENTS, 0);
         if(events_num == -1)
@@ -502,9 +503,13 @@ int main()
             }
         }
 
-        if(tlibc_timer_tick(&g_timer, get_current_ms() - g_start_ms) == E_TLIBC_NOERROR)
+        g_cur_ms = get_current_ms() - g_start_ms;
+        while(tlibc_timer_jiffies(&g_timer) <= g_cur_ms)
         {
-            busy = TRUE;
+            if(tlibc_timer_tick(&g_timer) == E_TLIBC_NOERROR)
+            {
+                busy = TRUE;
+            }
         }
         
         if(busy)
