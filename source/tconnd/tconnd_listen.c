@@ -11,6 +11,8 @@
 #include "tconnd/tconnd_mempool.h"
 #include "tconnd/tconnd_tbus.h"
 #include "tconnd/tconnd_config.h"
+#include "tconnd/tconnd_timer.h"
+
 #include "tlog/tlog_instance.h"
 
 #include <sys/ioctl.h>
@@ -23,12 +25,19 @@
 
 int g_listenfd;
 
+static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
+{
+    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
+    DEBUG_LOG("socket [%d, %llu] accept_timeout", self->id, self->sn);
+    tconnd_socket_delete(self);
+}
+
 
 TERROR_CODE tconnd_listen_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
 	struct sockaddr_in  listenaddr;
-    TLIBC_LIST_HEAD *iter, *next;
+    TLIBC_LIST_HEAD *iter;
     int value;
 
 	g_listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -150,11 +159,9 @@ TERROR_CODE tconnd_listen_init()
 
  
 
-    for(iter = g_socket_pool->unused_list.next; iter != &g_socket_pool->unused_list; iter = next)
+    for(iter = g_unused_socket_list.next; iter != &g_unused_socket_list; iter = iter->next)
     {
-        tlibc_mempool_block_t *b = TLIBC_CONTAINER_OF(iter, tlibc_mempool_block_t, used_list);
-        next = iter->next;
-        tconnd_socket_t *s = (tconnd_socket_t *)&b->data;
+        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_unused_socket_list);
         s->sn = TCONND_SOCKET_INVALID_SN;
     }
 	goto done;
@@ -172,9 +179,13 @@ TERROR_CODE tconnd_listen_proc()
 {
 	int ret = E_TS_NOERROR;
 	tconnd_socket_t *conn_socket;
-	
+
+    int socketfd;	
+    socklen_t cnt_len;
+    struct sockaddr_in sockaddr;	
 	size_t tbus_writer_size;
 	sip_req_t *pkg;
+	int nb;
 
 //1, 检查tbus是否能发送新的连接包
 	tbus_writer_size = SIP_REQ_SIZE;
@@ -192,24 +203,60 @@ TERROR_CODE tconnd_listen_proc()
 	}
 	
 //2, 检查是否能分配socket
-	conn_socket = tconnd_socket_new();
-	if(conn_socket == NULL)
+    if(g_socket_sn == TCONND_SOCKET_INVALID_SN)
+    {
+        ret = E_TS_ERROR;
+        ERROR_LOG("g_socket_sn [%llu] == TCONND_SOCKET_INVALID_SN", g_socket_sn);
+        goto done;
+    }
+
+    if(tlibc_list_empty(&g_unused_socket_list))
+    {
+        ret = E_TS_WOULD_BLOCK;
+        goto done;
+    }
+
+
+    memset(&sockaddr, 0, sizeof(struct sockaddr_in));
+    cnt_len = sizeof(struct sockaddr_in);
+    socketfd = accept(g_listenfd, (struct sockaddr *)&sockaddr, &cnt_len);
+
+    if(socketfd == -1)
+    {
+        switch(errno)
+        {
+            case EAGAIN:
+                ret = E_TS_WOULD_BLOCK;
+                break;
+            case EINTR:
+                ret = E_TS_WOULD_BLOCK;
+                break;
+            default:
+                ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
+                ret = E_TS_ERRNO;
+                break;
+        }
+        goto done;
+    }
+
+    nb = 1;
+	if(ioctl(socketfd, FIONBIO, &nb) == -1)
 	{
-//到达连接数上线
-//        DEBUG_LOG("tconnd_socket_new return NULL");
-		ret = E_TS_WOULD_BLOCK;
-		goto done;
+        ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
+    	ret = E_TS_ERRNO;
+		goto close_socket;
 	}
 
-    ret = tconnd_socket_accept(conn_socket);
-    if(ret == E_TS_WOULD_BLOCK)
-    {
-        goto free_socket;
-    }
-	else if(ret != E_TS_NOERROR)
-	{
-    	goto free_socket;
-	}	
+	conn_socket = tconnd_socket_new();
+	conn_socket->socketfd = socketfd;
+
+	TIMER_ENTRY_BUILD(&conn_socket->accept_timeout, 
+	    tconnd_timer_ms + TDTP_TIMER_ACCEPT_TIME_MS, tconnd_socket_accept_timeout);
+	tlibc_timer_push(&g_timer, &conn_socket->accept_timeout);
+	
+	conn_socket->status = e_tconnd_socket_status_syn_sent;
+
+
 
 //5, 发送连接的通知	
 	pkg->cmd = e_sip_req_cmd_connect;
@@ -224,24 +271,22 @@ TERROR_CODE tconnd_listen_proc()
 
 done:
 	return ret;
-free_socket:
-    tconnd_socket_delete(conn_socket);
+close_socket:
+    close(socketfd);
 	return ret;
 }
 
 
 void tconnd_listen_fini()
 {
-    TLIBC_LIST_HEAD *iter, *next;
-    
+    TLIBC_LIST_HEAD *iter;    
 
-    for(iter = g_socket_pool->used_list.next; iter != &g_socket_pool->used_list; iter = next)
-    {        
-        tlibc_mempool_block_t *b = TLIBC_CONTAINER_OF(iter, tlibc_mempool_block_t, used_list);
-        next = iter->next;
-        tconnd_socket_t *s = (tconnd_socket_t *)&b->data;
+    for(iter = g_used_socket_list.next; iter != &g_used_socket_list; iter = iter->next)
+    {
+        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_used_socket_list);
         tconnd_socket_delete(s);
     }
+
 
     if(close(g_listenfd) != 0)
     {

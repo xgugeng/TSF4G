@@ -114,11 +114,12 @@ TERROR_CODE process_input_tbus()
 
         for(i = 0; i < head->cid_list_num; ++i)
         {
-            tconnd_socket_t *socket = (tconnd_socket_t*)tconnd_mempool_get(e_tconnd_socket, head->cid_list[i].id);
-            if(socket == NULL)
+            tconnd_socket_t *socket = NULL;
+            if(head->cid_list[i].id >= g_socket_list_num)
             {
                 continue;
             }
+            socket = &g_socket_list[head->cid_list[i].id];
             
             if(head->cid_list[i].sn != socket->sn)
             {

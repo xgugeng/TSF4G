@@ -16,6 +16,9 @@
 #pragma pack(push,1)
 typedef struct _package_buff_t
 {
+    TLIBC_LIST_HEAD g_unused_package_list;
+    TLIBC_LIST_HEAD g_used_package_list;
+
     size_t size;
     char head[BSCP_HEAD_T_SIZE];    
     char body[1];
@@ -45,6 +48,10 @@ typedef struct _tconnd_socket_op_list
 
 typedef struct _tconnd_socket_t
 {
+    TLIBC_LIST_HEAD g_used_socket_list;
+    TLIBC_LIST_HEAD g_unused_socket_list;
+
+
     uint32_t id;
     uint64_t sn;
 	tconnd_socket_status_t status;
@@ -66,13 +73,14 @@ typedef struct _tconnd_socket_t
     size_t iov_num;
 }tconnd_socket_t;
 
-#define TCONND_SOCKET_INVALID_SN 0
+#define TCONND_SOCKET_INVALID_SN ULONG_MAX
+
+extern tuint64 g_socket_sn;
+
 
 tconnd_socket_t *tconnd_socket_new();
 
 void tconnd_socket_delete(tconnd_socket_t *self);
-
-TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self);
 

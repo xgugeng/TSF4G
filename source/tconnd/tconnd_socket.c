@@ -25,15 +25,7 @@
 #include <netinet/tcp.h>
 
 
-static tuint64 g_socket_sn = TCONND_SOCKET_INVALID_SN;
-
-
-static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
-{
-    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
-    DEBUG_LOG("socket [%d, %llu] accept_timeout", self->id, self->sn);
-    tconnd_socket_delete(self);
-}
+tuint64 g_socket_sn = 0;
 
 
 static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
@@ -45,31 +37,42 @@ static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
 
 tconnd_socket_t *tconnd_socket_new()
 {
-    tconnd_socket_t *socket= tconnd_mempool_alloc(e_tconnd_socket);
-	if(socket != NULL)
-	{
-    	tlibc_mempool_block_t *b = TLIBC_CONTAINER_OF(socket, tlibc_mempool_block_t, data);
-    	int id = tlibc_mempool_block2id(g_socket_pool, b);
-    	tlibc_mempool_block_t *_b = (tlibc_mempool_block_t*)tlibc_mempool_id2block(g_socket_pool, id);
-    	id = id;
-    	_b =_b;
-    	
-	    socket->id = tlibc_mempool_ptr2id(g_socket_pool, socket);
-	    socket->sn = TCONND_SOCKET_INVALID_SN;
-	    socket->status = e_tconnd_socket_status_closed;
-	    socket->iov_num = 0;
-	    socket->iov_total_size = 0;
-	    socket->package_buff = NULL;
-	    tlibc_list_init(&socket->readable_list);
-	    tlibc_list_init(&socket->writable_list);
+    tconnd_socket_t *socket = NULL;
 
-	    
-        TIMER_ENTRY_BUILD(&socket->package_timeout, 0, NULL);
-        TIMER_ENTRY_BUILD(&socket->close_timeout, 0, NULL);
-        TIMER_ENTRY_BUILD(&socket->accept_timeout, 0, NULL);
-        socket->writable = FALSE;
-        socket->readable = FALSE;
+    if(tlibc_list_empty(&g_unused_socket_list))
+    {
+        goto done;
+    }
+    
+	if(g_socket_sn == TCONND_SOCKET_INVALID_SN)
+	{
+	    ERROR_LOG("g_socket_sn [%llu] == TCONND_SOCKET_INVALID_SN.", g_socket_sn);
+	    goto done;
 	}
+	
+	socket = TLIBC_CONTAINER_OF(g_unused_socket_list.next, tconnd_socket_t, g_unused_socket_list);
+    socket->id = socket - g_socket_list;
+    socket->sn = g_socket_sn;
+    socket->status = e_tconnd_socket_status_closed;
+    socket->iov_num = 0;
+    socket->iov_total_size = 0;
+    socket->package_buff = NULL;
+    tlibc_list_init(&socket->readable_list);
+    tlibc_list_init(&socket->writable_list);    
+    TIMER_ENTRY_BUILD(&socket->package_timeout, 0, NULL);
+    TIMER_ENTRY_BUILD(&socket->close_timeout, 0, NULL);
+    TIMER_ENTRY_BUILD(&socket->accept_timeout, 0, NULL);
+    socket->writable = FALSE;
+    socket->readable = FALSE;
+
+    ++g_socket_sn;
+
+    tlibc_list_del(&socket->g_unused_socket_list);
+    --g_unused_socket_list_num;
+    tlibc_list_add_tail(&socket->g_used_socket_list, &g_used_socket_list);
+    ++g_used_socket_list_num;
+    
+done:
     return socket;
 }
 
@@ -100,7 +103,12 @@ void tconnd_socket_delete(tconnd_socket_t *self)
         if(self->package_buff != NULL)
         {
             tlibc_timer_pop(&self->package_timeout);
-            tconnd_mempool_free(e_tconnd_package, self->package_buff);
+            
+            tlibc_list_del(&self->package_buff->g_used_package_list);
+            --g_used_package_list_num;
+            tlibc_list_add_tail(&self->package_buff->g_unused_package_list, &g_unused_package_list);
+            ++g_unused_package_list_num;
+
             self->package_buff = NULL;
         }
 
@@ -115,64 +123,10 @@ void tconnd_socket_delete(tconnd_socket_t *self)
 
     self->sn = TCONND_SOCKET_INVALID_SN;
 
-    tconnd_mempool_free(e_tconnd_socket, self);
-}
-
-TERROR_CODE tconnd_socket_accept(tconnd_socket_t *self)
-{
-    int nb = 1;
-    TERROR_CODE ret = E_TS_NOERROR;
-    socklen_t cnt_len;
-    struct sockaddr_in sockaddr;
-
-    memset(&sockaddr, 0, sizeof(struct sockaddr_in));
-    cnt_len = sizeof(struct sockaddr_in);
-    self->socketfd = accept(g_listenfd, (struct sockaddr *)&sockaddr, &cnt_len);
-
-    if(self->socketfd == -1)
-    {
-        switch(errno)
-        {
-            case EAGAIN:
-                ret = E_TS_WOULD_BLOCK;
-                break;
-            case EINTR:
-                ret = E_TS_WOULD_BLOCK;
-                break;
-            default:
-                ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
-                ret = E_TS_ERRNO;
-                break;
-        }
-        goto done;
-    }
-    
-    ++g_socket_sn;
-    if(g_socket_sn == TCONND_SOCKET_INVALID_SN)
-    {
-        ret = E_TS_ERROR;
-        ERROR_LOG("g_socket_sn overflow.");
-        goto close_socket;
-    }
-    self->sn = g_socket_sn;
-    
-	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
-	{
-        ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
-    	ret = E_TS_ERRNO;
-		goto close_socket;
-	}
-
-	TIMER_ENTRY_BUILD(&self->accept_timeout, 
-	    tconnd_timer_ms + TDTP_TIMER_ACCEPT_TIME_MS, tconnd_socket_accept_timeout);
-	tlibc_timer_push(&g_timer, &self->accept_timeout);
-	
-	self->status = e_tconnd_socket_status_syn_sent;
-	return ret;
-close_socket:
-    close(self->socketfd);
-done:
-    return ret;
+    tlibc_list_del(&self->g_used_socket_list);
+    --g_used_socket_list_num;
+    tlibc_list_add_tail(&self->g_unused_socket_list, &g_unused_socket_list);
+    ++g_unused_socket_list_num;
 }
 
 TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
@@ -363,16 +317,12 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     body_ptr = package_ptr + package_size;
     body_size = total_size - header_size - package_size;
 
-    
-    package_buff = tconnd_mempool_alloc(e_tconnd_package);
-    if(package_buff == NULL)
+
+    if(tlibc_list_empty(&g_unused_package_list))
     {
-//        WARN_LOG("tconnd_mempool_alloc(e_tconnd_package) return NULL");
         ret = E_TS_WOULD_BLOCK;
         goto done;
     }
-
-    
 
     r = recv(self->socketfd, body_ptr, body_size, 0);
     if(g_config.quickack)
@@ -399,19 +349,20 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         {
             ret = E_TS_ERRNO;
         }
-        tconnd_mempool_free(e_tconnd_package, package_buff);
         goto done;
     }
     
     if(self->package_buff != NULL)
     {
         DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->sn, self->package_buff->size);
-        
-        assert(package_size == self->package_buff->size);
-        memcpy(package_ptr, self->package_buff->head, self->package_buff->size);
-        tconnd_mempool_free(e_tconnd_package, self->package_buff);
-        self->package_buff = NULL;
+
         tlibc_timer_pop(&self->package_timeout);
+
+        tlibc_list_del(&self->package_buff->g_used_package_list);
+        --g_used_package_list_num;
+        tlibc_list_add_tail(&self->package_buff->g_unused_package_list, &g_unused_package_list);
+        ++g_unused_package_list_num;
+        self->package_buff = NULL;        
     }
     limit_ptr = body_ptr + r;
     
@@ -435,7 +386,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             if(remain_size > g_config.package_size)
             {
                 ret = E_TS_CLOSE;
-                tconnd_mempool_free(e_tconnd_package, package_buff);
                 goto done;            
             }
 
@@ -444,7 +394,14 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     
     if(limit_ptr - remain_ptr > 0)
-    {
+    {   
+        package_buff = TLIBC_CONTAINER_OF(g_unused_package_list.next, package_buff_t, g_unused_package_list);
+        
+        tlibc_list_del(&package_buff->g_unused_package_list);
+        --g_unused_package_list_num;
+        tlibc_list_add_tail(&package_buff->g_used_package_list, &g_used_package_list);
+        ++g_used_package_list_num;
+
         package_buff->size = limit_ptr - remain_ptr;        
         memcpy(package_buff->head, remain_ptr, package_buff->size);
         self->package_buff = package_buff;
@@ -455,10 +412,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         tlibc_timer_push(&g_timer, &self->package_timeout);
         assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
     }
-    else
-    {
-        tconnd_mempool_free(e_tconnd_package, package_buff);
-    }
+
 
     if(remain_ptr - package_ptr > 0)
     {
