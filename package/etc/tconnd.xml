@@ -2,10 +2,10 @@
 	<log_config>etc/tconnd_log.xml</log_config>	
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
-	<package_size>65536</package_size>
+	<package_size>10240</package_size>
 	<package_connections>10000</package_connections>
 	<package_ms_limit>5000</package_ms_limit>
-	<connections>65536</connections>
+	<connections>32767</connections>
 
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
