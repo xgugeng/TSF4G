@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h>
 
 tbus_t              *g_input_tbus;
 tbus_t              *g_output_tbus;
@@ -66,14 +67,14 @@ TERROR_CODE process_input_tbus()
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 	char*message;
-	size_t message_len;
+	size_t message_len = 0;
 	size_t len;
 	tuint32 i;
     TLIBC_LIST_HEAD writable_list;
     TLIBC_LIST_HEAD *iter;
 
 
-    ret = tbus_read_begin(g_input_tbus, &message, &message_len);
+    ret = tbus_read_begin(g_input_tbus, &message, (uint32_t*)&message_len);
     if(ret == E_TS_WOULD_BLOCK)
     {
         goto done;
@@ -118,7 +119,7 @@ TERROR_CODE process_input_tbus()
             
             if(!tlibc_mempool_id_test(&g_socket_pool, head->cid_list[i].id))
             {
-                WARN_LOG("head->cmd = %d [%u, %llu] , head->cid_list[i].id[%u] > g_socket_pool->unit_num[%zu]."
+                WARN_LOG("head->cmd = %d [%u, %"PRIu64"] , head->cid_list[i].id[%u] > g_socket_pool->unit_num[%zu]."
                    , head->cmd, head->cid_list[i].id, head->cid_list[i].sn, head->cid_list[i].id, g_socket_pool.unit_num);
                 continue;
             }
@@ -126,7 +127,7 @@ TERROR_CODE process_input_tbus()
 
             if(!tlibc_mempool_ptr_test(socket, mempool_entry, head->cid_list[i].sn))
             {
-                WARN_LOG("socket [%u, %llu] head->cmd = %d [%u, %llu] mismatch."
+                WARN_LOG("socket [%u, %"PRIu64"] head->cmd = %d [%u, %"PRIu64"] mismatch."
                     , socket->id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
                 continue;
             }
@@ -164,7 +165,7 @@ TERROR_CODE process_input_tbus()
         }        
     }
 
-    tbus_read_end(g_input_tbus, message_len);    
+    tbus_read_end(g_input_tbus, (uint32_t)message_len);    
 done:
     return ret;
 }

@@ -37,14 +37,14 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
     size_t head_size;
 
 
-    DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%llu pkg.size = %u data_size = %zu."
+    DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%"PRIu64" pkg.size = %u data_size = %zu."
         , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
 
     head_size = SIP_RSP_T_SIZE(pkg);
     len = head_size + data_size;
     for(;;)
     {
-        ret = tbus_send_begin(tb, &addr, &len);
+        ret = tbus_send_begin(tb, &addr, (uint32_t*)&len);
         if(ret == E_TS_NOERROR)
         {
             memcpy(addr, pkg, head_size);         
@@ -55,7 +55,7 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
                 memcpy(addr, data, data_size);
             }
             
-            tbus_send_end(tb, head_size + data_size);
+            tbus_send_end(tb, (uint32_t)(head_size + data_size));
             break;
         }
         else if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
@@ -80,7 +80,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
     sip_rsp_t rsp;
     TLIBC_UNUSED(body_ptr);
 
-    INFO_PRINT("req.cmd = %d req.cid = [%u, %llu] req.size = %u.", req->cmd, req->cid.id, req->cid.sn, req->size);
+    INFO_PRINT("req.cmd = %d req.cid = [%u, %"PRIu64"] req.size = %u.", req->cmd, req->cid.id, req->cid.sn, req->size);
     switch(req->cmd)
     {
     case e_sip_req_cmd_connect:
@@ -89,12 +89,12 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
         rsp.cid_list[0] = req->cid;
         rsp.size = 0;
         block_send_pkg(otb, &rsp, NULL, 0);
-        INFO_PRINT("[%u, %llu] accept.", req->cid.id, req->cid.sn);
+        INFO_PRINT("[%u, %"PRIu64"] accept.", req->cid.id, req->cid.sn);
         break;
     case e_sip_req_cmd_recv:
         if(req->size == 0)
         {
-            INFO_PRINT("[%u, %llu] client close.", req->cid.id, req->cid.sn);
+            INFO_PRINT("[%u, %"PRIu64"] client close.", req->cid.id, req->cid.sn);
             return 0;
         }
         else
@@ -106,7 +106,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 rsp.cid_list[0] = req->cid;
                 rsp.size = 0;
                 block_send_pkg(otb, &rsp, NULL, 0);
-                INFO_PRINT("[%llu] server close.", req->cid.sn);
+                INFO_PRINT("[%"PRIu64"] server close.", req->cid.sn);
             }
             else
             {
@@ -124,7 +124,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                     bscp_head_t_decode(pkg_size);
                     
                     next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
-                    DEBUG_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
+                    DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
                     
 
                     rsp.size = pkg_size;
@@ -158,7 +158,7 @@ int main()
     sip_req_t *pkg;
 	int ishm_id, oshm_id;
 	size_t len;
-	size_t message_len;
+	size_t message_len = 0;
 	TERROR_CODE ret;
     struct sigaction  sa;
 
@@ -192,7 +192,7 @@ int main()
 
 	for(;!g_sig_term;)
 	{
-		ret = tbus_read_begin(itb, &message, &message_len);
+		ret = tbus_read_begin(itb, &message, (uint32_t*)&message_len);
 		if(ret == E_TS_NOERROR)
 		{
 		    len = message_len;
@@ -212,7 +212,7 @@ int main()
                 len -= SIP_REQ_SIZE + body_size;
                 message += SIP_REQ_SIZE + body_size;
 	    	}			
-			tbus_read_end(itb, message_len);
+			tbus_read_end(itb, (uint32_t)message_len);
 			continue;
 		}
 		else if(ret == E_TS_WOULD_BLOCK)

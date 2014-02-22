@@ -16,7 +16,7 @@ TERROR_CODE tbus_init(tbus_t *tb, uint32_t size)
 		ret = E_TS_NO_MEMORY;
 		goto done;
 	}
-	tb->size = size - TLIBC_OFFSET_OF(tbus_t, buff);
+	tb->size = (uint32_t)(size - TLIBC_OFFSET_OF(tbus_t, buff));
 	return E_TS_NOERROR;
 done:
 	return ret;
@@ -64,7 +64,7 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, uint32_t *len)
 	}
 
 	*buf = tb->buff + tail_offset + sizeof(tbus_header_s);
-	*len = write_size - sizeof(tbus_header_s);
+	*len = write_size - (uint32_t)sizeof(tbus_header_s);
 
 done:
     return ret;
@@ -78,7 +78,7 @@ void tbus_send_end(tbus_t *tb, uint32_t len)
 	header->cmd = e_tbus_cmd_package;
 	header->size = len;
 
-	tail_offset += sizeof(tbus_header_s) + len;
+	tail_offset += (uint32_t)sizeof(tbus_header_s) + len;
 	tb->tail_offset = tail_offset;
 }
 
@@ -136,7 +136,7 @@ done:
 
 void tbus_read_end(tbus_t *tb, uint32_t len)
 {
-	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_s) + len;
+	tuint32 head_offset = tb->head_offset + (uint32_t)sizeof(tbus_header_s) + len;
 	if(head_offset >= tb->size)
 	{
 		head_offset = 0;

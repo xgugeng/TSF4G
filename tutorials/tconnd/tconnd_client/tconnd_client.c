@@ -151,7 +151,7 @@ static void robot_on_establish(robot_s *self)
             ++g_client_close_connections;
         }
         
-        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
+        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%zu]."
         , self->id, total_size, send_size, g_total);
     }
     else
@@ -386,7 +386,7 @@ static void robot_init(robot_s *self, int id)
 static void robot_on_recv(robot_s *self)
 {
     char buff[BUFF_SIZE];
-    int r;
+    ssize_t r;
     for(;;)
     {
         r = recv(self->socketfd, buff, BUFF_SIZE, 0);

@@ -29,7 +29,7 @@ LDPATH+= -L$(TLIBC_HOME)/lib
 #C compiler flags
 
 ifdef _RELEASE
-CFLAGS = -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe O3 $(CINC) -DTS_RELEASE -DTLOG_PRINT_LEVEL=e_tlog_warn
+CFLAGS = -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -O3 $(CINC) -DTS_RELEASE -DTLOG_PRINT_LEVEL=e_tlog_warn
 else
 CFLAGS = -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -g $(CINC) -DTS_DEBUG -DTLOG_PRINT_LEVEL=e_tlog_debug
 endif
