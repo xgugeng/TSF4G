@@ -337,8 +337,9 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     {
         DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->mempool_entry.sn, self->package_buff->size);
 
-        tlibc_timer_pop(&self->package_timeout);
+        memcpy(package_ptr, self->package_buff->head, self->package_buff->size);        
 
+        tlibc_timer_pop(&self->package_timeout);
         tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
         self->package_buff = NULL;        
     }
