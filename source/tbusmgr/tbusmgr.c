@@ -3,6 +3,14 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#ifdef TLOG_INSTANCE_LEVEL
+#undef TLOG_INSTANCE_LEVEL
+#endif//TLOG_INSTANCE_LEVEL
+#define TLOG_INSTANCE_LEVEL e_tlog_debug
+
+
+#include "tlog/tlog_instance.h"
+
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
@@ -11,25 +19,26 @@
 
 void version()
 {
-	printf ( "TBus Version %s.\n", TBUS_VERSION);
+	INFO_PRINT( "TBus Version %s.", TBUS_VERSION);
 }
 
 void help() 
 {
-	printf("tbusmgr ([-s size] && [-w shmkey] | --help | --version)\n");
-	printf("--help\tPrint the help.\n");
-	printf("--version\tPrint the version.\n");
-	printf("-s size -w shmkey\tCreate shared memory segments with shmkey, and initialize the memory for tbus.\n");
+	INFO_PRINT("tbusmgr ([-s size] && [-w shmkey] | --help | --version)");
+	INFO_PRINT("--help                Print the help.");
+	INFO_PRINT("--version             Print the version.");
+	INFO_PRINT("-s size -w shmkey     Create shared memory segments with shmkey, and initialize the memory for tbus.");
 }
 
 int main(int argc, char**argv)
 {
 	int i;
-	int shm_size = -1;
-	int shm_key = 0;
+	size_t shm_size = -1;
+	key_t shm_key = 0;
 	int shm_id;
 	void *shm_ptr = NULL;
 	tbus_t *tbus_ptr = NULL;
+	char *endptr;
 	TERROR_CODE ret;
 
 	if(argc < 2)
@@ -63,68 +72,70 @@ int main(int argc, char**argv)
 			{
 				arg = argv[++i];
 				if(arg == NULL)
-				{					
-					fprintf(stderr, "Missing size.\n");
+				{
+				    ERROR_PRINT("Missing size.");
 					help();
 					exit(1);
 				}
 				
 				errno = 0;
-				shm_size = atoi(arg);
+				shm_size = strtoull(arg, &endptr, 10);
 				if(errno != 0)
 				{
-					fprintf(stderr, "atoi(\"%s\") returned an error[%d].\n", arg, errno);
+                    ERROR_PRINT("strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno , strerror(errno));
 					exit(1);
 				}
-				if(shm_size <= 0)
+				if(endptr == arg)
 				{
-					fprintf(stderr, "invalid size[%d].\n", shm_size);
-					exit(1);
+				    ERROR_PRINT("strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].", arg, shm_size, *endptr);
+				    exit(1);
 				}
 			}
 			else if (strcmp(arg, "-w") == 0)
-			{			
+			{
 				arg = argv[++i];
 				if(arg == NULL)
 				{
-					fprintf(stderr, "Missing shmkey.\n");
+					ERROR_PRINT("Missing shmkey.");
 					help();
 					exit(1);
 				}
 
-				if(shm_size < 0)
-				{
-					fprintf(stderr, "Please specify shared memory size use -s option.\n");
-					exit(1);
-				}
 				errno = 0;
-				shm_key = atoi(arg);
+                shm_key = strtol(arg, &endptr, 10);
 				if(errno != 0)
 				{
-					fprintf(stderr, "atoi(\"%s\") returned an error[%d].\n", arg, errno);
+					ERROR_PRINT("strtol(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno, strerror(errno));
 					exit(1);
+				}
+				
+				if(endptr == arg)
+				{
+				    ERROR_PRINT("strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].", arg, shm_size, *endptr);
+				    exit(1);
 				}
 
 				errno = 0;
 				shm_id = shmget(shm_key, shm_size, 0664 | IPC_CREAT|IPC_EXCL);
 				if(shm_id == -1)
 				{
-					fprintf(stderr, "shmget(%d, %d, IPC_CREAT|IPC_EXCL) returned an error[%d].\n", shm_key, shm_size, errno);
+					ERROR_PRINT("shmget(%d, %zu, IPC_CREAT|IPC_EXCL) returned an errno[%d], %s.", shm_key, shm_size, errno, strerror(errno));
 					exit(1);
 				}
 				shm_ptr = shmat(shm_id, NULL, 0);
 				if(shm_ptr == NULL)
 				{
-					fprintf(stderr, "shmat(%d, NULL, 0) returned an error[%d].\n", shm_id, errno);
+					ERROR_PRINT("shmat(%d, NULL, 0) returned an errno[%d], %s.", shm_id, errno, strerror(errno));
 					goto error_free_memory;
 				}
 				tbus_ptr = (tbus_t*)shm_ptr;
 				ret = tbus_init(tbus_ptr, shm_size);
 				if(ret != E_TS_NOERROR)
 				{
-					fprintf(stderr, "tbus_init(%p) returned an error[%d].\n", tbus_ptr, ret);
+					ERROR_PRINT("tbus_init(%p) returned an error[%d].", tbus_ptr, ret);
 					goto error_free_memory;
 				}
+				INFO_PRINT("tbus_init succeed, shm_key = [%d] shm_size = [%zu].", shm_key, shm_size);
 				return 0;
 			error_free_memory:
 				shmctl(shm_id, IPC_RMID, 0);
@@ -132,7 +143,7 @@ int main(int argc, char**argv)
 			}
 			else
 			{
-				fprintf(stderr, "Unrecognized option: %s\n", arg);
+				ERROR_PRINT("Unrecognized option: %s.", arg);
 				help();
 				exit(1);
 			}
