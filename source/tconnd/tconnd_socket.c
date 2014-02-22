@@ -36,19 +36,19 @@ tconnd_socket_t *tconnd_socket_new()
 {
     tconnd_socket_t *socket = NULL;
 
-    if(tm_empty(&g_socket_pool))
+    if(tlibc_mempool_empty(&g_socket_pool))
     {
         goto done;
     }
     
-	if(g_socket_pool.sn == tm_invalid_id)
+	if(g_socket_pool.sn == tlibc_mempool_invalid_id)
 	{
 	    ERROR_LOG("g_socket_pool.sn [%llu] == g_socket_pool.sn.", g_socket_pool.sn);
 	    goto done;
 	}
 	
-	tm_alloc(&g_socket_pool, tconnd_socket_t, mempool_entry, socket);
-    socket->id = tm_ptr2id(&g_socket_pool, socket);
+	tlibc_mempool_alloc(&g_socket_pool, tconnd_socket_t, mempool_entry, socket);
+    socket->id = tlibc_mempool_ptr2id(&g_socket_pool, socket);
     socket->status = e_tconnd_socket_status_closed;
     socket->iov_num = 0;
     socket->iov_total_size = 0;
@@ -93,7 +93,7 @@ void tconnd_socket_delete(tconnd_socket_t *self)
         {
             tlibc_timer_pop(&self->package_timeout);
 
-            tm_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
+            tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
 
             self->package_buff = NULL;
         }
@@ -107,7 +107,7 @@ void tconnd_socket_delete(tconnd_socket_t *self)
         break;
     }
 
-    tm_free(&g_socket_pool, tconnd_socket_t, mempool_entry, self);
+    tlibc_mempool_free(&g_socket_pool, tconnd_socket_t, mempool_entry, self);
 }
 
 TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
@@ -299,7 +299,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     body_size = total_size - header_size - package_size;
 
 
-    if(tm_empty(&g_package_pool))
+    if(tlibc_mempool_empty(&g_package_pool))
     {
         ret = E_TS_WOULD_BLOCK;
         goto done;
@@ -339,7 +339,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
         tlibc_timer_pop(&self->package_timeout);
 
-        tm_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
+        tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
         self->package_buff = NULL;        
     }
     limit_ptr = body_ptr + r;
@@ -373,7 +373,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     
     if(limit_ptr - remain_ptr > 0)
     {   
-        tm_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
+        tlibc_mempool_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
 
         package_buff->size = limit_ptr - remain_ptr;        
         memcpy(package_buff->head, remain_ptr, package_buff->size);
@@ -393,6 +393,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         pkg->cid.id = self->id;
         pkg->cid.sn = self->mempool_entry.sn;
         pkg->size = remain_ptr - package_ptr;
+
         sip_req_t_code(pkg);
 
         tbus_send_end(g_output_tbus, remain_ptr - header_ptr);

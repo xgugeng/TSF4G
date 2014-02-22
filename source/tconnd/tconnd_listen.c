@@ -194,14 +194,14 @@ TERROR_CODE tconnd_listen_proc()
 	}
 	
 //2, 检查是否能分配socket
-    if(tm_over(&g_socket_pool))
+    if(tlibc_mempool_over(&g_socket_pool))
     {
         ret = E_TS_ERROR;
         ERROR_LOG("g_socket_pool.sn [%llu] == tm_invalid_id", g_socket_pool.sn);
         goto done;
     }
 
-    if(tm_empty(&g_socket_pool))
+    if(tlibc_mempool_empty(&g_socket_pool))
     {
         ret = E_TS_WOULD_BLOCK;
         goto done;

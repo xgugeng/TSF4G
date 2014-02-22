@@ -6,8 +6,8 @@
 #include "tlog/tlog_instance.h"
 #include "tconnd/tconnd_timer.h"
 
-tconnd_mempool_s g_socket_pool;
-tconnd_mempool_s g_package_pool;
+tlibc_mempool_t g_socket_pool;
+tlibc_mempool_t g_package_pool;
 
 
 static tlibc_timer_entry_t mempool_log_timeout;
@@ -45,7 +45,7 @@ TERROR_CODE tconnd_mempool_init()
             , g_socket_pool.unit_size, g_socket_pool.unit_num);
         goto done;
     }    
-    tm_init(&g_socket_pool, tconnd_socket_t, mempool_entry, g_socket_pool.pool
+    tlibc_mempool_init(&g_socket_pool, tconnd_socket_t, mempool_entry, g_socket_pool.pool
         , g_socket_pool.unit_size, g_socket_pool.unit_num);
 	INFO_LOG("g_socket_pool.unit_size = %zu, g_socket_pool.unit_num = %zu"
 	    , g_socket_pool.unit_size, g_socket_pool.unit_num);
@@ -63,7 +63,7 @@ TERROR_CODE tconnd_mempool_init()
         goto done;
     }
     
-    tm_init(&g_package_pool, package_buff_t, mempool_entry
+    tlibc_mempool_init(&g_package_pool, package_buff_t, mempool_entry
         , g_package_pool.pool, g_package_pool.unit_size, g_package_pool.unit_num);
 
 	INFO_LOG("g_package_pool.unit_size = %zu, g_package_pool.unit_num = %zu"

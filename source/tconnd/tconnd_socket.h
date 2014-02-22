@@ -10,13 +10,13 @@
 #include <limits.h>
 #include "tcommon/bscp.h"
 
-#include "tconnd/tconnd_mempool.h"
+#include "tlibc/core/tlibc_mempool.h"
 
 
 #pragma pack(push,1)
 typedef struct _package_buff_t
 {
-    tconnd_mempool_entry_s mempool_entry;
+    tlibc_mempool_entry_t mempool_entry;
     
     size_t size;
     char head[BSCP_HEAD_T_SIZE];    
@@ -41,7 +41,7 @@ typedef enum _tconnd_socket_status_t
 
 typedef struct _tconnd_socket_t
 {
-    tconnd_mempool_entry_s mempool_entry;
+    tlibc_mempool_entry_t mempool_entry;
 
     uint32_t id;
 

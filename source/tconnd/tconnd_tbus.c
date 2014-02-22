@@ -116,15 +116,15 @@ TERROR_CODE process_input_tbus()
         {
             tconnd_socket_t *socket = NULL;
             
-            if(!tm_id_test(&g_socket_pool, head->cid_list[i].id))
+            if(!tlibc_mempool_id_test(&g_socket_pool, head->cid_list[i].id))
             {
                 WARN_LOG("socket [%u, %llu] head->cmd = %d [%u, %llu] mismatch."
                    , socket->id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
                 continue;
             }
-            socket = (tconnd_socket_t*)tm_id2ptr(&g_socket_pool, head->cid_list[i].id);
+            socket = (tconnd_socket_t*)tlibc_mempool_id2ptr(&g_socket_pool, head->cid_list[i].id);
 
-            if(!tm_ptr_test(socket, mempool_entry, head->cid_list[i].sn))
+            if(!tlibc_mempool_ptr_test(socket, mempool_entry, head->cid_list[i].sn))
             {
                 WARN_LOG("socket [%u, %llu] head->cmd = %d [%u, %llu] mismatch."
                     , socket->id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
