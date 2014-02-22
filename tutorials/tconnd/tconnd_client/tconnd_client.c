@@ -24,7 +24,6 @@
 #include <signal.h>
 #include <assert.h>
 
-#define TLOG_INSTANCE_LEVEL e_tlog_info
 #include "tlog/tlog_instance.h"
 
 
@@ -36,15 +35,19 @@
 #define BUFF_SIZE 1024
 int g_epollfd;
 tlibc_timer_t g_timer;
-
-
-#define ROBOT_NUM 2000
 #define ROBOT_MAX_EVENTS 1024
+
+
+
+#define ROBOT_NUM 2
+tuint32 g_limit = 10 * 1000000;
+
+
 
 tuint64 g_start_ms;
 tuint64 g_connected_ms;
 tuint32 g_total = 0;
-tuint32 g_limit = 1000 * 1000000;
+
 
 
 tuint32 g_server_close_connections;
@@ -89,13 +92,13 @@ void robot_halt()
     tuint64 send_and_recv_time_ms = current_time_ms - g_connected_ms;
 
     ERROR_PRINT("summary:");    
-    INFO_PRINT("g_total_connect %u", g_total_connection);
-    INFO_PRINT("g_max_connection %u", g_max_connection);
-    INFO_PRINT("g_server_close_connections %u", g_server_close_connections);
-    INFO_PRINT("g_client_close_connections %u", g_client_close_connections);
-    INFO_PRINT("g_total_mb %.2lf", (double)g_total / (1024 * 1024));
-    INFO_PRINT("connect_time_s %.2lf", (double)connect_time_ms / 1000);
-    INFO_PRINT("send_and_recv_time_s %.2lf", (double)send_and_recv_time_ms / 1000);
+    WARN_PRINT("g_total_connect %u", g_total_connection);
+    WARN_PRINT("g_max_connection %u", g_max_connection);
+    WARN_PRINT("g_server_close_connections %u", g_server_close_connections);
+    WARN_PRINT("g_client_close_connections %u", g_client_close_connections);
+    WARN_PRINT("g_total_mb %.2lf", (double)g_total / (1024 * 1024));
+    WARN_PRINT("connect_time_s %.2lf", (double)connect_time_ms / 1000);
+    WARN_PRINT("send_and_recv_time_s %.2lf", (double)send_and_recv_time_ms / 1000);
     exit(0);
 }
 

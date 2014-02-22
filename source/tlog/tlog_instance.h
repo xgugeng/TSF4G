@@ -6,6 +6,10 @@
 #include <time.h>
 #include <sys/uio.h>
 
+//最终的log级别为配置文件里和宏定义的最高级
+#ifndef TLOG_INSTANCE_LEVEL
+#define TLOG_INSTANCE_LEVEL e_tlog_debug
+#endif//TLOG_INSTANCE_LEVEL
 
 extern tlog_t g_tlog_instance;
 
@@ -67,10 +71,30 @@ extern tlog_t g_tlog_instance;
 	}\
 }
 
+#if TLOG_INSTANCE_LEVEL <= e_tlog_error
 #define ERROR_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_error, __VA_ARGS__)
+#else
+#define ERROR_LOG(...)
+#endif
+
+#if TLOG_INSTANCE_LEVEL <= e_tlog_warn
 #define WARN_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_warn, __VA_ARGS__)
+#else
+#define WARN_LOG(...)
+#endif
+
+#if TLOG_INSTANCE_LEVEL <= e_tlog_info
 #define INFO_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_info, __VA_ARGS__)
+#else
+#define INFO_LOG(...)
+#endif
+
+#if TLOG_INSTANCE_LEVEL <= e_tlog_debug
 #define DEBUG_LOG(...) TLOG_LOG(&g_tlog_instance, e_tlog_debug, __VA_ARGS__)
+#else
+#define DEBUG_LOG(...)
+#endif
+
 
 #define TLOG_ERROR_COLOR "\033[;31m"
 #define TLOG_WARN_COLOR "\033[;33m"
@@ -81,9 +105,7 @@ extern tlog_t g_tlog_instance;
 #define TLOG_RST_COLOR "\033[0m"
 #define TLOG_RST_COLOR_LEN 4
 
-#ifndef TLOG_INSTANCE_LEVEL
-#define TLOG_INSTANCE_LEVEL e_tlog_debug
-#endif//TLOG_INSTANCE_LEVEL
+
 
 #include <string.h>
 #define TLOG_PRINT(fout, lv, ...)\
@@ -118,11 +140,29 @@ extern tlog_t g_tlog_instance;
     }\
 }
 
-#define ERROR_PRINT(...) TLOG_PRINT(stderr, e_tlog_error, __VA_ARGS__)
-#define WARN_PRINT(...) TLOG_PRINT(stderr, e_tlog_warn, __VA_ARGS__)
-#define INFO_PRINT(...) TLOG_PRINT(stdout, e_tlog_info, __VA_ARGS__)
-#define DEBUG_PRINT(...) TLOG_PRINT(stdout, e_tlog_debug, __VA_ARGS__)
+#if TLOG_INSTANCE_LEVEL <= e_tlog_error
+#define ERROR_PRINT(...) TLOG_PRINT(&g_tlog_instance, e_tlog_error, __VA_ARGS__)
+#else
+#define ERROR_PRINT(...)
+#endif
 
+#if TLOG_INSTANCE_LEVEL <= e_tlog_warn
+#define WARN_PRINT(...) TLOG_PRINT(&g_tlog_instance, e_tlog_warn, __VA_ARGS__)
+#else
+#define WARN_PRINT(...)
+#endif
+
+#if TLOG_INSTANCE_LEVEL <= e_tlog_info
+#define INFO_PRINT(...) TLOG_PRINT(&g_tlog_instance, e_tlog_info, __VA_ARGS__)
+#else
+#define INFO_PRINT(...)
+#endif
+
+#if TLOG_INSTANCE_LEVEL <= e_tlog_debug
+#define DEBUG_PRINT(...) TLOG_PRINT(&g_tlog_instance, e_tlog_debug, __VA_ARGS__)
+#else
+#define DEBUG_PRINT(...)
+#endif
 
 #endif//_H_TLOG_INSTANCE_H
 

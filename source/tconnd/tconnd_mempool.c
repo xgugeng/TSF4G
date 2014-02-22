@@ -37,7 +37,7 @@ static void tconnd_mempool_log(const tlibc_timer_entry_t *super)
 TERROR_CODE tconnd_mempool_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
-    size_t size;
+    size_t size, unit_size;
     TLIBC_ERROR_CODE r;
 
     size = TLIBC_MEMPOOL_SIZE(sizeof(tconnd_socket_t), g_config.connections);
@@ -61,7 +61,8 @@ TERROR_CODE tconnd_mempool_init()
 
 
 
-    size = TLIBC_MEMPOOL_SIZE(sizeof(package_buff_t), MAX_PACKAGE_NUM);
+    unit_size = TLIBC_OFFSET_OF(package_buff_t, body) + g_config.package_size;
+    size = TLIBC_MEMPOOL_SIZE(unit_size, g_config.package_connections);
 	g_package_pool = (tlibc_mempool_t*)malloc(size);
 	if(g_package_pool == NULL)
 	{
@@ -69,7 +70,7 @@ TERROR_CODE tconnd_mempool_init()
     	ret = E_TS_ERROR;
 		goto done;
 	}
-	r = tlibc_mempool_init(g_package_pool, size, sizeof(package_buff_t));
+	r = tlibc_mempool_init(g_package_pool, size, unit_size);
 	if(r != E_TLIBC_NOERROR)
 	{
         ERROR_LOG("tlibc_mempool_init return %d.", r);

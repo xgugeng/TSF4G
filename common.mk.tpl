@@ -29,9 +29,9 @@ LDPATH+= -L$(TLIBC_HOME)/lib
 #C compiler flags
 
 ifdef _RELEASE
-CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror -D NDEBUG -O3
+CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror -D NDEBUG -O3 -D TLOG_INSTANCE_LEVEL=e_tlog_warn
 else
-CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror
+CFLAGS = -g -Wall -Wextra -pipe -D_NEW_LIC -D_GNU_SOURCE -D_REENTRANT -fPIC $(CINC) -Werror -D TLOG_INSTANCE_LEVEL=e_tlog_debug
 endif
 
 MAKE = make -I $(ROOT_DIR)

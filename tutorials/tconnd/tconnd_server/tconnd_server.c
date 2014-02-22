@@ -2,7 +2,6 @@
 #include "tcommon/sip.h"
 #include "tcommon/bscp.h"
 
-#define TLOG_INSTANCE_LEVEL e_tlog_error
 #include "tlog/tlog_instance.h"
 
 
@@ -93,7 +92,7 @@ sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
     case e_sip_req_cmd_recv:
         if(req->size == 0)
         {
-            INFO_PRINT("[%llu] client close.", req->cid.sn);
+            INFO_PRINT("[%u, %llu] client close.", req->cid.id, req->cid.sn);
             return 0;
         }
         else

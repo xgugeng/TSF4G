@@ -340,7 +340,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     else
     {
-        package_size = self->package_buff->buff_size;
+        package_size = self->package_buff->size;
     }
     body_size = 1;
     
@@ -405,10 +405,10 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     
     if(self->package_buff != NULL)
     {
-        DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->sn, self->package_buff->buff_size);
+        DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->sn, self->package_buff->size);
         
-        assert(package_size == self->package_buff->buff_size);
-        memcpy(package_ptr, self->package_buff->buff, package_size);
+        assert(package_size == self->package_buff->size);
+        memcpy(package_ptr, self->package_buff->head, self->package_buff->size);
         tconnd_mempool_free(e_tconnd_package, self->package_buff);
         self->package_buff = NULL;
         tlibc_timer_pop(&self->package_timeout);
@@ -421,17 +421,23 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     else
     {
+
         for(iter = package_ptr; iter <= limit_ptr;)
-        {
+        {        
             bscp_head_t remain_size;
             remain_ptr = iter;
-
             if((size_t)(limit_ptr - iter) < BSCP_HEAD_T_SIZE)
             {
                 break;
             }
             remain_size = *(bscp_head_t*)iter;
             bscp_head_t_decode(remain_size);
+            if(remain_size > g_config.package_size)
+            {
+                ret = E_TS_CLOSE;
+                tconnd_mempool_free(e_tconnd_package, package_buff);
+                goto done;            
+            }
 
             iter += BSCP_HEAD_T_SIZE + remain_size;
         }
@@ -439,8 +445,8 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     
     if(limit_ptr - remain_ptr > 0)
     {
-        package_buff->buff_size = limit_ptr - remain_ptr;
-        memcpy(package_buff->buff, remain_ptr, limit_ptr - remain_ptr);
+        package_buff->size = limit_ptr - remain_ptr;        
+        memcpy(package_buff->head, remain_ptr, package_buff->size);
         self->package_buff = package_buff;
 
         

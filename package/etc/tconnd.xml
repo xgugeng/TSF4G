@@ -2,11 +2,14 @@
 	<log_config>etc/tconnd_log.xml</log_config>	
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
-	<backlog>128</backlog>
+	<package_size>65536</package_size>
+	<package_connections>1000</package_connections>
 	<connections>2000</connections>
+
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>
+	<backlog>128</backlog>
 
 	<defer_accept>0</defer_accept>
 	<sndbuf>10000000</sndbuf>

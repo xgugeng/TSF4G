@@ -8,21 +8,19 @@
 #include "tcommon/sip.h"
 #include <sys/uio.h>
 #include <limits.h>
-
+#include "tcommon/bscp.h"
 #define TDTP_TIMER_ACCEPT_TIME_MS 5000
 #define TDTP_TIMER_PACKAGE_TIME_MS 5000
 
 
-#define MAX_PACKAGE_NUM 1024
-
-///warning 这玩意分包的时候要注意啊
-#define PACKAG_BUFF_SIZE 65536
-
+#pragma pack(push,1)
 typedef struct _package_buff_t
 {
-    char buff[PACKAG_BUFF_SIZE];
-    size_t buff_size;
+    size_t size;
+    char head[BSCP_HEAD_T_SIZE];    
+    char body[1];
 }package_buff_t;
+#pragma pack(pop)
 
 
 typedef enum _tconnd_socket_status_t
