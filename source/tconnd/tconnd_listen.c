@@ -28,7 +28,7 @@ int g_listenfd;
 static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
 {
     tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
-    DEBUG_LOG("socket [%d, %llu] accept_timeout", self->id, self->sn);
+    DEBUG_LOG("socket [%u, %llu] accept_timeout", self->id, self->mempool_entry.sn);
     tconnd_socket_delete(self);
 }
 
@@ -37,7 +37,6 @@ TERROR_CODE tconnd_listen_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
 	struct sockaddr_in  listenaddr;
-    TLIBC_LIST_HEAD *iter;
     int value;
 
 	g_listenfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -155,15 +154,7 @@ TERROR_CODE tconnd_listen_init()
             goto close_listenfd;
     	}
 	}
-    
 
- 
-
-    for(iter = g_unused_socket_list.next; iter != &g_unused_socket_list; iter = iter->next)
-    {
-        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_unused_socket_list);
-        s->sn = TCONND_SOCKET_INVALID_SN;
-    }
 	goto done;
 close_listenfd:
     if(close(g_listenfd) != 0)
@@ -203,14 +194,14 @@ TERROR_CODE tconnd_listen_proc()
 	}
 	
 //2, 检查是否能分配socket
-    if(g_socket_sn == TCONND_SOCKET_INVALID_SN)
+    if(tm_over(&g_socket_pool))
     {
         ret = E_TS_ERROR;
-        ERROR_LOG("g_socket_sn [%llu] == TCONND_SOCKET_INVALID_SN", g_socket_sn);
+        ERROR_LOG("g_socket_pool.sn [%llu] == tm_invalid_id", g_socket_pool.sn);
         goto done;
     }
 
-    if(tlibc_list_empty(&g_unused_socket_list))
+    if(tm_empty(&g_socket_pool))
     {
         ret = E_TS_WOULD_BLOCK;
         goto done;
@@ -251,7 +242,7 @@ TERROR_CODE tconnd_listen_proc()
 	conn_socket->socketfd = socketfd;
 
 	TIMER_ENTRY_BUILD(&conn_socket->accept_timeout, 
-	    tconnd_timer_ms + TDTP_TIMER_ACCEPT_TIME_MS, tconnd_socket_accept_timeout);
+	    tconnd_timer_ms + g_config.accept_ms_limit, tconnd_socket_accept_timeout);
 	tlibc_timer_push(&g_timer, &conn_socket->accept_timeout);
 	
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
@@ -260,7 +251,7 @@ TERROR_CODE tconnd_listen_proc()
 
 //5, 发送连接的通知	
 	pkg->cmd = e_sip_req_cmd_connect;
-    pkg->cid.sn = conn_socket->sn;
+    pkg->cid.sn = conn_socket->mempool_entry.sn;
 	pkg->cid.id = conn_socket->id;
 	pkg->size = 0;
 	sip_req_t_code(pkg);
@@ -281,9 +272,9 @@ void tconnd_listen_fini()
 {
     TLIBC_LIST_HEAD *iter;    
 
-    for(iter = g_used_socket_list.next; iter != &g_used_socket_list; iter = iter->next)
+    for(iter = g_socket_pool.mempool_entry.used_list.next; iter != &g_socket_pool.mempool_entry.used_list; iter = iter->next)
     {
-        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_used_socket_list);
+        tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, mempool_entry.used_list);
         tconnd_socket_delete(s);
     }
 

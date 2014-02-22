@@ -9,12 +9,14 @@ struct tconnd_config_t
 	string<TSERVER_IP_LENGTH> 			ip;								#监听ip
 	uint16 								port;							#监听端口
 	uint32								package_size;					#包的大小
-	uint32								package_connections;
+	uint32								package_connections;			#包的个数
+	uint32								package_ms_limit;				#包超时的毫秒
 	uint32 								connections;					#最多可以接入的连接数
 	int32 								tdgi_pass;						#转发的tdgi服务器
 	int32 								input_tbuskey;					#输入tbuskey
 	int32								output_tbuskey; 				#输出tbuskey
 	uint32 								backlog;						#未处理的连接数
+	uint32								accept_ms_limit;				#接入连接的超市时间
 
 	int32                               defer_accept;   				#TCP_DEFER_ACCEPT
 	uint32								sndbuf;							#SO_SNDBUF

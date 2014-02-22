@@ -25,13 +25,10 @@
 #include <netinet/tcp.h>
 
 
-tuint64 g_socket_sn = 0;
-
-
 static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
 {
     tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, package_timeout);
-    DEBUG_LOG("socket [%d, %llu] package_timeout", self->id, self->sn);
+    DEBUG_LOG("socket [%d, %llu] package_timeout", self->id, self->mempool_entry.sn);
     tconnd_socket_delete(self);
 }
 
@@ -39,20 +36,19 @@ tconnd_socket_t *tconnd_socket_new()
 {
     tconnd_socket_t *socket = NULL;
 
-    if(tlibc_list_empty(&g_unused_socket_list))
+    if(tm_empty(&g_socket_pool))
     {
         goto done;
     }
     
-	if(g_socket_sn == TCONND_SOCKET_INVALID_SN)
+	if(g_socket_pool.sn == tm_invalid_id)
 	{
-	    ERROR_LOG("g_socket_sn [%llu] == TCONND_SOCKET_INVALID_SN.", g_socket_sn);
+	    ERROR_LOG("g_socket_pool.sn [%llu] == g_socket_pool.sn.", g_socket_pool.sn);
 	    goto done;
 	}
 	
-	socket = TLIBC_CONTAINER_OF(g_unused_socket_list.next, tconnd_socket_t, g_unused_socket_list);
-    socket->id = socket - g_socket_list;
-    socket->sn = g_socket_sn;
+	tm_alloc(&g_socket_pool, tconnd_socket_t, mempool_entry, socket);
+    socket->id = tm_ptr2id(&g_socket_pool, socket);
     socket->status = e_tconnd_socket_status_closed;
     socket->iov_num = 0;
     socket->iov_total_size = 0;
@@ -64,13 +60,6 @@ tconnd_socket_t *tconnd_socket_new()
     TIMER_ENTRY_BUILD(&socket->accept_timeout, 0, NULL);
     socket->writable = FALSE;
     socket->readable = FALSE;
-
-    ++g_socket_sn;
-
-    tlibc_list_del(&socket->g_unused_socket_list);
-    --g_unused_socket_list_num;
-    tlibc_list_add_tail(&socket->g_used_socket_list, &g_used_socket_list);
-    ++g_used_socket_list_num;
     
 done:
     return socket;
@@ -80,7 +69,7 @@ void tconnd_socket_delete(tconnd_socket_t *self)
 {
     if(self->status != e_tconnd_socket_status_closed)
     {
-        INFO_LOG("socket [%d, %llu] delete state = %d  ", self->id, self->sn, self->status);
+        INFO_LOG("socket [%d, %llu] delete state = %d  ", self->id, self->mempool_entry.sn, self->status);
     }
 
     switch(self->status)
@@ -90,24 +79,21 @@ void tconnd_socket_delete(tconnd_socket_t *self)
     case e_tconnd_socket_status_syn_sent:
         if(close(self->socketfd) != 0)
         {
-            ERROR_LOG("socket [%d, %llu] close errno[%d], %s", self->id, self->sn, errno, strerror(errno));
+            ERROR_LOG("socket [%d, %llu] close errno[%d], %s", self->id, self->mempool_entry.sn, errno, strerror(errno));
         }
         tlibc_timer_pop(&self->accept_timeout);
         break;
     case e_tconnd_socket_status_established:
         if(close(self->socketfd) != 0)
         {
-            ERROR_LOG("socket [%d, %llu] close errno[%d], %s", self->id, self->sn, errno, strerror(errno));
+            ERROR_LOG("socket [%d, %llu] close errno[%d], %s", self->id, self->mempool_entry.sn, errno, strerror(errno));
         }
         
         if(self->package_buff != NULL)
         {
             tlibc_timer_pop(&self->package_timeout);
-            
-            tlibc_list_del(&self->package_buff->g_used_package_list);
-            --g_used_package_list_num;
-            tlibc_list_add_tail(&self->package_buff->g_unused_package_list, &g_unused_package_list);
-            ++g_unused_package_list_num;
+
+            tm_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
 
             self->package_buff = NULL;
         }
@@ -121,12 +107,7 @@ void tconnd_socket_delete(tconnd_socket_t *self)
         break;
     }
 
-    self->sn = TCONND_SOCKET_INVALID_SN;
-
-    tlibc_list_del(&self->g_used_socket_list);
-    --g_used_socket_list_num;
-    tlibc_list_add_tail(&self->g_unused_socket_list, &g_unused_socket_list);
-    ++g_unused_socket_list_num;
+    tm_free(&g_socket_pool, tconnd_socket_t, mempool_entry, self);
 }
 
 TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
@@ -136,7 +117,7 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
     
     if(self->status != e_tconnd_socket_status_established)
     {
-        DEBUG_LOG("socket [%llu] status != e_tconnd_socket_status_established", self->sn);
+        DEBUG_LOG("socket [%llu] status != e_tconnd_socket_status_established", self->mempool_entry.sn);
         ret = E_TS_CLOSE;
         goto done;
     }
@@ -151,17 +132,17 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
     {    
         if((errno == EINTR) || (errno == EAGAIN)|| (errno == EPIPE))
         {
-            DEBUG_LOG("socket [%u, %llu] writev return [%zi], errno [%d], %s", self->id, self->sn, send_size, errno, strerror(errno));
+            DEBUG_LOG("socket [%u, %llu] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));
         }
         else
         {
-            WARN_LOG("socket [%u, %llu] writev return [%zi], errno [%d], %s", self->id, self->sn, send_size, errno, strerror(errno));
+            WARN_LOG("socket [%u, %llu] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));
         }
     }
     else if((size_t)send_size != self->iov_total_size)
     {
      
-        DEBUG_LOG("socket [%d, %llu] writev return [%zi].", self->id, self->sn, send_size);
+        DEBUG_LOG("socket [%d, %llu] writev return [%zi].", self->id, self->mempool_entry.sn, send_size);
         
         ret = E_TS_CLOSE;
         goto done;
@@ -181,7 +162,7 @@ static TERROR_CODE tconnd_socket_on_cmd_send(tconnd_socket_t *self, const char* 
     
     if((body_size > SSIZE_MAX) || (body_size == 0))
     {
-        ERROR_LOG("socket [%llu] send invalid buff, size = [%zu].", self->sn, body_size);
+        ERROR_LOG("socket [%llu] send invalid buff, size = [%zu].", self->mempool_entry.sn, body_size);
         ret = E_TS_CLOSE;
         goto done;
     }
@@ -229,7 +210,7 @@ static TERROR_CODE tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
     }
     else
     {
-        DEBUG_LOG("socket [%llu] established.", self->sn);
+        DEBUG_LOG("socket [%llu] established.", self->mempool_entry.sn);
         
         self->status = e_tconnd_socket_status_established;
     }
@@ -250,13 +231,13 @@ TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head,
         return tconnd_socket_on_cmd_accept(self);
     case e_sip_rsp_cmd_close:
         {
-            DEBUG_LOG("socket [%llu] closing.", self->sn);
+            DEBUG_LOG("socket [%llu] closing.", self->mempool_entry.sn);
             ret = E_TS_CLOSE;
             goto done;
         };
     default:
         ret = E_TS_CLOSE;
-        ERROR_LOG("socket [%llu] closing when it received the invalid cmd [%d].", self->sn, head->cmd);
+        ERROR_LOG("socket [%llu] closing when it received the invalid cmd [%d].", self->mempool_entry.sn, head->cmd);
         goto done;
 
     }
@@ -318,7 +299,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     body_size = total_size - header_size - package_size;
 
 
-    if(tlibc_list_empty(&g_unused_package_list))
+    if(tm_empty(&g_package_pool))
     {
         ret = E_TS_WOULD_BLOCK;
         goto done;
@@ -338,12 +319,12 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         {
             pkg->cmd = e_sip_req_cmd_recv;
             pkg->cid.id = self->id;
-            pkg->cid.sn = self->sn;
+            pkg->cid.sn = self->mempool_entry.sn;
             pkg->size = 0;
             sip_req_t_code(pkg);
             tbus_send_end(g_output_tbus, header_size);
             ret = E_TS_CLOSE;
-            DEBUG_LOG("socket [%llu] closed by client.", self->sn);
+            DEBUG_LOG("socket [%llu] closed by client.", self->mempool_entry.sn);
         }
         else
         {
@@ -354,14 +335,11 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     
     if(self->package_buff != NULL)
     {
-        DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->sn, self->package_buff->size);
+        DEBUG_LOG("socket [%llu] have remain package_buff , size = %u", self->mempool_entry.sn, self->package_buff->size);
 
         tlibc_timer_pop(&self->package_timeout);
 
-        tlibc_list_del(&self->package_buff->g_used_package_list);
-        --g_used_package_list_num;
-        tlibc_list_add_tail(&self->package_buff->g_unused_package_list, &g_unused_package_list);
-        ++g_unused_package_list_num;
+        tm_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
         self->package_buff = NULL;        
     }
     limit_ptr = body_ptr + r;
@@ -395,12 +373,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     
     if(limit_ptr - remain_ptr > 0)
     {   
-        package_buff = TLIBC_CONTAINER_OF(g_unused_package_list.next, package_buff_t, g_unused_package_list);
-        
-        tlibc_list_del(&package_buff->g_unused_package_list);
-        --g_unused_package_list_num;
-        tlibc_list_add_tail(&package_buff->g_used_package_list, &g_used_package_list);
-        ++g_used_package_list_num;
+        tm_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
 
         package_buff->size = limit_ptr - remain_ptr;        
         memcpy(package_buff->head, remain_ptr, package_buff->size);
@@ -408,7 +381,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
         
         TIMER_ENTRY_BUILD(&self->package_timeout, 
-            tconnd_timer_ms + TDTP_TIMER_PACKAGE_TIME_MS, tconnd_socket_package_timeout);
+            tconnd_timer_ms + g_config.package_ms_limit, tconnd_socket_package_timeout);
         tlibc_timer_push(&g_timer, &self->package_timeout);
         assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
     }
@@ -418,7 +391,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     {
         pkg->cmd = e_sip_req_cmd_recv;
         pkg->cid.id = self->id;
-        pkg->cid.sn = self->sn;
+        pkg->cid.sn = self->mempool_entry.sn;
         pkg->size = remain_ptr - package_ptr;
         sip_req_t_code(pkg);
 
@@ -429,4 +402,5 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 done:
     return ret;
 }
+
 

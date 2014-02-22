@@ -9,16 +9,15 @@
 #include <sys/uio.h>
 #include <limits.h>
 #include "tcommon/bscp.h"
-#define TDTP_TIMER_ACCEPT_TIME_MS 5000
-#define TDTP_TIMER_PACKAGE_TIME_MS 5000
+
+#include "tconnd/tconnd_mempool.h"
 
 
 #pragma pack(push,1)
 typedef struct _package_buff_t
 {
-    TLIBC_LIST_HEAD g_unused_package_list;
-    TLIBC_LIST_HEAD g_used_package_list;
-
+    tconnd_mempool_entry_s mempool_entry;
+    
     size_t size;
     char head[BSCP_HEAD_T_SIZE];    
     char body[1];
@@ -40,20 +39,12 @@ typedef enum _tconnd_socket_status_t
     #endif
 #endif
 
-typedef struct _tconnd_socket_op_list
-{
-    tuint32 num;
-
-}tconnd_socket_op_list;
-
 typedef struct _tconnd_socket_t
 {
-    TLIBC_LIST_HEAD g_used_socket_list;
-    TLIBC_LIST_HEAD g_unused_socket_list;
-
+    tconnd_mempool_entry_s mempool_entry;
 
     uint32_t id;
-    uint64_t sn;
+
 	tconnd_socket_status_t status;
 	int socketfd;
 
@@ -72,11 +63,6 @@ typedef struct _tconnd_socket_t
     struct iovec iov[TCONND_SOCKET_OP_LIST_MAX];
     size_t iov_num;
 }tconnd_socket_t;
-
-#define TCONND_SOCKET_INVALID_SN ULONG_MAX
-
-extern tuint64 g_socket_sn;
-
 
 tconnd_socket_t *tconnd_socket_new();
 
