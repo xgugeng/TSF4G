@@ -96,7 +96,7 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
 	}
 	else
 	{
-		read_size = tb->size - head_offset;
+		read_size = tb->size - head_offset - 1;
 	}
 
 	if(read_size < sizeof(tbus_header_s))

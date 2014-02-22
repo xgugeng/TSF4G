@@ -39,9 +39,10 @@ tlibc_timer_t g_timer;
 
 
 
-#define ROBOT_NUM 2
-tuint32 g_limit = 10 * 1000000;
+#define ROBOT_NUM 1000
+tuint32 g_limit = 1000 * 1000000;
 
+int g_connected = FALSE;
 
 
 tuint64 g_start_ms;
@@ -110,6 +111,7 @@ void robot_on_establish(robot_s *self)
     int len;
     ssize_t total_size;
     ssize_t send_size;
+    
     snprintf(data_ptr, BUFF_SIZE - BSCP_HEAD_T_SIZE, "hello %ld", time(0));
     len = 1024;
     *pkg_ptr = len;
@@ -117,18 +119,39 @@ void robot_on_establish(robot_s *self)
     total_size = len + 2;
 
     send_size = send(self->socketfd, buff, total_size, 0);
-    if(send_size != total_size)
+    if(send_size < 0)
+    {    
+        if((errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
+        {
+            ERROR_PRINT("robot [%d] send errno [%d], %s", self->id, errno, strerror(errno));
+        }
+        else
+        {
+            WARN_PRINT("robot [%d] send errno [%d], %s", self->id, errno, strerror(errno));
+        }
+
+        if(g_connected)
+        {        
+            --g_cur_connection;
+            ++g_client_close_connections;
+        }
+        
+        
+        close(self->socketfd);
+        self->state = e_closed;        
+    }
+    else if(send_size != total_size)
     {
         close(self->socketfd);
         self->state = e_closed;
-        --g_cur_connection;
-        if((send_size < 0) && (errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
-        {
-//            ERROR_PRINT("robot [%d] send errno [%d], %s\n", self->id, errno, strerror(errno));
+        if(g_connected)
+        {        
+            --g_cur_connection;
+            ++g_client_close_connections;
         }
-        ++g_client_close_connections;
-//        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
-//        , self->id, total_size, send_size, g_total);
+        
+        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%u]."
+        , self->id, total_size, send_size, g_total);
     }
     else
     {
@@ -236,7 +259,7 @@ void robot_on_connected(robot_s *self)
     }
 }
 
-int g_connected = FALSE;
+
 void robot_timeout(const tlibc_timer_entry_t *super)
 {
     robot_s *self = TLIBC_CONTAINER_OF(super, robot_s, entry);
@@ -293,9 +316,9 @@ void robot_on_connect(robot_s *self)
 
     if(!g_connected)
     {
-        if(g_cur_connection % 10 == 0)
+        if(g_cur_connection % 100 == 0)
         {
-            INFO_PRINT("g_cur_connection = %u", g_cur_connection);
+            WARN_PRINT("g_cur_connection = %u", g_cur_connection);
         }
         
         if(g_cur_connection == ROBOT_NUM)
@@ -316,8 +339,7 @@ void robot_on_connect(robot_s *self)
                 TIMER_ENTRY_BUILD(&g_robot[i].entry, g_timer.jiffies, robot_timeout);
                 tlibc_timer_push(&g_timer, &g_robot[i].entry);
             }
-
-            INFO_PRINT("All the robots connection established.");
+            WARN_PRINT("[%d] robots connection established.", ROBOT_NUM);
         }
     }
     else
@@ -332,24 +354,31 @@ void robot_init(robot_s *self, int id)
 {
 	self->state = e_closed;
 	self->id = id;
-	
-    robot_on_closed(self);
-    if(self->state != e_connected)
-    {
-        ERROR_PRINT("robot [%d] state error [%d]", self->id, self->state);
-        exit(1);
+
+	for(;;)
+	{
+        robot_on_closed(self);
+        if(self->state != e_connected)
+        {
+            ERROR_PRINT("robot [%d] state error [%d]", self->id, self->state);
+            exit(1);
+        }
+
+
+        robot_on_connected(self);    
+        if(self->state != e_connecting)
+        {
+            ERROR_PRINT("robot [%d] state error %d", self->id, self->state);
+            exit(1);
+        }
+
+        //如果服务器设置了TCP_DEFER_ACCEPT， 不发数据的话连接的建立会很慢.
+        robot_on_establish(self);
+        if(self->state == e_connecting)
+        {
+            break;
+        }
     }
-
-
-    robot_on_connected(self);    
-    if(self->state != e_connecting)
-    {
-        ERROR_PRINT("robot [%d] state error %d", self->id, self->state);
-        exit(1);
-    }
-
-    //如果服务器设置了TCP_DEFER_ACCEPT， 不发数据的话连接的建立会很慢.
-    robot_on_establish(self);
 }
 
 

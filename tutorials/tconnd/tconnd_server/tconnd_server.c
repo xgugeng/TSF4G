@@ -2,6 +2,7 @@
 #include "tcommon/sip.h"
 #include "tcommon/bscp.h"
 
+
 #include "tlog/tlog_instance.h"
 
 
@@ -122,7 +123,7 @@ sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                     bscp_head_t_decode(pkg_size);
                     
                     next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
-                    DEBUG_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
+                    DEBUG_PRINT("[%llu] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);                    
 
                     rsp.size = pkg_size;
 
