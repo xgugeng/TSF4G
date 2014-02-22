@@ -49,10 +49,12 @@ typedef struct _tconnd_socket_t
 	int socketfd;
 
 	tlibc_timer_entry_t accept_timeout;
-    tlibc_timer_entry_t package_timeout;
 	tlibc_timer_entry_t close_timeout;
 
+    TLIBC_LIST_HEAD package_socket_list;
+    tlibc_timer_entry_t package_timeout;
     package_buff_t *package_buff;
+    
     TLIBC_LIST_HEAD readable_list;
     TLIBC_LIST_HEAD writable_list;
     int writable;

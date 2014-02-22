@@ -13,14 +13,17 @@
 #include <errno.h>
 #include <string.h>
 
-int                 g_epollfd;
-static TLIBC_LIST_HEAD     readable_list;
+int                         g_epollfd;
+static TLIBC_LIST_HEAD      readable_list;
+TLIBC_LIST_HEAD             g_package_socket_list;
+
 
 TERROR_CODE tconnd_epoll_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
 
 	tlibc_list_init(&readable_list);
+	tlibc_list_init(&g_package_socket_list);
 
 	g_epollfd = epoll_create(g_config.connections);
 	if(g_epollfd == -1)
@@ -113,11 +116,25 @@ TERROR_CODE tconnd_epool_proc()
             //tbus满了
             ret = E_TS_WOULD_BLOCK;
             break;
-        }        
+        }
+        //如果包缓存不足， 那么断开一个需要等待数据的socket    
+        else if(r == E_TS_NO_MEMORY)
+        {
+            tconnd_socket_t *sock = NULL;
+            if(tlibc_list_empty(&g_package_socket_list))
+            {
+                ret = E_TS_NO_MEMORY;
+                ERROR_LOG("Not enough package buff.");
+                break;
+            }
+
+            sock = TLIBC_CONTAINER_OF(g_package_socket_list.next, tconnd_socket_t, package_socket_list);
+            assert(sock->package_buff != NULL);
+            WARN_LOG("close socket [%u, %llu] to release package buff.", sock->id, sock->mempool_entry.sn);
+            tconnd_socket_delete(sock);
+        }
         else if(r != E_TS_NOERROR)
         {
-            socket->readable = FALSE;
-            tlibc_list_del(iter);
             tconnd_socket_delete(socket);
         }
     }

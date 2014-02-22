@@ -53,6 +53,8 @@ tconnd_socket_t *tconnd_socket_new()
     socket->iov_num = 0;
     socket->iov_total_size = 0;
     socket->package_buff = NULL;
+    
+    tlibc_list_init(&socket->package_socket_list);
     tlibc_list_init(&socket->readable_list);
     tlibc_list_init(&socket->writable_list);    
     TIMER_ENTRY_BUILD(&socket->package_timeout, 0, NULL);
@@ -91,8 +93,8 @@ void tconnd_socket_delete(tconnd_socket_t *self)
         
         if(self->package_buff != NULL)
         {
+            tlibc_list_del(&self->package_socket_list);
             tlibc_timer_pop(&self->package_timeout);
-
             tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
 
             self->package_buff = NULL;
@@ -301,7 +303,8 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     if(tlibc_mempool_empty(&g_package_pool))
     {
-        ret = E_TS_WOULD_BLOCK;
+        ret = E_TS_NO_MEMORY;
+        WARN_LOG("socket [%u, %llu] try to receive data with no package buff.", self->id, self->mempool_entry.sn);
         goto done;
     }
 
@@ -339,9 +342,10 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
         memcpy(package_ptr, self->package_buff->head, self->package_buff->size);        
 
+        tlibc_list_del(&self->package_socket_list);
         tlibc_timer_pop(&self->package_timeout);
         tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
-        self->package_buff = NULL;        
+        self->package_buff = NULL;
     }
     limit_ptr = body_ptr + r;
     
@@ -379,12 +383,14 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         package_buff->size = limit_ptr - remain_ptr;        
         memcpy(package_buff->head, remain_ptr, package_buff->size);
         self->package_buff = package_buff;
+        tlibc_list_add_tail(&self->package_socket_list, &g_package_socket_list);        
 
         
         TIMER_ENTRY_BUILD(&self->package_timeout, 
             tconnd_timer_ms + g_config.package_ms_limit, tconnd_socket_package_timeout);
         tlibc_timer_push(&g_timer, &self->package_timeout);
         assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
+        DEBUG_LOG("socket [%u, %llu] need to cache package buff, size = [%u].", self->id, self->mempool_entry.sn, self->package_buff->size);
     }
 
 

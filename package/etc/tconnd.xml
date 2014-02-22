@@ -3,9 +3,9 @@
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
 	<package_size>65536</package_size>
-	<package_connections>1000</package_connections>
+	<package_connections>10000</package_connections>
 	<package_ms_limit>5000</package_ms_limit>
-	<connections>2000</connections>
+	<connections>65536</connections>
 
 	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
