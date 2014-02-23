@@ -15,7 +15,7 @@ struct tconnd_config_t
 	int32 								tdgi_pass;						#转发的tdgi服务器
 	int32 								input_tbuskey;					#输入tbuskey
 	int32								output_tbuskey; 				#输出tbuskey
-	uint32 								backlog;						#未处理的连接数
+	int32 								backlog;						#未处理的连接数
 	uint32								accept_ms_limit;				#接入连接的超市时间
 
 	int32                               defer_accept;   				#TCP_DEFER_ACCEPT

@@ -4,12 +4,12 @@
 
 #define TCONND_VERSION "0.0.1"
 
-void version()
+static void version()
 {
 	printf("TConnd version %s\n", TCONND_VERSION);
 }
 
-void help()
+static void help()
 {
 	fprintf(stderr, "Usage: tconnd [options] file\n");  
 	fprintf(stderr, "Options:\n");

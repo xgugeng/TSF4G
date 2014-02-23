@@ -22,13 +22,13 @@
 #define oSHM_KEY 10001
 
 
-const char *message = NULL;
+char *message = NULL;
 
 tbus_t *itb;
 tbus_t *otb;
 
 #define TBUS_MTU 65536
-void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t data_size)
+static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t data_size)
 {
     char *addr;
     size_t len = 0;
@@ -58,7 +58,7 @@ void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t d
             tbus_send_end(tb, head_size + data_size);
             break;
         }
-        else if(ret == E_TS_WOULD_BLOCK)
+        else if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
         {
             ++idle;
             if(idle > 30)
@@ -75,7 +75,7 @@ void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t d
 }
 
 
-sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
+static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 {
     sip_rsp_t rsp;
     TLIBC_UNUSED(body_ptr);
@@ -118,7 +118,7 @@ sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 limit = body_ptr + req->size;
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
-                    bscp_head_t pkg_size = *(bscp_head_t*)iter;
+                    bscp_head_t pkg_size = *(const bscp_head_t*)iter;
                     const char* pkg_content = iter + sizeof(bscp_head_t);
 
                     bscp_head_t_decode(pkg_size);
@@ -187,7 +187,7 @@ int main()
 	oshm_id = shmget(oSHM_KEY, 0, 0666);
     otb = shmat(oshm_id, NULL, 0);
 
-    srand(time(0));
+    srand((unsigned int)time(0));
 
 
 	for(;!g_sig_term;)

@@ -1,4 +1,6 @@
 #include "tlog/tlog_instance.h"
+#include "tlog/tlog_print.h"
+
 
 #include <stdio.h>
 #include <string.h>

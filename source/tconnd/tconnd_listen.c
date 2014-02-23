@@ -12,6 +12,7 @@
 #include "tconnd/tconnd_tbus.h"
 #include "tconnd/tconnd_config.h"
 #include "tconnd/tconnd_timer.h"
+#include "tconnd/tconnd_epoll.h"
 
 #include "tlog/tlog_instance.h"
 
@@ -23,7 +24,7 @@
 #include <assert.h>
 #include <errno.h>
 
-int g_listenfd;
+tconnd_socket_t g_listen;
 
 static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
 {
@@ -38,9 +39,13 @@ TERROR_CODE tconnd_listen_init()
     TERROR_CODE ret = E_TS_NOERROR;
 	struct sockaddr_in  listenaddr;
     int value;
+    int socketfd;
+    struct epoll_event  ev;
 
-	g_listenfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(g_listenfd == -1)
+
+
+	socketfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(socketfd == -1)
 	{
 	    ERROR_LOG("socket errno[%d], %s.", errno, strerror(errno));
 	    ret = E_TS_ERRNO;
@@ -48,7 +53,7 @@ TERROR_CODE tconnd_listen_init()
 	}
 
 	value = 1;
-	if(ioctl(g_listenfd, FIONBIO, &value) == -1)
+	if(ioctl(socketfd, FIONBIO, &value) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -61,28 +66,29 @@ TERROR_CODE tconnd_listen_init()
 	listenaddr.sin_addr.s_addr = inet_addr(g_config.ip);
 	listenaddr.sin_port = htons(g_config.port);
 
-	if(bind(g_listenfd,(struct sockaddr *)(&listenaddr), sizeof(struct sockaddr_in)) == -1)
+	if(bind(socketfd,(struct sockaddr *)(&listenaddr), sizeof(struct sockaddr_in)) == -1)
 	{
     	ERROR_LOG("bind errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}	
 
-	if(listen(g_listenfd, g_config.backlog) == -1)
+	if(listen(socketfd, g_config.backlog) == -1)
 	{
         ERROR_LOG("listen errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
 	
-	if(ioctl(g_listenfd, FIONBIO, &value) == -1)
+	
+	if(ioctl(socketfd, FIONBIO, &value) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
 		goto close_listenfd;
 	}
 
-    if (setsockopt(g_listenfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &g_config.defer_accept, sizeof(g_config.defer_accept)))
+    if (setsockopt(socketfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &g_config.defer_accept, sizeof(g_config.defer_accept)))
     {
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -91,14 +97,14 @@ TERROR_CODE tconnd_listen_init()
 
 
 
-    if(setsockopt(g_listenfd, SOL_SOCKET, SO_SNDBUF, &g_config.sndbuf, sizeof(g_config.sndbuf)) == -1)
+    if(setsockopt(socketfd, SOL_SOCKET, SO_SNDBUF, &g_config.sndbuf, sizeof(g_config.sndbuf)) == -1)
 	{	
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
         goto close_listenfd;
 	}
 
-    if(setsockopt(g_listenfd, SOL_SOCKET, SO_RCVBUF, &g_config.rcvbuf, sizeof(g_config.rcvbuf)) == -1)
+    if(setsockopt(socketfd, SOL_SOCKET, SO_RCVBUF, &g_config.rcvbuf, sizeof(g_config.rcvbuf)) == -1)
 	{	
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -108,14 +114,14 @@ TERROR_CODE tconnd_listen_init()
 	
 
 	
-    if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_NODELAY, &g_config.nodelay, sizeof(g_config.nodelay)) == -1)
+    if(setsockopt(socketfd, IPPROTO_TCP, TCP_NODELAY, &g_config.nodelay, sizeof(g_config.nodelay)) == -1)
     {    
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
         goto close_listenfd;
     }
 
-    if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_CORK, &g_config.cork, sizeof(g_config.cork)) == -1)
+    if(setsockopt(socketfd, IPPROTO_TCP, TCP_CORK, &g_config.cork, sizeof(g_config.cork)) == -1)
     {    
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -123,7 +129,7 @@ TERROR_CODE tconnd_listen_init()
     }
 
     
-    if(setsockopt(g_listenfd, SOL_SOCKET, SO_KEEPALIVE, &g_config.keepalive, sizeof(g_config.keepalive)) == -1)
+    if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &g_config.keepalive, sizeof(g_config.keepalive)) == -1)
     {   
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
         ret = E_TS_ERRNO;
@@ -132,14 +138,14 @@ TERROR_CODE tconnd_listen_init()
 
 	if(g_config.keepalive)
 	{
-	    if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_KEEPIDLE, &g_config.keepidle, sizeof(g_config.keepidle)) == -1)
+	    if(setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPIDLE, &g_config.keepidle, sizeof(g_config.keepidle)) == -1)
     	{	
             ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
             ret = E_TS_ERRNO;
             goto close_listenfd;
     	} 
 
-    	if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_KEEPINTVL, &g_config.keepintvl, sizeof(g_config.keepintvl)) == -1)
+    	if(setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPINTVL, &g_config.keepintvl, sizeof(g_config.keepintvl)) == -1)
     	{	
             ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
             ret = E_TS_ERRNO;
@@ -147,7 +153,7 @@ TERROR_CODE tconnd_listen_init()
     	}
 
     	
-    	if(setsockopt(g_listenfd, IPPROTO_TCP, TCP_KEEPCNT, &g_config.keepcnt, sizeof(g_config.keepcnt)) == -1)
+    	if(setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPCNT, &g_config.keepcnt, sizeof(g_config.keepcnt)) == -1)
     	{	
             ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
             ret = E_TS_ERRNO;
@@ -155,9 +161,22 @@ TERROR_CODE tconnd_listen_init()
     	}
 	}
 
+    ev.events = (uint32_t)(EPOLLIN | EPOLLET);
+    ev.data.ptr = &g_listen;  
+    if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, socketfd, &ev) == -1)
+    {
+        DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
+        ret = E_TS_ERRNO;
+        goto close_listenfd;
+    }
+
+    tcond_socket_construct(&g_listen);
+    g_listen.socketfd = socketfd;
+    g_listen.status = e_tconnd_socket_status_listen;
+
 	goto done;
 close_listenfd:
-    if(close(g_listenfd) != 0)
+    if(close(socketfd) != 0)
     {
         ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
     }
@@ -166,7 +185,7 @@ done:
     return ret;
 }
 
-TERROR_CODE tconnd_listen_proc()
+TERROR_CODE tconnd_listen()
 {
 	int ret = E_TS_NOERROR;
 	tconnd_socket_t *conn_socket;
@@ -181,10 +200,9 @@ TERROR_CODE tconnd_listen_proc()
 //1, 检查tbus是否能发送新的连接包
 	tbus_writer_size = SIP_REQ_SIZE;
 	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, &tbus_writer_size);
-	if(ret == E_TS_WOULD_BLOCK)
+	if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
 	{
-//	    WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
-		ret = E_TS_WOULD_BLOCK;
+//	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");
 		goto done;
 	}
 	else if(ret != E_TS_NOERROR)
@@ -196,21 +214,21 @@ TERROR_CODE tconnd_listen_proc()
 //2, 检查是否能分配socket
     if(tlibc_mempool_over(&g_socket_pool))
     {
-        ret = E_TS_ERROR;
         ERROR_LOG("g_socket_pool.sn [%llu] == tm_invalid_id", g_socket_pool.sn);
+        ret = E_TS_ERROR;
         goto done;
     }
 
     if(tlibc_mempool_empty(&g_socket_pool))
     {
-        ret = E_TS_WOULD_BLOCK;
+        ret = E_TS_TOO_MANY_SOCKET;
         goto done;
     }
 
 
     memset(&sockaddr, 0, sizeof(struct sockaddr_in));
     cnt_len = sizeof(struct sockaddr_in);
-    socketfd = accept(g_listenfd, (struct sockaddr *)&sockaddr, &cnt_len);
+    socketfd = accept(g_listen.socketfd, (struct sockaddr *)&sockaddr, &cnt_len);
 
     if(socketfd == -1)
     {
@@ -224,9 +242,9 @@ TERROR_CODE tconnd_listen_proc()
                 break;
             default:
                 ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
-                ret = E_TS_ERRNO;
                 break;
         }
+        ret = E_TS_ERRNO;
         goto done;
     }
 
@@ -234,7 +252,7 @@ TERROR_CODE tconnd_listen_proc()
 	if(ioctl(socketfd, FIONBIO, &nb) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
-    	ret = E_TS_ERRNO;
+    	ret = E_TS_WOULD_BLOCK;
 		goto close_socket;
 	}
 
@@ -270,18 +288,13 @@ close_socket:
 
 void tconnd_listen_fini()
 {
-    TLIBC_LIST_HEAD *iter;    
+    TLIBC_LIST_HEAD *iter;
+    tcond_socket_destruct(&g_listen);
 
     for(iter = g_socket_pool.mempool_entry.used_list.next; iter != &g_socket_pool.mempool_entry.used_list; iter = iter->next)
     {
         tconnd_socket_t *s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, mempool_entry.used_list);
         tconnd_socket_delete(s);
-    }
-
-
-    if(close(g_listenfd) != 0)
-    {
-        ERROR_LOG("close errno[%d], %s", errno, strerror(errno));
     }
 }
 

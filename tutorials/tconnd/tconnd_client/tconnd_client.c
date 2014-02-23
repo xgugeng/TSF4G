@@ -48,7 +48,7 @@ int g_connected = FALSE;
 
 tuint64 g_start_ms;
 tuint64 g_connected_ms;
-tuint32 g_total = 0;
+size_t g_total = 0;
 
 
 
@@ -79,15 +79,15 @@ typedef struct _robot_s
     int socketfd;
 }robot_s;
 
-tuint64 get_current_ms()
+static tuint64 get_current_ms()
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 
-	return tv.tv_sec*1000 + tv.tv_usec/1000;
+	return (tuint64)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
-void robot_halt()
+static void robot_halt()
 {
     tuint64 current_time_ms = get_current_ms();
     tuint64 connect_time_ms = g_connected_ms - g_start_ms;
@@ -104,20 +104,20 @@ void robot_halt()
     exit(0);
 }
 
-void robot_on_establish(robot_s *self)
+static void robot_on_establish(robot_s *self)
 {
     char buff[BUFF_SIZE];
     bscp_head_t *pkg_ptr = (bscp_head_t *)buff;
     char *data_ptr = buff + BSCP_HEAD_T_SIZE;
-    int len;
-    ssize_t total_size;
+    bscp_head_t len;
+    size_t total_size;
     ssize_t send_size;
     
     snprintf(data_ptr, BUFF_SIZE - BSCP_HEAD_T_SIZE, "hello %ld", time(0));
     len = 1024;
     *pkg_ptr = len;
     bscp_head_t_code(*pkg_ptr);
-    total_size = len + 2;
+    total_size = (size_t)len + 2;
 
     send_size = send(self->socketfd, buff, total_size, 0);
     if(send_size < 0)
@@ -157,7 +157,7 @@ void robot_on_establish(robot_s *self)
     else
     {
         DEBUG_PRINT("robot [%d] send buff [%zi].", self->id, total_size);
-        g_total += send_size;
+        g_total += (size_t)send_size;
         if(g_total >= g_limit)
         {
             robot_halt();
@@ -170,7 +170,7 @@ void robot_on_establish(robot_s *self)
 int sndbuf = 10000000;
 int rcvbuf = 10000000;
 
-void robot_on_closed(robot_s *self)
+static void robot_on_closed(robot_s *self)
 {
     int nb = 1;
 
@@ -205,7 +205,7 @@ void robot_on_closed(robot_s *self)
 }
 
 
-void robot_on_connected(robot_s *self)
+static void robot_on_connected(robot_s *self)
 {
     struct sockaddr_in address;
 	struct epoll_event 	ev;
@@ -222,7 +222,7 @@ void robot_on_connected(robot_s *self)
     {
         if(errno == EINPROGRESS)
         {
-            ev.events = EPOLLIN | EPOLLOUT | EPOLLET;
+            ev.events = (uint32_t)(EPOLLIN | EPOLLOUT | EPOLLET);
         	ev.data.ptr = self;	
         	
 
@@ -261,7 +261,7 @@ void robot_on_connected(robot_s *self)
 }
 
 
-void robot_timeout(const tlibc_timer_entry_t *super)
+static void robot_timeout(const tlibc_timer_entry_t *super)
 {
     robot_s *self = TLIBC_CONTAINER_OF(super, robot_s, entry);
 
@@ -302,7 +302,7 @@ void robot_timeout(const tlibc_timer_entry_t *super)
 robot_s g_robot[ROBOT_NUM];
 
 
-void robot_on_connect(robot_s *self)
+static void robot_on_connect(robot_s *self)
 {
     int i;
     
@@ -351,7 +351,7 @@ void robot_on_connect(robot_s *self)
 }
 
 
-void robot_init(robot_s *self, int id)
+static void robot_init(robot_s *self, int id)
 {
 	self->state = e_closed;
 	self->id = id;
@@ -383,7 +383,7 @@ void robot_init(robot_s *self, int id)
 }
 
 
-void robot_on_recv(robot_s *self)
+static void robot_on_recv(robot_s *self)
 {
     char buff[BUFF_SIZE];
     int r;

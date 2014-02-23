@@ -1,5 +1,12 @@
 include ../../../common.mk
 
+ifdef _RELEASE
+CFLAGS = -Wall -Werror --pipe -O3
+else
+CFLAGS = -Wall -Werror --pipe -g
+endif
+
+
 NAME=start-stop-daemon
 #CINC+=
 #DEPLIBS+=

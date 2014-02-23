@@ -12,7 +12,7 @@
 
 #define SHM_KEY 123456
 
-const char *message = NULL;
+char *message = NULL;
 
 int main()
 {

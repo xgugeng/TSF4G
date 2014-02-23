@@ -47,24 +47,25 @@ TERROR_CODE tconnd_reactor_init(const char* config_file)
     {
         goto mempool_fini;
     }
-
-    if(tconnd_listen_init() != E_TS_NOERROR)
+    
+    if(tconnd_epoll_init() != E_TS_NOERROR)
     {
         goto tbus_fini;
     }
 
-    if(tconnd_epoll_init() != E_TS_NOERROR)
+    if(tconnd_listen_init() != E_TS_NOERROR)
     {
-        goto listen_fini;
+        goto epoll_fini;
     }
+
 
     g_tconnd_reactor_switch = FALSE;
 
     INFO_PRINT("tconnd init succeed.");
 	return E_TS_NOERROR;
 	
-listen_fini:
-    tconnd_listen_fini();
+epoll_fini:
+    tconnd_epoll_fini();
 tbus_fini:
     tconnd_tbus_fini();
 mempool_fini:
@@ -79,17 +80,6 @@ TERROR_CODE tconnd_reactor_process()
 {
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	TERROR_CODE r;
-
-	r = tconnd_listen_proc();
-	if(r == E_TS_NOERROR)
-	{
-		ret = E_TS_NOERROR;
-	}
-	else if(r != E_TS_WOULD_BLOCK)
-	{
-		ret = r;
-		goto done;
-	}
 
 	r = tconnd_epool_proc();
 	if(r == E_TS_NOERROR)
@@ -182,9 +172,9 @@ done:
 void tconnd_reactor_fini()
 {
     INFO_PRINT("tconnd_reactor_fini.");
-    
-    tconnd_epoll_fini();
+
     tconnd_listen_fini();
+    tconnd_epoll_fini();
     tconnd_tbus_fini();
     tconnd_mempool_fini();
     tlog_fini(&g_tlog_instance);

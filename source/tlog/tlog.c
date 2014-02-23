@@ -8,6 +8,9 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdbool.h>
+#include <errno.h>
+#include <unistd.h>
+
 
 static void rolling_file_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config)
 {
@@ -35,6 +38,7 @@ static void rolling_file_log(tlog_rolling_file_instance_t *self,
 		const char *message, size_t message_size)
 {
 	size_t file_size;
+	long ft;
 
 	if(self->fout == NULL)
 	{
@@ -43,10 +47,19 @@ static void rolling_file_log(tlog_rolling_file_instance_t *self,
 		{
 			goto done;
 		}
-		fseek(self->fout, 0, SEEK_END);
+		fseek(self->fout, 0, SEEK_END);		
 	}
 	
-	file_size = ftell(self->fout);
+	ft = ftell(self->fout);
+	if(ft < 0)
+	{
+	    goto done;
+	}
+	else
+	{
+	    file_size = (size_t)ft;
+	}
+	
 	if(file_size + message_size > config->max_file_size)
 	{
 		char file_name[TSERVER_FILE_NAME_LENGH];

@@ -30,15 +30,10 @@ typedef enum _tconnd_socket_status_t
 	e_tconnd_socket_status_closed = 1,
 	e_tconnd_socket_status_syn_sent = 2,
 	e_tconnd_socket_status_established = 3,
+	e_tconnd_socket_status_listen = 4,
 }tconnd_socket_status_t;
 
-#ifdef IOV_MAX
-    #define TCONND_SOCKET_OP_LIST_MAX 16
-    #if TCONND_SOCKET_OP_LIST_MAX > IOV_MAX
-        #error "TCONND_SOCKET_OP_LIST_MAX > IOV_MAX"
-    #endif
-#endif
-
+#define TCONND_SOCKET_OP_LIST_MAX 128
 typedef struct _tconnd_socket_t
 {
     tlibc_mempool_entry_t mempool_entry;
@@ -63,8 +58,13 @@ typedef struct _tconnd_socket_t
 
     size_t iov_total_size;
     struct iovec iov[TCONND_SOCKET_OP_LIST_MAX];
-    size_t iov_num;
+    int iov_num;
 }tconnd_socket_t;
+
+void tcond_socket_construct(tconnd_socket_t* self);
+
+void tcond_socket_destruct(tconnd_socket_t* self);
+
 
 tconnd_socket_t *tconnd_socket_new();
 
@@ -72,7 +72,7 @@ void tconnd_socket_delete(tconnd_socket_t *self);
 
 TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, const char* body, size_t body_size);
+TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, void* body, size_t body_size);
 
 TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self);
 

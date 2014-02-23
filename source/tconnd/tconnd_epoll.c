@@ -5,7 +5,7 @@
 #include "tconnd/tconnd_socket.h"
 #include "tconnd/tconnd_config.h"
 #include "tlog/tlog_instance.h"
-
+#include "tconnd/tconnd_listen.h"
 #include <unistd.h>
 #include <assert.h>
 #include <sys/epoll.h>
@@ -25,7 +25,14 @@ TERROR_CODE tconnd_epoll_init()
 	tlibc_list_init(&readable_list);
 	tlibc_list_init(&g_package_socket_list);
 
-	g_epollfd = epoll_create(g_config.connections);
+    if(g_config.connections > INT_MAX)
+    {
+        ERROR_LOG("g_config.connections [%u] > INT_MAX.", g_config.connections);
+        ret = E_TS_ERROR;
+        goto done;
+    }
+
+	g_epollfd = epoll_create((int)g_config.connections);
 	if(g_epollfd == -1)
 	{
         ERROR_LOG("epoll_create errno[%d], %s.", errno, strerror(errno));
@@ -42,7 +49,7 @@ done:
 TERROR_CODE tconnd_epool_proc()
 {
 	int i;
-	TERROR_CODE ret = E_TS_NOERROR;
+	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	TLIBC_LIST_HEAD *iter, *next;
 
 	if(tlibc_list_empty(&readable_list))
@@ -55,7 +62,6 @@ TERROR_CODE tconnd_epool_proc()
 		{
 		    if(errno == EINTR)
 		    {
-		        ret = E_TS_WOULD_BLOCK;
 		        DEBUG_LOG("tconnd_epool_proc reutrn E_TS_WOULD_BLOCK");
 		    }
 		    else
@@ -84,7 +90,6 @@ TERROR_CODE tconnd_epool_proc()
 
 	if(tlibc_list_empty(&readable_list))
 	{
-        ret = E_TS_WOULD_BLOCK;
 	    goto done;
 	}
 	
@@ -93,10 +98,25 @@ TERROR_CODE tconnd_epool_proc()
         TERROR_CODE r;
         tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, readable_list);
         next = iter->next;
-        
-        r = tconnd_socket_recv(socket);
-        if(r == E_TS_ERRNO)
+
+        if(socket == &g_listen)
         {
+            r = tconnd_listen();
+        }
+        else
+        {
+            r = tconnd_socket_recv(socket);
+        }
+        
+        switch(r)
+        {
+        case E_TS_TBUS_NOT_ENOUGH_SPACE:
+            goto done;
+        case E_TS_TOO_MANY_SOCKET:
+            break;
+        case E_TS_WOULD_BLOCK:
+            break;
+        case E_TS_ERRNO:
             switch(errno)
             {
                 case EAGAIN:
@@ -106,37 +126,33 @@ TERROR_CODE tconnd_epool_proc()
                 case EINTR:
                     break;
                 default:
-                    assert(0);
-                    ret = E_TS_ERROR;
+                    ret = E_TS_ERRNO;
                     goto done;
             }
-        }
-        else if(r == E_TS_WOULD_BLOCK)
-        {
-            //tbus满了
-            ret = E_TS_WOULD_BLOCK;
             break;
-        }
-        //如果包缓存不足， 那么断开一个需要等待数据的socket    
-        else if(r == E_TS_NO_MEMORY)
-        {
-            tconnd_socket_t *sock = NULL;
-            if(tlibc_list_empty(&g_package_socket_list))
+        case E_TS_NO_MEMORY:
             {
-                ret = E_TS_NO_MEMORY;
-                ERROR_LOG("Not enough package buff.");
-                break;
-            }
+                tconnd_socket_t *sock = NULL;
+                if(tlibc_list_empty(&g_package_socket_list))
+                {
+                    ret = E_TS_NO_MEMORY;
+                    ERROR_LOG("Not enough package buff.");
+                    break;
+                }
 
-            sock = TLIBC_CONTAINER_OF(g_package_socket_list.next, tconnd_socket_t, package_socket_list);
-            assert(sock->package_buff != NULL);
-            WARN_LOG("close socket [%u, %llu] to release package buff.", sock->id, sock->mempool_entry.sn);
-            tconnd_socket_delete(sock);
-        }
-        else if(r != E_TS_NOERROR)
-        {
+                sock = TLIBC_CONTAINER_OF(g_package_socket_list.next, tconnd_socket_t, package_socket_list);
+                assert(sock->package_buff != NULL);
+                WARN_LOG("close socket [%u, %llu] to release package buff.", sock->id, sock->mempool_entry.sn);
+                tconnd_socket_delete(sock);
+            }
+            break;
+        case E_TS_CLOSE:
             tconnd_socket_delete(socket);
-        }
+            break;
+        default:
+            ret = r;
+            goto done;
+        }        
     }
 
 done:	

@@ -25,7 +25,7 @@ typedef struct _tlog_appender_instance_t
 
 typedef struct _tlog_instance_t
 {
-	tuint16 appender_instance_num;
+	tuint32 appender_instance_num;
 	tlog_appender_instance_t appender_instance[TLOG_MAX_APPENDER_NUM];
 }tlog_instance_t;
 

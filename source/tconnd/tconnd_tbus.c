@@ -65,7 +65,7 @@ done:
 TERROR_CODE process_input_tbus()
 {
 	TERROR_CODE ret = E_TS_NOERROR;
-	const char*message;
+	char*message;
 	size_t message_len;
 	size_t len;
 	tuint32 i;
@@ -90,7 +90,7 @@ TERROR_CODE process_input_tbus()
     {
         sip_rsp_t *head = NULL;
         size_t head_size = 0;
-        const char* body_addr = NULL;
+        char* body_addr = NULL;
         size_t body_size = 0;
 
         head = (sip_rsp_t*)message;
@@ -118,8 +118,8 @@ TERROR_CODE process_input_tbus()
             
             if(!tlibc_mempool_id_test(&g_socket_pool, head->cid_list[i].id))
             {
-                WARN_LOG("socket [%u, %llu] head->cmd = %d [%u, %llu] mismatch."
-                   , socket->id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
+                WARN_LOG("head->cmd = %d [%u, %llu] , head->cid_list[i].id[%u] > g_socket_pool->unit_num[%zu]."
+                   , head->cmd, head->cid_list[i].id, head->cid_list[i].sn, head->cid_list[i].id, g_socket_pool.unit_num);
                 continue;
             }
             socket = (tconnd_socket_t*)tlibc_mempool_id2ptr(&g_socket_pool, head->cid_list[i].id);

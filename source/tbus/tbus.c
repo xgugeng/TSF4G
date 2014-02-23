@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-TERROR_CODE tbus_init(tbus_t *tb, size_t size)
+TERROR_CODE tbus_init(tbus_t *tb, uint32_t size)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
@@ -23,12 +23,12 @@ done:
 }
 
 
-TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, size_t *len)
+TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, uint32_t *len)
 {
     TERROR_CODE ret = E_TS_NOERROR;
-	size_t write_size;	
-	int head_offset = tb->head_offset;
-	int tail_offset = tb->tail_offset;
+	uint32_t write_size;	
+	uint32_t head_offset = tb->head_offset;
+	uint32_t tail_offset = tb->tail_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
 	if(*len + sizeof(tbus_header_s) + 1 > tb->size)
@@ -59,7 +59,7 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, size_t *len)
 			tb->tail_offset = 0;
 			return tbus_send_begin(tb, buf, len);
 		}
-		ret = E_TS_WOULD_BLOCK;
+		ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
 		goto done;
 	}
 
@@ -70,9 +70,9 @@ done:
     return ret;
 }
 
-void tbus_send_end(tbus_t *tb, size_t len)
+void tbus_send_end(tbus_t *tb, uint32_t len)
 {
-	int tail_offset = tb->tail_offset;
+	uint32_t tail_offset = tb->tail_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
 	header->cmd = e_tbus_cmd_package;
@@ -82,12 +82,12 @@ void tbus_send_end(tbus_t *tb, size_t len)
 	tb->tail_offset = tail_offset;
 }
 
-TERROR_CODE tbus_read_begin(tbus_t *tb, const char** buf, size_t *len)
+TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, uint32_t *len)
 {
     TERROR_CODE ret = E_TS_NOERROR;
-	size_t read_size;
-	int tail_offset = tb->tail_offset;
-	int head_offset = tb->head_offset;
+	uint32_t read_size;
+	uint32_t tail_offset = tb->tail_offset;
+	uint32_t head_offset = tb->head_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + head_offset);
 
 	if(head_offset <= tail_offset)
@@ -134,7 +134,7 @@ done:
     return ret;
 }
 
-void tbus_read_end(tbus_t *tb, size_t len)
+void tbus_read_end(tbus_t *tb, uint32_t len)
 {
 	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_s) + len;
 	if(head_offset >= tb->size)

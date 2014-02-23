@@ -42,7 +42,7 @@ int main()
 			++i;
 			continue;
 		}
-		if(ret == E_TS_WOULD_BLOCK)
+		if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
 		{
 			usleep(1000);
 		}

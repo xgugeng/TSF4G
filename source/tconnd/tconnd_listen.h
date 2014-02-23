@@ -3,12 +3,14 @@
 
 #include "tcommon/terrno.h"
 
-extern int g_listenfd;
+#include "tconnd/tconnd_socket.h"
+
+extern tconnd_socket_t g_listen;
 
 
 TERROR_CODE tconnd_listen_init();
 
-TERROR_CODE tconnd_listen_proc();
+TERROR_CODE tconnd_listen();
 
 void tconnd_listen_fini();
 

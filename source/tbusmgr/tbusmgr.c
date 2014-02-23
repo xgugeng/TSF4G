@@ -2,14 +2,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <limits.h>
 
-#ifdef TLOG_INSTANCE_LEVEL
-#undef TLOG_INSTANCE_LEVEL
-#endif//TLOG_INSTANCE_LEVEL
-#define TLOG_INSTANCE_LEVEL e_tlog_debug
+#ifdef TLOG_PRINT_LEVEL
+#undef TLOG_PRINT_LEVEL
+#endif//TLOG_PRINT_LEVEL
+#define TLOG_PRINT_LEVEL e_tlog_debug
 
 
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_print.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -17,12 +18,12 @@
 
 #include "tbus/tbus.h"
 
-void version()
+static void version()
 {
 	INFO_PRINT( "TBus Version %s.", TBUS_VERSION);
 }
 
-void help() 
+static void help() 
 {
 	INFO_PRINT("tbusmgr ([-s size] && [-w shmkey] | --help | --version)");
 	INFO_PRINT("--help                Print the help.");
@@ -33,7 +34,7 @@ void help()
 int main(int argc, char**argv)
 {
 	int i;
-	size_t shm_size = -1;
+	size_t shm_size = 0;
 	key_t shm_key = 0;
 	int shm_id;
 	void *shm_ptr = NULL;
@@ -53,6 +54,7 @@ int main(int argc, char**argv)
 		arg = strtok(argv[i], " ");
 		while (arg != NULL)
 		{
+    		unsigned long long int ull;
 			if (arg[0] == '-' && arg[1] == '-')
 			{
 				++arg;
@@ -79,7 +81,13 @@ int main(int argc, char**argv)
 				}
 				
 				errno = 0;
-				shm_size = strtoull(arg, &endptr, 10);
+				ull = strtoull(arg, &endptr, 10);
+				if(ull > SSIZE_MAX)
+				{
+                    ERROR_PRINT("ull [%llu] over follow SSIZE_MAX.", ull);
+					exit(1);
+				}
+				shm_size = (size_t)ull;
 				if(errno != 0)
 				{
                     ERROR_PRINT("strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno , strerror(errno));

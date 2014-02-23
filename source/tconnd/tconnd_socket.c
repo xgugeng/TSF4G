@@ -32,6 +32,24 @@ static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
     tconnd_socket_delete(self);
 }
 
+void tcond_socket_construct(tconnd_socket_t* self)
+{
+    self->id = tlibc_mempool_ptr2id(&g_socket_pool, self);
+    self->status = e_tconnd_socket_status_closed;
+    self->iov_num = 0;
+    self->iov_total_size = 0;
+    self->package_buff = NULL;
+    
+    tlibc_list_init(&self->package_socket_list);
+    tlibc_list_init(&self->readable_list);
+    tlibc_list_init(&self->writable_list);    
+    TIMER_ENTRY_BUILD(&self->package_timeout, 0, NULL);
+    TIMER_ENTRY_BUILD(&self->close_timeout, 0, NULL);
+    TIMER_ENTRY_BUILD(&self->accept_timeout, 0, NULL);
+    self->writable = FALSE;
+    self->readable = FALSE;
+}
+
 tconnd_socket_t *tconnd_socket_new()
 {
     tconnd_socket_t *socket = NULL;
@@ -48,26 +66,13 @@ tconnd_socket_t *tconnd_socket_new()
 	}
 	
 	tlibc_mempool_alloc(&g_socket_pool, tconnd_socket_t, mempool_entry, socket);
-    socket->id = tlibc_mempool_ptr2id(&g_socket_pool, socket);
-    socket->status = e_tconnd_socket_status_closed;
-    socket->iov_num = 0;
-    socket->iov_total_size = 0;
-    socket->package_buff = NULL;
-    
-    tlibc_list_init(&socket->package_socket_list);
-    tlibc_list_init(&socket->readable_list);
-    tlibc_list_init(&socket->writable_list);    
-    TIMER_ENTRY_BUILD(&socket->package_timeout, 0, NULL);
-    TIMER_ENTRY_BUILD(&socket->close_timeout, 0, NULL);
-    TIMER_ENTRY_BUILD(&socket->accept_timeout, 0, NULL);
-    socket->writable = FALSE;
-    socket->readable = FALSE;
-    
+
+	tcond_socket_construct(socket);    
 done:
     return socket;
 }
 
-void tconnd_socket_delete(tconnd_socket_t *self)
+void tcond_socket_destruct(tconnd_socket_t* self)
 {
     if(self->status != e_tconnd_socket_status_closed)
     {
@@ -99,16 +104,30 @@ void tconnd_socket_delete(tconnd_socket_t *self)
 
             self->package_buff = NULL;
         }
-
         
         if(self->readable)
         {
             tlibc_list_del(&self->readable_list);
+        }        
+        break;
+    case e_tconnd_socket_status_listen:
+        if(close(self->socketfd) != 0)
+        {
+            ERROR_LOG("socket [%d, %llu] close errno[%d], %s", self->id, self->mempool_entry.sn, errno, strerror(errno));
         }
         
+        if(self->readable)
+        {
+            tlibc_list_del(&self->readable_list);
+        }        
         break;
     }
+}
 
+void tconnd_socket_delete(tconnd_socket_t *self)
+{
+    tcond_socket_destruct(self);
+    
     tlibc_mempool_free(&g_socket_pool, tconnd_socket_t, mempool_entry, self);
 }
 
@@ -158,7 +177,7 @@ done:
     return ret;
 }
 
-static TERROR_CODE tconnd_socket_on_cmd_send(tconnd_socket_t *self, const char* body, size_t body_size)
+static TERROR_CODE tconnd_socket_on_cmd_send(tconnd_socket_t *self, void* body, size_t body_size)
 {
     TERROR_CODE ret = E_TS_NOERROR;
     
@@ -181,7 +200,7 @@ static TERROR_CODE tconnd_socket_on_cmd_send(tconnd_socket_t *self, const char* 
     assert(self->iov_total_size == 0);
     
     self->iov_total_size += body_size;
-    self->iov[self->iov_num].iov_base = (void*)body;
+    self->iov[self->iov_num].iov_base = body;
     self->iov[self->iov_num].iov_len = body_size;
     ++self->iov_num;
 done:
@@ -202,7 +221,7 @@ static TERROR_CODE tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
     tlibc_timer_pop(&self->accept_timeout);
     
     
-    ev.events = EPOLLIN | EPOLLET;
+    ev.events = (uint32_t)(EPOLLIN | EPOLLET);
     ev.data.ptr = self;  
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
     {
@@ -221,7 +240,7 @@ done:
     return ret;
 }
 
-TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, const char* body, size_t body_size)
+TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, void* body, size_t body_size)
 {
     TERROR_CODE ret = E_TS_NOERROR;
     
@@ -284,7 +303,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     total_size = header_size + package_size + body_size;
 
     ret = tbus_send_begin(g_output_tbus, &header_ptr, &total_size);
-    if(ret == E_TS_WOULD_BLOCK)
+    if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
     {
 //        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
         goto done;
@@ -380,7 +399,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     {   
         tlibc_mempool_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
 
-        package_buff->size = limit_ptr - remain_ptr;        
+        package_buff->size = (size_t)(limit_ptr - remain_ptr);
         memcpy(package_buff->head, remain_ptr, package_buff->size);
         self->package_buff = package_buff;
         tlibc_list_add_tail(&self->package_socket_list, &g_package_socket_list);        
@@ -399,11 +418,11 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         pkg->cmd = e_sip_req_cmd_recv;
         pkg->cid.id = self->id;
         pkg->cid.sn = self->mempool_entry.sn;
-        pkg->size = remain_ptr - package_ptr;
+        pkg->size = (size_t)(remain_ptr - package_ptr);
 
         sip_req_t_code(pkg);
 
-        tbus_send_end(g_output_tbus, remain_ptr - header_ptr);
+        tbus_send_end(g_output_tbus, (uint32_t)(remain_ptr - header_ptr));
         DEBUG_LOG("e_tdgi_cmd_recv sn[%llu] size[%u]", pkg->cid.sn, pkg->size);
     }
     
