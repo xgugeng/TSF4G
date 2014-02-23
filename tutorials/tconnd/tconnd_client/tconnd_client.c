@@ -17,7 +17,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sched.h>
 #include "tlibc/core/tlibc_timer.h"
 #include "tlibc/core/tlibc_error_code.h"
 #include <sys/time.h>
@@ -39,7 +38,7 @@ tlibc_timer_t g_timer;
 
 
 
-#define ROBOT_NUM 600
+#define ROBOT_NUM 300
 uint32_t g_limit = 1000 * 1000000;
 
 
@@ -542,11 +541,6 @@ int main()
             usleep(1000);
             idle_times = 0;
         }
-        else
-        {
-            sched_yield();
-        }
-
     }
 	
 	return 0;

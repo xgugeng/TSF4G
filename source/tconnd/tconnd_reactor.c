@@ -11,7 +11,6 @@
 #include "tlog/tlog_instance.h"
 
 #include <unistd.h>
-#include <sched.h>
 #include <errno.h>
 #include <string.h>
 
