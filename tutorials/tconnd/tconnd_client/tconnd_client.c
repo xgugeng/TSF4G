@@ -39,7 +39,7 @@ tlibc_timer_t g_timer;
 
 
 
-#define ROBOT_NUM 500
+#define ROBOT_NUM 600
 uint32_t g_limit = 1000 * 1000000;
 
 
@@ -48,7 +48,8 @@ int g_connected = FALSE;
 
 uint64_t g_start_ms;
 uint64_t g_connected_ms;
-size_t g_total = 0;
+size_t g_total_recv = 0;
+size_t g_total_send = 0;
 
 
 
@@ -98,7 +99,8 @@ static void robot_halt()
     WARN_PRINT("g_max_connection %u", g_max_connection);
     WARN_PRINT("g_server_close_connections %u", g_server_close_connections);
     WARN_PRINT("g_client_close_connections %u", g_client_close_connections);
-    WARN_PRINT("g_total_mb %.2lf", (double)g_total / (1024 * 1024));
+    WARN_PRINT("g_total_send %.2lfmb", (double)g_total_send / (1024 * 1024));
+	WARN_PRINT("g_total_recv %.2lfmb", (double)g_total_recv / (1024 * 1024));	
     WARN_PRINT("connect_time_s %.2lf", (double)connect_time_ms / 1000);
     WARN_PRINT("send_and_recv_time_s %.2lf", (double)send_and_recv_time_ms / 1000);
     exit(0);
@@ -121,7 +123,7 @@ static void robot_on_establish(robot_s *self)
 
     send_size = send(self->socketfd, buff, total_size, 0);
     if(send_size < 0)
-    {    
+    {
         if((errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
         {
             ERROR_PRINT("robot [%d] send errno [%d], %s", self->id, errno, strerror(errno));
@@ -149,19 +151,15 @@ static void robot_on_establish(robot_s *self)
         {        
             --g_cur_connection;
             ++g_client_close_connections;
-        }
-        
-        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total [%zu]."
-        , self->id, total_size, send_size, g_total);
+        }        
+
+        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total_send [%zu]."
+        , self->id, total_size, send_size, g_total_send);
     }
     else
     {
         DEBUG_PRINT("robot [%d] send buff [%zi].", self->id, total_size);
-        g_total += (size_t)send_size;
-        if(g_total >= g_limit)
-        {
-            robot_halt();
-        }
+		g_total_send += (size_t)send_size;
     }
 }
 
@@ -373,7 +371,6 @@ static void robot_init(robot_s *self, int id)
             exit(1);
         }
 
-        //如果服务器设置了TCP_DEFER_ACCEPT， 不发数据的话连接的建立会很慢.
         robot_on_establish(self);
         if(self->state == e_connecting)
         {
@@ -382,15 +379,16 @@ static void robot_init(robot_s *self, int id)
     }
 }
 
+size_t g_lmb = 0;
 
 static void robot_on_recv(robot_s *self)
 {
     char buff[BUFF_SIZE];
-    ssize_t r;
+    ssize_t recv_size;
     for(;;)
     {
-        r = recv(self->socketfd, buff, BUFF_SIZE, 0);
-        if(r <= 0)
+        recv_size = recv(self->socketfd, buff, BUFF_SIZE, 0);
+        if(recv_size <= 0)
         {
             if (errno == EAGAIN)
             {
@@ -403,6 +401,24 @@ static void robot_on_recv(robot_s *self)
             --g_cur_connection;
             break;
         }
+		else
+		{
+			size_t mb;
+
+			g_total_recv += (size_t)recv_size;
+
+			mb = g_total_recv / (1024 * 1024);
+			if((mb != g_lmb) && (mb % 100 == 0))
+			{
+				DEBUG_PRINT("%zubm send.", mb);
+				g_lmb = mb;
+			}
+
+			if(g_total_recv >= g_limit)
+			{
+				robot_halt();
+			}
+		}
     }
 }
 

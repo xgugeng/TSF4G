@@ -1,6 +1,8 @@
 include common.mk
 
-SUBMODS = source/tcommon source/tlog source/tbus source/tbusmgr source/tconnd source/utils/start-stop-daemon tutorials/tbus/tbus_client tutorials/tbus/tbus_server tutorials/tconnd/tconnd_client tutorials/tconnd/tconnd_server tutorials/tlog/
+SUBMODS = source/tcommon source/tlog source/tbus source/tbusmgr source/tconnd source/utils/start-stop-daemon tutorials/tbus/tbus_client 
+SUBMODS += tutorials/tlog/ tutorials/tbus/tbus_server 
+SUBMODS += tutorials/tconnd/tconnd_client tutorials/tconnd/tconnd_server tutorials/tconnd/socket_client tutorials/tconnd/socket_server
 
 CLEANTARGET = clean
 INSTALLTARGET = install

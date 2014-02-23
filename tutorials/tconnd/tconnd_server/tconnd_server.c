@@ -161,6 +161,7 @@ int main()
 	size_t message_len = 0;
 	TERROR_CODE ret;
     struct sigaction  sa;
+	size_t idle_times = 0;
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
@@ -213,11 +214,17 @@ int main()
                 message += SIP_REQ_SIZE + body_size;
 	    	}			
 			tbus_read_end(itb, (uint32_t)message_len);
+			idle_times = 0;
 			continue;
 		}
 		else if(ret == E_TS_WOULD_BLOCK)
 		{
-			usleep(1000);
+			++idle_times;
+			if(idle_times > 30)
+			{
+				idle_times = 0;
+				usleep(1000);
+			}			
 		}
 		else
 		{
