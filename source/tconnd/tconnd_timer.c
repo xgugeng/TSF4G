@@ -18,12 +18,12 @@ void tconnd_timer_init()
 TERROR_CODE tconnd_timer_process()
 {
     bool busy = false;
-    tuint64      current_time_ms;
+    uint64_t      current_time_ms;
     struct timeval      cur_tv;
     gettimeofday(&cur_tv, NULL);
     if(cur_tv.tv_sec >= start_tv.tv_sec)
     {
-        current_time_ms = (tuint64)(cur_tv.tv_sec - start_tv.tv_sec) * 1000;
+        current_time_ms = (uint64_t)(cur_tv.tv_sec - start_tv.tv_sec) * 1000;
     }
     else
     {
@@ -32,7 +32,7 @@ TERROR_CODE tconnd_timer_process()
 
     if(cur_tv.tv_usec >= start_tv.tv_usec)
     {
-        current_time_ms += (tuint64)(cur_tv.tv_usec - start_tv.tv_usec) /1000;
+        current_time_ms += (uint64_t)(cur_tv.tv_usec - start_tv.tv_usec) /1000;
     }    
 
     while(tconnd_timer_ms <= current_time_ms)

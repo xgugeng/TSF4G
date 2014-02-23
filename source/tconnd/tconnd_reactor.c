@@ -132,7 +132,7 @@ done:
 
 void tconnd_reactor_loop()
 {
-    tuint32 idle_count = 0;
+    uint32_t idle_count = 0;
     TERROR_CODE ret;
 
     INFO_LOG("tconnd_reactor_loop begin");

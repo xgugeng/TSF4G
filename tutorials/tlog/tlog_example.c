@@ -9,7 +9,7 @@
 
 int main()
 {
-	tuint32 i;
+	uint32_t i;
 	
 
 	tlog_init(&g_tlog_instance, "tlog_config.xml");

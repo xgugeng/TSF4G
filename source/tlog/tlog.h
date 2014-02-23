@@ -14,7 +14,7 @@
 typedef struct _tlog_rolling_file_instance_t
 {
 	FILE *fout;
-	tuint32 index;
+	uint32_t index;
 }tlog_rolling_file_instance_t;
 
 typedef struct _tlog_appender_instance_t
@@ -25,7 +25,7 @@ typedef struct _tlog_appender_instance_t
 
 typedef struct _tlog_instance_t
 {
-	tuint32 appender_instance_num;
+	uint32_t appender_instance_num;
 	tlog_appender_instance_t appender_instance[TLOG_MAX_APPENDER_NUM];
 }tlog_instance_t;
 

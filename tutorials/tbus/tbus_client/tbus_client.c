@@ -17,7 +17,7 @@ int main()
 {
 	int shm_id = shmget(SHM_KEY, 0, 0666);
 	tbus_t *tb = shmat(shm_id, NULL, 0);
-	tuint32 i;
+	uint32_t i;
 	
 	for(i = 0;i < 10;)
 	{

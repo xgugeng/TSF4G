@@ -68,7 +68,7 @@ TERROR_CODE process_input_tbus()
 	char*message;
 	size_t message_len;
 	size_t len;
-	tuint32 i;
+	uint32_t i;
     TLIBC_LIST_HEAD writable_list;
     TLIBC_LIST_HEAD *iter;
 

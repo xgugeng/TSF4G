@@ -14,8 +14,8 @@
 
 static void rolling_file_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config)
 {
-	tuint32 i;	
-	tchar file_name[TSERVER_FILE_NAME_LENGH];
+	uint32_t i;	
+	char file_name[TSERVER_FILE_NAME_LENGH];
 	size_t file_name_len = strlen(config->file_name);
 	strncpy(file_name, config->file_name, file_name_len);
 	file_name[TSERVER_FILE_NAME_LENGH - 1] = 0;
@@ -105,7 +105,7 @@ TERROR_CODE tlog_init(tlog_t *self, const char *config_file)
 {
 	TERROR_CODE ret = E_TS_NOERROR;;
 	TLIBC_XML_READER xml_reader;
-	tuint32 i;
+	uint32_t i;
 	
 	tlibc_xml_reader_init(&xml_reader);
 	if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
@@ -138,7 +138,7 @@ done:
 
 void tlog_write(tlog_t *self, const char *message, size_t message_size)
 {
-	tuint32 i;
+	uint32_t i;
 	
 	for(i = 0; i < self->config.appender_num; ++i)	
 	{
@@ -153,7 +153,7 @@ void tlog_write(tlog_t *self, const char *message, size_t message_size)
 
 void tlog_fini(tlog_t *self)
 {
-	tuint32 i;
+	uint32_t i;
 	
 	for(i = 0; i < self->config.appender_num; ++i)	
 	{

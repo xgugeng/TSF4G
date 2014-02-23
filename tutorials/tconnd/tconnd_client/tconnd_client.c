@@ -40,23 +40,23 @@ tlibc_timer_t g_timer;
 
 
 #define ROBOT_NUM 500
-tuint32 g_limit = 1000 * 1000000;
+uint32_t g_limit = 1000 * 1000000;
 
 
 int g_connected = FALSE;
 
 
-tuint64 g_start_ms;
-tuint64 g_connected_ms;
+uint64_t g_start_ms;
+uint64_t g_connected_ms;
 size_t g_total = 0;
 
 
 
-tuint32 g_server_close_connections;
-tuint32 g_client_close_connections;
-tuint32 g_total_connection;
-tuint32 g_max_connection;
-tuint32 g_cur_connection;
+uint32_t g_server_close_connections;
+uint32_t g_client_close_connections;
+uint32_t g_total_connection;
+uint32_t g_max_connection;
+uint32_t g_cur_connection;
 
 
 
@@ -79,19 +79,19 @@ typedef struct _robot_s
     int socketfd;
 }robot_s;
 
-static tuint64 get_current_ms()
+static uint64_t get_current_ms()
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 
-	return (tuint64)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+	return (uint64_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
 }
 
 static void robot_halt()
 {
-    tuint64 current_time_ms = get_current_ms();
-    tuint64 connect_time_ms = g_connected_ms - g_start_ms;
-    tuint64 send_and_recv_time_ms = current_time_ms - g_connected_ms;
+    uint64_t current_time_ms = get_current_ms();
+    uint64_t connect_time_ms = g_connected_ms - g_start_ms;
+    uint64_t send_and_recv_time_ms = current_time_ms - g_connected_ms;
 
     ERROR_PRINT("summary:");    
     WARN_PRINT("g_total_connect %u", g_total_connection);
@@ -471,7 +471,7 @@ int main()
     for(;!g_sig_term;)
     {
         busy = FALSE;
-        tuint64 g_cur_ms;
+        uint64_t g_cur_ms;
         
         events_num = epoll_wait(g_epollfd, events, ROBOT_MAX_EVENTS, 0);
         if(events_num == -1)

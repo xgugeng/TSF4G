@@ -136,7 +136,7 @@ done:
 
 void tbus_read_end(tbus_t *tb, uint32_t len)
 {
-	tuint32 head_offset = tb->head_offset + sizeof(tbus_header_s) + len;
+	uint32_t head_offset = tb->head_offset + sizeof(tbus_header_s) + len;
 	if(head_offset >= tb->size)
 	{
 		head_offset = 0;

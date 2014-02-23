@@ -20,7 +20,7 @@ int main()
 	tbus_t *tb = shmat(shm_id, NULL, 0);
 	size_t len;
 	TERROR_CODE ret;
-	tuint32 i;
+	uint32_t i;
 
 	for(i = 0;; ++i)
 	{
