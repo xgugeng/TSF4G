@@ -9,18 +9,16 @@
 tlibc_mempool_t g_socket_pool;
 tlibc_mempool_t g_package_pool;
 
+
+/*
 static size_t socket_used_list_num;
 static size_t package_used_list_num;
-
 
 static tlibc_timer_entry_t mempool_log_timeout;
 
 #define TCONND_MEMPOOL_LOG_INTEVAL_MS 10000
-static void tconnd_mempool_log(const tlibc_timer_entry_t *super)
+static void tconnd_mempool_log()
 {
-    TLIBC_UNUSED(super);
-
-
     if(socket_used_list_num != g_socket_pool.used_list_num)
     {
         DEBUG_LOG("g_socket_pool.used_list_num = %zu, g_socket_pool.unit_num = %zu.", 
@@ -40,7 +38,7 @@ static void tconnd_mempool_log(const tlibc_timer_entry_t *super)
 	    tconnd_timer_ms + TCONND_MEMPOOL_LOG_INTEVAL_MS, tconnd_mempool_log);
 	tlibc_timer_push(&g_timer, &mempool_log_timeout);
 }
-
+*/
 
 TERROR_CODE tconnd_mempool_init()
 {
@@ -94,14 +92,14 @@ TERROR_CODE tconnd_mempool_init()
 	INFO_LOG("g_package_pool.unit_size = %zu, g_package_pool.unit_num = %zu"
 	    , g_package_pool.unit_size, g_package_pool.unit_num);
 
-
+/*
     socket_used_list_num = SIZE_MAX;
     package_used_list_num = SIZE_MAX;
 
 	TIMER_ENTRY_BUILD(&mempool_log_timeout, 
 	    tconnd_timer_ms + TCONND_MEMPOOL_LOG_INTEVAL_MS, tconnd_mempool_log);
 	tlibc_timer_push(&g_timer, &mempool_log_timeout);
-
+*/
 done:
     return ret;
 }

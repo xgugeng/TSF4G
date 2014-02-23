@@ -26,13 +26,6 @@
 #include <inttypes.h>
 
 
-static void tconnd_socket_package_timeout(const tlibc_timer_entry_t *super)
-{
-    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, package_timeout);
-    DEBUG_LOG("socket [%d, %"PRIu64"] package_timeout", self->id, self->mempool_entry.sn);
-    tconnd_socket_delete(self);
-}
-
 void tcond_socket_construct(tconnd_socket_t* self)
 {
     self->id = (uint32_t)tlibc_mempool_ptr2id(&g_socket_pool, self);
@@ -41,12 +34,12 @@ void tcond_socket_construct(tconnd_socket_t* self)
     self->iov_total_size = 0;
     self->package_buff = NULL;
     
-    tlibc_list_init(&self->package_socket_list);
+
     tlibc_list_init(&self->readable_list);
-    tlibc_list_init(&self->writable_list);    
-    TIMER_ENTRY_BUILD(&self->package_timeout, 0, NULL);
-    TIMER_ENTRY_BUILD(&self->close_timeout, 0, NULL);
-    TIMER_ENTRY_BUILD(&self->accept_timeout, 0, NULL);
+    tlibc_list_init(&self->writable_list);
+    tlibc_list_init(&self->g_package_socket_list);
+    tlibc_list_init(&self->g_pending_socket_list);    
+    
     self->writable = FALSE;
     self->readable = FALSE;
 }
@@ -89,7 +82,8 @@ void tcond_socket_destruct(tconnd_socket_t* self)
         {
             ERROR_LOG("socket [%d, %"PRIu64"] close errno[%d], %s", self->id, self->mempool_entry.sn, errno, strerror(errno));
         }
-        tlibc_timer_pop(&self->accept_timeout);
+        
+        tlibc_list_del(&self->g_pending_socket_list);
         break;
     case e_tconnd_socket_status_established:
         if(close(self->socketfd) != 0)
@@ -99,10 +93,8 @@ void tcond_socket_destruct(tconnd_socket_t* self)
         
         if(self->package_buff != NULL)
         {
-            tlibc_list_del(&self->package_socket_list);
-            tlibc_timer_pop(&self->package_timeout);
+            tlibc_list_del(&self->g_package_socket_list);
             tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
-
             self->package_buff = NULL;
         }
         
@@ -136,6 +128,7 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
     ssize_t send_size;
+    uint64_t cur_tick;
     
     if(self->status != e_tconnd_socket_status_established)
     {
@@ -149,21 +142,32 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
         goto done;
     }
     
+again:
+    cur_tick = g_cur_ticks;
+
     send_size = writev(self->socketfd, self->iov, self->iov_num);
     if(send_size < 0)
     {    
-        if((errno == EINTR) || (errno == EAGAIN)|| (errno == EPIPE))
+        //只有被时钟终端搞掉的writev会可以被重试
+        if((errno == EINTR) && ((g_cur_ticks != cur_tick)))
         {
-            DEBUG_LOG("socket [%u, %"PRIu64"] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));
+            cur_tick = g_cur_ticks;
+            goto again;
+        }
+        
+        if(errno == EAGAIN)
+        {
+            DEBUG_LOG("socket [%u, %"PRIu64"] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));      
         }
         else
         {
-            WARN_LOG("socket [%u, %"PRIu64"] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));
+            WARN_LOG("socket [%u, %"PRIu64"] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));      
         }
+        ret = E_TS_CLOSE;
+        goto done;
     }
     else if((size_t)send_size != self->iov_total_size)
     {
-     
         DEBUG_LOG("socket [%d, %"PRIu64"] writev return [%zi].", self->id, self->mempool_entry.sn, send_size);
         
         ret = E_TS_CLOSE;
@@ -219,13 +223,18 @@ static TERROR_CODE tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
         ret = E_TS_CLOSE;
         goto done;
     }
-    tlibc_timer_pop(&self->accept_timeout);
+    tlibc_list_del(&self->g_pending_socket_list);
     
     
     ev.events = (uint32_t)(EPOLLIN | EPOLLET);
     ev.data.ptr = self;  
+again:
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
     {
+        if(errno == EINTR)
+        {
+            goto again;
+        }
         DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
         ret = E_TS_CLOSE;
         goto done;
@@ -338,21 +347,20 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     if(r <= 0)
     {
-        if((r == 0) || ((errno != EAGAIN) && (errno != EINTR)))
-        {
-            pkg->cmd = e_sip_req_cmd_recv;
-            pkg->cid.id = self->id;
-            pkg->cid.sn = self->mempool_entry.sn;
-            pkg->size = 0;
-            sip_req_t_code(pkg);
-            tbus_send_end(g_output_tbus, (uint32_t)header_size);
-            ret = E_TS_CLOSE;
-            DEBUG_LOG("socket [%"PRIu64"] closed by client.", self->mempool_entry.sn);
-        }
-        else
+        if((errno == EAGAIN) || (errno == EINTR))
         {
             ret = E_TS_ERRNO;
+            goto done;
         }
+        
+        pkg->cmd = e_sip_req_cmd_recv;
+        pkg->cid.id = self->id;
+        pkg->cid.sn = self->mempool_entry.sn;
+        pkg->size = 0;
+        sip_req_t_code(pkg);
+        tbus_send_end(g_output_tbus, (uint32_t)header_size);
+        ret = E_TS_CLOSE;
+        DEBUG_LOG("socket [%"PRIu64"] closed by client.", self->mempool_entry.sn);
         goto done;
     }
     
@@ -362,8 +370,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
         memcpy(package_ptr, self->package_buff->head, self->package_buff->size);        
 
-        tlibc_list_del(&self->package_socket_list);
-        tlibc_timer_pop(&self->package_timeout);
+        tlibc_list_del(&self->g_package_socket_list);
         tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
         self->package_buff = NULL;
     }
@@ -403,13 +410,10 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         package_buff->size = (size_t)(limit_ptr - remain_ptr);
         memcpy(package_buff->head, remain_ptr, package_buff->size);
         self->package_buff = package_buff;
-        tlibc_list_add_tail(&self->package_socket_list, &g_package_socket_list);        
+        self->package_ticks = g_cur_ticks + g_config.package_ticks_limit;
+        tlibc_list_add_tail(&self->g_package_socket_list, &g_package_socket_list);
 
         
-        TIMER_ENTRY_BUILD(&self->package_timeout, 
-            tconnd_timer_ms + g_config.package_ms_limit, tconnd_socket_package_timeout);
-        tlibc_timer_push(&g_timer, &self->package_timeout);
-        assert(self->package_timeout.entry.prev != &self->package_timeout.entry);
         DEBUG_LOG("socket [%u, %"PRIu64"] need to cache package buff, size = [%zu].", self->id, self->mempool_entry.sn, self->package_buff->size);
     }
 

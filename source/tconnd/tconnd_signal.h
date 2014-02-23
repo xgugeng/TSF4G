@@ -21,7 +21,7 @@ RETURN VALUE
 	E_TS_NOERROR:成功处理一个信号
 	E_TS_WOULD_BLOCK:没有需要处理的信号
 */
-TERROR_CODE signal_processing_proc();
+void signal_processing_proc();
 
 #endif//_H_TCONND_SIGNAL_H
 

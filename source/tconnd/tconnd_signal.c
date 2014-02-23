@@ -54,14 +54,12 @@ ERROR_RET:
 	return E_TS_ERROR;
 }
 
-TERROR_CODE signal_processing_proc()
+void signal_processing_proc()
 {
 	if(sig_term)
 	{
 	    INFO_LOG("receive sig_term.");
 		g_tconnd_reactor_switch = FALSE;
-		return E_TS_NOERROR;
 	}
-	return E_TS_WOULD_BLOCK;
 }
 

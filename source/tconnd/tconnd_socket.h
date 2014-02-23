@@ -3,14 +3,15 @@
 
 #include "tlibc/platform/tlibc_platform.h"
 #include <netinet/in.h>
-#include "tlibc/core/tlibc_timer.h"
 #include "tcommon/terrno.h"
 #include "tcommon/sip.h"
 #include <sys/uio.h>
 #include <limits.h>
 #include "tcommon/bscp.h"
+#include "tlibc/core/tlibc_list.h"
 
 #include "tlibc/core/tlibc_mempool.h"
+
 
 
 #pragma pack(push,1)
@@ -43,11 +44,12 @@ typedef struct _tconnd_socket_t
 	tconnd_socket_status_t status;
 	int socketfd;
 
-	tlibc_timer_entry_t accept_timeout;
-	tlibc_timer_entry_t close_timeout;
 
-    TLIBC_LIST_HEAD package_socket_list;
-    tlibc_timer_entry_t package_timeout;
+    uint64_t        pending_ticks;
+	TLIBC_LIST_HEAD g_pending_socket_list;
+
+    uint64_t        package_ticks;
+    TLIBC_LIST_HEAD g_package_socket_list;
     package_buff_t *package_buff;
     
     TLIBC_LIST_HEAD readable_list;

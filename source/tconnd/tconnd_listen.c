@@ -26,14 +26,6 @@
 
 tconnd_socket_t g_listen;
 
-static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
-{
-    tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
-    DEBUG_LOG("socket [%u, %"PRIu64"] accept_timeout", self->id, self->mempool_entry.sn);
-    tconnd_socket_delete(self);
-}
-
-
 TERROR_CODE tconnd_listen_init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
@@ -228,6 +220,7 @@ TERROR_CODE tconnd_listen()
 
     memset(&sockaddr, 0, sizeof(struct sockaddr_in));
     cnt_len = sizeof(struct sockaddr_in);
+
     socketfd = accept(g_listen.socketfd, (struct sockaddr *)&sockaddr, &cnt_len);
 
     if(socketfd == -1)
@@ -235,10 +228,7 @@ TERROR_CODE tconnd_listen()
         switch(errno)
         {
             case EAGAIN:
-                ret = E_TS_WOULD_BLOCK;
-                break;
             case EINTR:
-                ret = E_TS_WOULD_BLOCK;
                 break;
             default:
                 ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
@@ -251,17 +241,14 @@ TERROR_CODE tconnd_listen()
     nb = 1;
 	if(ioctl(socketfd, FIONBIO, &nb) == -1)
 	{
-        ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
-    	ret = E_TS_WOULD_BLOCK;
+    	ret = E_TS_ERRNO;
 		goto close_socket;
 	}
 
 	conn_socket = tconnd_socket_new();
 	conn_socket->socketfd = socketfd;
-
-	TIMER_ENTRY_BUILD(&conn_socket->accept_timeout, 
-	    tconnd_timer_ms + g_config.accept_ms_limit, tconnd_socket_accept_timeout);
-	tlibc_timer_push(&g_timer, &conn_socket->accept_timeout);
+	conn_socket->pending_ticks = g_cur_ticks + g_config.accept_ticks_limit;
+	tlibc_list_add_tail(&conn_socket->g_pending_socket_list, &g_pending_socket_list);
 	
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
 
@@ -281,7 +268,10 @@ TERROR_CODE tconnd_listen()
 done:
 	return ret;
 close_socket:
-    close(socketfd);
+    if(close(socketfd) != 0)
+    {
+        ERROR_LOG("close [%d] return errno [%d], %s.", socketfd, errno, strerror(errno));
+    }
 	return ret;
 }
 

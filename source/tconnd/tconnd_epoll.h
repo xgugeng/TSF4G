@@ -4,8 +4,9 @@
 #include "tcommon/terrno.h"
 #include "tlibc/core/tlibc_list.h"
 
-extern int                 g_epollfd;
-extern TLIBC_LIST_HEAD g_package_socket_list;
+extern int                  g_epollfd;
+extern TLIBC_LIST_HEAD      g_package_socket_list;
+extern TLIBC_LIST_HEAD      g_pending_socket_list;
 
 TERROR_CODE tconnd_epoll_init();
 

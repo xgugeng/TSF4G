@@ -7,7 +7,6 @@
 
 #include "tlibc/core/tlibc_list.h"
 #include "tlibc/core/tlibc_mempool.h"
-#include "tlibc/core/tlibc_timer.h"
 
 
 #include <sys/epoll.h>

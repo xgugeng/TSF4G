@@ -7,6 +7,8 @@
 #include "tconnd/tconnd_signal.h"
 #include "tconnd/tconnd_mempool.h"
 #include "tconnd/tconnd_tbus.h"
+#include "tconnd/tconnd_socket.h"
+
 
 #include "tlog/tlog_instance.h"
 
@@ -18,8 +20,6 @@ int g_tconnd_reactor_switch;
 
 TERROR_CODE tconnd_reactor_init(const char* config_file)
 {
-    tconnd_timer_init();
-
     if(tconnd_config_init(config_file) != E_TS_NOERROR)
     {
         goto ERROR_RET;
@@ -32,7 +32,13 @@ TERROR_CODE tconnd_reactor_init(const char* config_file)
     }
     INFO_PRINT("tlog init(%s) succeed, check the log file for more information.", g_config.log_config);
 
+
     if(signal_processing_init() != E_TS_NOERROR)
+    {
+        goto tlog_fini;
+    }
+
+    if(tconnd_timer_init() != E_TS_NOERROR)
     {
         goto tlog_fini;
     }
@@ -102,27 +108,9 @@ TERROR_CODE tconnd_reactor_process()
 		goto done;
 	}
 
-	r = signal_processing_proc();
-	if(r == E_TS_NOERROR)
-	{
-	    ret = E_TS_NOERROR;
-	}
-	else if(r != E_TS_WOULD_BLOCK)
-	{
-		ret = r;
-		goto done;
-	}
-
-	r = tconnd_timer_process();
-    if(r == E_TS_NOERROR)
-	{
-	    ret = E_TS_NOERROR;
-	}
-	else if(r != E_TS_WOULD_BLOCK)
-	{
-		ret = r;
-		goto done;
-	}
+	signal_processing_proc();
+	
+	tconnd_timer_process();
 	
 done:
 	return ret;

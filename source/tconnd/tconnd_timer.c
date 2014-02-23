@@ -1,55 +1,85 @@
 #include "tconnd_timer.h"
 #include "tconnd/tconnd_reactor.h"
-#include "tlibc/core/tlibc_timer.h"
 #include "tlog/tlog_instance.h"
+#include "tconnd/tconnd_config.h"
+#include "tconnd/tconnd_epoll.h"
+#include "tconnd/tconnd_socket.h"
+
 
 #include <sys/time.h>
 #include <assert.h>
+#include <string.h>
+#include <signal.h>
+#include <errno.h>
 
-tlibc_timer_t       g_timer;
-static struct timeval      start_tv;
 
-void tconnd_timer_init()
+uint64_t       g_cur_ticks;
+
+static void tconnd_timer_signal_handler(int signo)
 {
-	tlibc_timer_init(&g_timer);
-    gettimeofday(&start_tv, NULL);
+    ++g_cur_ticks;
 }
 
-TERROR_CODE tconnd_timer_process()
+
+TERROR_CODE tconnd_timer_init()
 {
-    bool busy = false;
-    uint64_t      current_time_ms;
-    struct timeval      cur_tv;
-    gettimeofday(&cur_tv, NULL);
-    if(cur_tv.tv_sec >= start_tv.tv_sec)
+    struct sigaction  sa;
+    struct itimerval  itv;
+    TERROR_CODE ret = E_TS_NOERROR;
+    
+    memset(&sa, 0, sizeof(struct sigaction));
+    sa.sa_handler = tconnd_timer_signal_handler;
+    sigemptyset(&sa.sa_mask);
+    
+    if (sigaction(SIGALRM, &sa, NULL) == -1)
     {
-        current_time_ms = (uint64_t)(cur_tv.tv_sec - start_tv.tv_sec) * 1000;
-    }
-    else
-    {
-        current_time_ms = 0;
-    }
-
-    if(cur_tv.tv_usec >= start_tv.tv_usec)
-    {
-        current_time_ms += (uint64_t)(cur_tv.tv_usec - start_tv.tv_usec) /1000;
-    }    
-
-    while(tconnd_timer_ms <= current_time_ms)
-    {
-        if(tlibc_timer_tick(&g_timer) == E_TLIBC_NOERROR)
-        {
-            busy = true;
-        }
+        ERROR_LOG("sigaction return errno [%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERROR;
+        goto done;
     }
     
-    if(busy)
+    itv.it_interval.tv_sec = g_config.interval/ 1000;
+    itv.it_interval.tv_usec = (g_config.interval % 1000) * 1000;
+    itv.it_value.tv_sec = g_config.interval / 1000;
+    itv.it_value.tv_usec = (g_config.interval % 1000 ) * 1000;
+    
+    if (setitimer(ITIMER_REAL, &itv, NULL) == -1)
     {
-        return E_TS_NOERROR;
+        ERROR_LOG("setitimer return errno [%d], %s.", errno, strerror(errno));
+        ret = E_TS_ERROR;
+        goto done;
     }
-    else
+    g_cur_ticks = 0;
+    
+done:
+    return ret;
+}
+
+void tconnd_timer_process()
+{
+    TLIBC_LIST_HEAD *iter, *next;
+    tconnd_socket_t *s = NULL;
+    for(iter = g_pending_socket_list.next; iter != &g_pending_socket_list; iter = next)
     {
-        return E_TS_WOULD_BLOCK;
+        s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_pending_socket_list);        
+        if(s->pending_ticks > g_cur_ticks)
+        {
+            break;
+        }
+        next = iter->next;
+        tconnd_socket_delete(s);
     }
+
+   
+   for(iter = g_package_socket_list.next; iter != &g_package_socket_list; iter = next)
+   {       
+       s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_package_socket_list);
+       if(s->package_ticks > g_cur_ticks)
+       {
+            break;
+       }
+       next = iter->next;
+       tconnd_socket_delete(s);
+   }
 }
 

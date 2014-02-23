@@ -41,6 +41,10 @@ tlibc_timer_t g_timer;
 #define ROBOT_NUM 300
 uint32_t g_limit = 1000 * 1000000;
 
+/*
+#define ROBOT_NUM 1
+uint32_t g_limit = 1000;// * 1000000;
+*/
 
 int g_connected = FALSE;
 

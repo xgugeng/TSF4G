@@ -16,6 +16,7 @@
 int                         g_epollfd;
 static TLIBC_LIST_HEAD      readable_list;
 TLIBC_LIST_HEAD             g_package_socket_list;
+TLIBC_LIST_HEAD             g_pending_socket_list;
 
 
 TERROR_CODE tconnd_epoll_init()
@@ -23,7 +24,8 @@ TERROR_CODE tconnd_epoll_init()
     TERROR_CODE ret = E_TS_NOERROR;
 
 	tlibc_list_init(&readable_list);
-	tlibc_list_init(&g_package_socket_list);
+	tlibc_list_init(&g_package_socket_list);	
+    tlibc_list_init(&g_pending_socket_list);
 
     if(g_config.connections > INT_MAX)
     {
@@ -56,19 +58,20 @@ TERROR_CODE tconnd_epool_proc()
 	{
 		struct epoll_event 	events[TCONND_EPOLL_MAX_EVENTS];
 		int                 events_num;
-		
+
 		events_num = epoll_wait(g_epollfd, events, TCONND_EPOLL_MAX_EVENTS, 0);
 	    if(events_num == -1)
 		{
+		    //有可能被时钟打断
 		    if(errno == EINTR)
 		    {
-		        DEBUG_LOG("tconnd_epool_proc reutrn E_TS_WOULD_BLOCK");
+		        ret = E_TS_NOERROR;
+		        goto done;
 		    }
-		    else
-		    {
-                ERROR_LOG("epoll_wait errno[%d], %s.", errno, strerror(errno));
-		        ret = E_TS_ERRNO;
-		    }
+		    
+	    
+            ERROR_LOG("epoll_wait errno[%d], %s.", errno, strerror(errno));
+	        ret = E_TS_ERRNO;
 			goto done;
 	    }
 
@@ -90,6 +93,7 @@ TERROR_CODE tconnd_epool_proc()
 
 	if(tlibc_list_empty(&readable_list))
 	{
+	    ret = E_TS_WOULD_BLOCK;
 	    goto done;
 	}
 	
@@ -140,7 +144,7 @@ TERROR_CODE tconnd_epool_proc()
                     break;
                 }
 
-                sock = TLIBC_CONTAINER_OF(g_package_socket_list.next, tconnd_socket_t, package_socket_list);
+                sock = TLIBC_CONTAINER_OF(g_package_socket_list.next, tconnd_socket_t, g_package_socket_list);
                 assert(sock->package_buff != NULL);
                 WARN_LOG("close socket [%u, %"PRIu64"] to release package buff.", sock->id, sock->mempool_entry.sn);
                 tconnd_socket_delete(sock);
