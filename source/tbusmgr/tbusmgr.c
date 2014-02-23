@@ -54,7 +54,6 @@ int main(int argc, char**argv)
 		arg = strtok(argv[i], " ");
 		while (arg != NULL)
 		{
-    		unsigned long long int ull;
 			if (arg[0] == '-' && arg[1] == '-')
 			{
 				++arg;
@@ -81,13 +80,7 @@ int main(int argc, char**argv)
 				}
 				
 				errno = 0;
-				ull = strtoull(arg, &endptr, 10);
-				if(ull > SSIZE_MAX)
-				{
-                    ERROR_PRINT("ull [%llu] over follow SSIZE_MAX.", ull);
-					exit(1);
-				}
-				shm_size = (size_t)ull;
+				shm_size = (size_t)strtoull(arg, &endptr, 10);
 				if(errno != 0)
 				{
                     ERROR_PRINT("strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno , strerror(errno));
@@ -110,7 +103,7 @@ int main(int argc, char**argv)
 				}
 
 				errno = 0;
-                shm_key = strtol(arg, &endptr, 10);
+                shm_key = (key_t)strtol(arg, &endptr, 10);
 				if(errno != 0)
 				{
 					ERROR_PRINT("strtol(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno, strerror(errno));
@@ -137,7 +130,7 @@ int main(int argc, char**argv)
 					goto error_free_memory;
 				}
 				tbus_ptr = (tbus_t*)shm_ptr;
-				ret = tbus_init(tbus_ptr, shm_size);
+				ret = tbus_init(tbus_ptr, (uint32_t)shm_size);
 				if(ret != E_TS_NOERROR)
 				{
 					ERROR_PRINT("tbus_init(%p) returned an error[%d].", tbus_ptr, ret);

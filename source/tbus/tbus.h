@@ -18,7 +18,7 @@ typedef enum _tbus_cmd_e
 typedef struct _tbus_header_s
 {
     tbus_cmd_e cmd;
-    size_t size;
+    uint32_t size;
 }tbus_header_s;
 
 typedef struct _tbus_t tbus_t;

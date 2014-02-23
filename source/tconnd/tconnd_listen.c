@@ -29,7 +29,7 @@ tconnd_socket_t g_listen;
 static void tconnd_socket_accept_timeout(const tlibc_timer_entry_t *super)
 {
     tconnd_socket_t *self = TLIBC_CONTAINER_OF(super, tconnd_socket_t, accept_timeout);
-    DEBUG_LOG("socket [%u, %llu] accept_timeout", self->id, self->mempool_entry.sn);
+    DEBUG_LOG("socket [%u, %"PRIu64"] accept_timeout", self->id, self->mempool_entry.sn);
     tconnd_socket_delete(self);
 }
 
@@ -199,7 +199,7 @@ TERROR_CODE tconnd_listen()
 
 //1, 检查tbus是否能发送新的连接包
 	tbus_writer_size = SIP_REQ_SIZE;
-	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, &tbus_writer_size);
+	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, (uint32_t*)&tbus_writer_size);
 	if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
 	{
 //	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");
@@ -214,7 +214,7 @@ TERROR_CODE tconnd_listen()
 //2, 检查是否能分配socket
     if(tlibc_mempool_over(&g_socket_pool))
     {
-        ERROR_LOG("g_socket_pool.sn [%llu] == tm_invalid_id", g_socket_pool.sn);
+        ERROR_LOG("g_socket_pool.sn [%"PRIu64"] == tm_invalid_id", g_socket_pool.sn);
         ret = E_TS_ERROR;
         goto done;
     }
@@ -276,7 +276,7 @@ TERROR_CODE tconnd_listen()
 	
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
 	tbus_send_end(g_output_tbus, SIP_REQ_SIZE);
-    DEBUG_LOG("[%u, %llu] connect.", pkg->cid.id, pkg->cid.sn);
+    DEBUG_LOG("[%u, %"PRIu64"] connect.", pkg->cid.id, pkg->cid.sn);
 
 done:
 	return ret;

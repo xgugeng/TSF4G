@@ -77,7 +77,7 @@ TERROR_CODE tconnd_epool_proc()
             tconnd_socket_t *socket = events[i].data.ptr;
             if(socket->readable)
             {
-                ERROR_LOG("socket [%u, %llu] already readable.", socket->id, socket->mempool_entry.sn);
+                ERROR_LOG("socket [%u, %"PRIu64"] already readable.", socket->id, socket->mempool_entry.sn);
                 assert(0);
                 ret = E_TS_ERROR;
                 goto done;
@@ -142,7 +142,7 @@ TERROR_CODE tconnd_epool_proc()
 
                 sock = TLIBC_CONTAINER_OF(g_package_socket_list.next, tconnd_socket_t, package_socket_list);
                 assert(sock->package_buff != NULL);
-                WARN_LOG("close socket [%u, %llu] to release package buff.", sock->id, sock->mempool_entry.sn);
+                WARN_LOG("close socket [%u, %"PRIu64"] to release package buff.", sock->id, sock->mempool_entry.sn);
                 tconnd_socket_delete(sock);
             }
             break;

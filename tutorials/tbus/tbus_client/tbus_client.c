@@ -26,7 +26,7 @@ int main()
 		size_t data_size;
 		
 		char *message;
-		size_t message_size;
+		size_t message_size = 0;
 		
 		snprintf(data, MAX_MESSAGE_LENGTH, "hello %d", i);
 		data[MAX_MESSAGE_LENGTH - 1] = 0;
@@ -34,11 +34,11 @@ int main()
 		data_size = strlen(data) + 1;
 		message_size = data_size;
 		
-		ret = tbus_send_begin(tb, &message, &message_size);
+		ret = tbus_send_begin(tb, &message, (uint32_t*)&message_size);
 		if(ret == E_TS_NOERROR)
 		{
 			memcpy(message, data, data_size);
-			tbus_send_end(tb, data_size);
+			tbus_send_end(tb, (uint32_t)data_size);
 			++i;
 			continue;
 		}

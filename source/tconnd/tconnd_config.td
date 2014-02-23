@@ -1,4 +1,5 @@
 import "tcommon/tcommon.td"
+import "tcommon/bscp.td"
 
 #这个进程处理bscp(The Binary Stream Cutting Protocol)协议，并由sip(The Socket Interface Protocol)协议把结果发送给另一个进程处理
 
@@ -8,7 +9,7 @@ struct tconnd_config_t
 	string<TSERVER_FILE_NAME_LENGH>		log_config; 					#log配置文件的路径
 	string<TSERVER_IP_LENGTH> 			ip;								#监听ip
 	uint16 								port;							#监听端口
-	uint32								package_size;					#包的大小
+	bscp_head_t							package_size;					#包的大小
 	uint32								package_connections;			#包的个数
 	uint32								package_ms_limit;				#包超时的毫秒
 	uint32 								connections;					#最多可以接入的连接数
