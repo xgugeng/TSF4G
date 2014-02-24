@@ -216,10 +216,10 @@ static TERROR_CODE tconnd_socket_on_cmd_send(tconnd_socket_t *self, void* body, 
         if(ret != E_TS_NOERROR)
         {
             goto done;
-        }
+        }        
+        
     }
-    assert(self->iov_num == 0);
-    assert(self->iov_total_size == 0);
+    assert(self->iov_num < TCONND_SOCKET_OP_LIST_MAX);
     
     self->iov_total_size += body_size;
     self->iov[self->iov_num].iov_base = body;

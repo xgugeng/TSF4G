@@ -66,18 +66,24 @@ done:
 TERROR_CODE process_input_tbus()
 {
 	TERROR_CODE ret = E_TS_NOERROR;
-	char*message;
+	char*message, *cur, *message_limit;
 	tbus_atomic_size_t message_len = 0;
-	size_t len;
-	uint32_t i;
     TLIBC_LIST_HEAD writable_list;
     TLIBC_LIST_HEAD *iter;
+    
+    tlibc_list_init(&writable_list);
 
 
+    
     ret = tbus_read_begin(g_input_tbus, &message, &message_len);
     if(ret == E_TS_WOULD_BLOCK)
     {
         goto done;
+    }
+    else if(ret == E_TS_BAD_PACKAGE)
+    {
+        ERROR_LOG("tbus receive a bad package.");
+        goto read_end;
     }
     else if(ret != E_TS_NOERROR)
     {
@@ -85,33 +91,41 @@ TERROR_CODE process_input_tbus()
         goto done;
     }
 
-    len = (size_t)message_len;
-    tlibc_list_init(&writable_list);
-    while(len > 0)
+    message_limit = message + message_len;
+
+    for(cur = message; cur < message_limit;)
     {
+        uint32_t i;
         sip_rsp_t *head = NULL;
-        size_t head_size = 0;
+        ssize_t head_size = 0;
         char* body_addr = NULL;
         size_t body_size = 0;
 
-        head = (sip_rsp_t*)message;
-        sip_rsp_t_decode(head);
-        head_size = SIP_RSP_T_SIZE(head);
+
+        head = (sip_rsp_t*)cur;
+        head_size = sip_rst_t_decode(cur, message_limit);
+        if(head_size < 0)
+        {
+            ERROR_LOG("can not decode sip_rst_t.");
+            goto flush_socket;
+        }
         
         if(head->cmd == e_sip_rsp_cmd_send)
         {
             body_size = head->size;
             body_addr = message + head_size;
+            if(body_addr + body_size >= message_limit)
+            {
+                ERROR_LOG("sip_rst_t.size out of range.");
+                goto flush_socket;
+            }
         }
         else
         {
             body_addr = NULL;
             body_size = 0;
-        }
-
-        
-        message += head_size + body_size;
-        len -= head_size + body_size;
+        }        
+        cur += (size_t)head_size + body_size;
 
         for(i = 0; i < head->cid_list_num; ++i)
         {
@@ -129,7 +143,6 @@ TERROR_CODE process_input_tbus()
                 continue;
             }
             socket = (tconnd_socket_t*)tlibc_mempool_id2ptr(&g_socket_pool, head->cid_list[i].id);
-
             if(!tlibc_mempool_ptr_test(socket, mempool_entry, head->cid_list[i].sn))
             {
                 WARN_LOG("socket [%u, %"PRIu64"] head->cmd = %d [%u, %"PRIu64"] mismatch."
@@ -157,11 +170,11 @@ TERROR_CODE process_input_tbus()
         }
     }
     
+flush_socket:
     for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
     {
         tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-        TERROR_CODE r = tconnd_socket_flush(socket);
-        
+        TERROR_CODE r = tconnd_socket_flush(socket);        
         socket->writable = FALSE;
         
         if(r == E_TS_CLOSE)
@@ -169,8 +182,10 @@ TERROR_CODE process_input_tbus()
             tconnd_socket_delete(socket);
         }        
     }
-
+read_end:
     tbus_read_end(g_input_tbus, message_len);    
+
+
     DEBUG_LOG("process tbus data [%d].", message_len);
 done:
     return ret;

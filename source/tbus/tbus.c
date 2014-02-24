@@ -79,7 +79,8 @@ void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
 	header->size = len;
 
 	tail_offset += (tbus_atomic_size_t)sizeof(tbus_header_s) + len;
-	tb->tail_offset = tail_offset;
+
+	tb->tail_offset = tail_offset;	
 }
 
 TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
@@ -125,11 +126,12 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
 		if(header->size > read_size - (tbus_atomic_size_t)sizeof(tbus_header_s))
 		{
 		    ret = E_TS_BAD_PACKAGE;
+		    *len = read_size - (tbus_atomic_size_t)sizeof(tbus_header_s);
+		    *buf = NULL;
 		    goto done;
 		}
-		
 		*buf = tb->buff + sizeof(tbus_header_s) + head_offset;
-		*len = header->size;
+        *len = header->size;
 		break;
 	default:
 	    ret = E_TS_ERROR;

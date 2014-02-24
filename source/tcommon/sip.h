@@ -66,7 +66,7 @@ typedef struct _sip_rsp_t
 	uint32_t            cid_list_num;                       //连接id个数
 	sip_cid_t           cid_list[SIP_BROADCAST_NUM];        //连接id数组
 }sip_rsp_t;
-#define SIP_RSP_T_SIZE(h) (sizeof(sip_rsp_t) - sizeof(sip_cid_t) * (SIP_BROADCAST_NUM - (h)->cid_list_num))
+#define SIP_RSP_T_CODE_SIZE(h) (sizeof(sip_rsp_t) - sizeof(sip_cid_t) * (SIP_BROADCAST_NUM - (h)->cid_list_num))
 
 #define sip_rsp_t_code(h) \
 {\
@@ -81,18 +81,10 @@ typedef struct _sip_rsp_t
     }\
 }
 
-#define sip_rsp_t_decode(h) \
-{\
-    size_t i;\
-    tlibc_little_to_host16((h)->cmd)\
-    tlibc_little_to_host32((h)->size)\
-    tlibc_little_to_host32((h)->cid_list_num)\
-    for(i = 0; i < (h)->cid_list_num; ++i)\
-    {\
-        tlibc_little_to_host64((h)->cid_list[i].sn)\
-        tlibc_little_to_host32((h)->cid_list[i].id)\
-    }\
-}
+//正整数表示成功解码的长度
+//-1表示发生错误
+ssize_t sip_rst_t_decode(char *buff_start, char *buff_limit);
+
 
 
 #pragma pack(pop)

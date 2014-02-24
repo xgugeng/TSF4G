@@ -24,53 +24,90 @@
 
 
 char *message = NULL;
+#define TBUS_MTU 65536
+
+
 
 tbus_t *itb;
 tbus_t *otb;
 
-#define TBUS_MTU 65536
-static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t data_size)
+char *write_start = NULL;           //开始写入的指针
+char *write_limit = NULL;           //结束写入的指针
+tbus_atomic_size_t write_size = 0;  //总共可以写入的长度
+char *write_cur = NULL;             //当前写入的指针
+
+#define WRITE_LIMIT 1 * 1000000    //最大缓存长度
+
+static void ts_flush()
 {
-    char *addr;
-    tbus_atomic_size_t len = 0;
-    TERROR_CODE ret;
+    if(write_size != 0)
+    {
+        tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
+        write_size = 0;
+    }
+}
+
+static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
+{
+    tbus_atomic_size_t total_size= 0;
     size_t head_size;
 
+    head_size = SIP_RSP_T_CODE_SIZE(pkg);
+    total_size = (tbus_atomic_size_t)(head_size + data_size);
+      
+
+    if(write_size == 0)
+    {
+        write_size = total_size;
+        if(tbus_send_begin(otb, &write_start, &write_size) != E_TS_NOERROR)
+        {
+            write_size = 0;
+            ERROR_PRINT("tbus no space, drop pkg->cmd [%d] pkg->size [%u].", pkg->cmd, pkg->size);
+            return;
+        }
+        write_limit = write_start + write_size;
+        write_cur = write_start;
+    }
+    else
+    {
+        if(write_limit - write_cur < total_size)
+        {
+            tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
+            
+            write_size = total_size;
+            if(tbus_send_begin(otb, &write_start, &write_size) != E_TS_NOERROR)
+            {
+                write_size = 0;
+                ERROR_PRINT("tbus no space, drop pkg->cmd [%d] pkg->size [%u].", pkg->cmd, pkg->size);
+                return;
+            }
+            write_limit = write_start + write_size;
+            write_cur = write_start;
+        }
+    }
+    
+    assert(write_size != 0);
+    assert(write_cur != NULL);
+    assert(write_limit - write_cur >= total_size);    
 
 
-    DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%"PRIu64" pkg.size = %u data_size = %zu."
-        , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
-
-    head_size = SIP_RSP_T_SIZE(pkg);
+    memcpy(write_cur, pkg, head_size);         
+    sip_rsp_t_code((sip_rsp_t*)write_cur);
+    write_cur += head_size;
+    if(data)
+    {
+        memcpy(write_cur, data, data_size);
+        write_cur += data_size;
+    }
 
     
-    len = (tbus_atomic_size_t)(head_size + data_size);
-    for(;;)
+    DEBUG_PRINT("ts_send pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%"PRIu64" pkg.size = %u data_size = %zu."
+        , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
+
+    if(write_cur - write_start >= WRITE_LIMIT)
     {
-        ret = tbus_send_begin(tb, &addr, &len);
-        if(ret == E_TS_NOERROR)
-        {
-            memcpy(addr, pkg, head_size);         
-            sip_rsp_t_code((sip_rsp_t*)addr);
-            addr += head_size;
-            if(data)
-            {
-                memcpy(addr, data, data_size);
-            }
-            
-            tbus_send_end(tb, (tbus_atomic_size_t)(head_size + data_size));
-            DEBUG_PRINT("tbus send data [%d], head [%d] tail [%d].", (head_size + data_size), itb->head_offset, itb->tail_offset);
-            break;
-        }
-        else if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
-        {
-            break;
-        }
-        else
-        {
-            ERROR_PRINT("tbus_send_begin return [%d]", ret);
-            exit(1);
-        }        
+        tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
+        write_size = 0;
     }
 }
 
@@ -91,7 +128,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
         rsp.cid_list_num = 1;
         rsp.cid_list[0] = req->cid;
         rsp.size = 0;
-        block_send_pkg(otb, &rsp, NULL, 0);
+        ts_send(&rsp, NULL, 0);
         INFO_PRINT("[%u, %"PRIu64"] accept.", req->cid.id, req->cid.sn);
         break;
     case e_sip_req_cmd_recv:
@@ -108,7 +145,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 rsp.cid_list_num = 1;
                 rsp.cid_list[0] = req->cid;
                 rsp.size = 0;
-                block_send_pkg(otb, &rsp, NULL, 0);
+                ts_send(&rsp, NULL, 0);
                 INFO_PRINT("[%"PRIu64"] server close.", req->cid.sn);
             }
             else
@@ -121,7 +158,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 limit = body_ptr + req->size;
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
-                    int i;
+//                    int i;
                     
                     bscp_head_t pkg_size = *(const bscp_head_t*)iter;
 //                    const char* pkg_content = iter + sizeof(bscp_head_t);
@@ -131,13 +168,19 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                     next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
                     DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u", req->cid.sn, pkg_size);
                     
-
+//分10小块发也不会影响网络的收发效率
+/*
                     for(i = 0; i < 10; ++i)
                     {
                         rsp.size = BLOCK_SIZE / 10;
 
-                        block_send_pkg(otb, &rsp, buff, rsp.size);
+                        ts_send(&rsp, buff, rsp.size);
                     }
+*/
+                    rsp.size = BLOCK_SIZE;
+    
+                    ts_send(&rsp, buff, rsp.size);
+
                 }
             }
             return req->size;
@@ -204,45 +247,43 @@ int main()
 	for(;!g_sig_term;)
 	{
 		ret = tbus_read_begin(itb, &message, &message_len);
-		if(ret == E_TS_NOERROR)
-		{
-		    len = (size_t)message_len;
-//		    ERROR_PRINT("tbus receive begin data [%u] tail [%d].", message_len, itb->tail_offset);
-		    while(len > 0)
-		    {
-		        sip_size_t body_size;
-		        if(len < SIP_REQ_SIZE)
-		        {
-                    ERROR_PRINT("tlibc_read_tdgi_req_t error");
-		            exit(1);
-		        }
-		        pkg = (sip_req_t*)message;
-		        sip_req_t_decode(pkg);
-
-		        
-                body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
-                len -= SIP_REQ_SIZE + body_size;
-                message += SIP_REQ_SIZE + body_size;
-	    	}			
-			tbus_read_end(itb, message_len);
-//            ERROR_PRINT("tbus receive end data [%u] tail [%d].", message_len, itb->tail_offset);
-			idle_times = 0;
-			continue;
-		}
-		else if(ret == E_TS_WOULD_BLOCK)
+        if(ret == E_TS_WOULD_BLOCK)
 		{
 			++idle_times;
 			if(idle_times > 30)
 			{
 				idle_times = 0;
 				usleep(100);
-			}			
+			}
+			continue;
 		}
-		else
+		else if(ret != E_TS_NOERROR)
 		{
 			ERROR_PRINT("tbus_read_begin error.");
 			exit(1);
 		}
+
+        idle_times = 0;
+        len = (size_t)message_len;
+	    while(len > 0)
+	    {
+	        sip_size_t body_size;
+	        if(len < SIP_REQ_SIZE)
+	        {
+                ERROR_PRINT("tlibc_read_tdgi_req_t error");
+	            exit(1);
+	        }
+	        pkg = (sip_req_t*)message;
+	        sip_req_t_decode(pkg);
+
+	        
+            body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
+            len -= SIP_REQ_SIZE + body_size;
+            message += SIP_REQ_SIZE + body_size;
+    	}
+		tbus_read_end(itb, message_len);
+        ts_flush();
+		idle_times = 0;
 	}
 	
 	return 0;

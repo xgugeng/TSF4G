@@ -9,7 +9,7 @@
 
 #define TBUS_VERSION "0.0.1"
 
-typedef int tbus_atomic_size_t;
+typedef uint32_t tbus_atomic_size_t;
 
 typedef enum _tbus_cmd_e
 {
@@ -38,7 +38,6 @@ struct _tbus_t
 TERROR_CODE tbus_init(tbus_t *tb, tbus_atomic_size_t size);
 
 
-//len的返回值一定大于等于输入值
 TERROR_CODE tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf, TLIBC_INOUT tbus_atomic_size_t *len);
 
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);
