@@ -2,6 +2,12 @@
 #include "tcommon/sip.h"
 #include "tcommon/bscp.h"
 
+#ifdef TLOG_PRINT_LEVEL
+#undef TLOG_PRINT_LEVEL
+#endif//TLOG_PRINT_LEVEL
+#define TLOG_PRINT_LEVEL e_tlog_debug
+
+
 
 #include "tlog/tlog_instance.h"
 
@@ -41,6 +47,8 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
         , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
 
     head_size = SIP_RSP_T_SIZE(pkg);
+
+    
     len = head_size + data_size;
     for(;;)
     {
@@ -75,7 +83,9 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
     }
 }
 
+#define BLOCK_SIZE 1024
 
+char buff[BLOCK_SIZE];
 static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 {
     sip_rsp_t rsp;
@@ -130,7 +140,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 
                     rsp.size = pkg_size;
 
-                    block_send_pkg(otb, &rsp, pkg_content, pkg_size);
+                    block_send_pkg(otb, &rsp, buff, BLOCK_SIZE);
                 }
             }
             return req->size;
@@ -163,6 +173,8 @@ int main()
 	TERROR_CODE ret;
     struct sigaction  sa;
 	size_t idle_times = 0;
+	
+    INFO_PRINT("Hello world!");
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;

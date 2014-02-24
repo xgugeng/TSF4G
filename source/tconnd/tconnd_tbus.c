@@ -116,6 +116,11 @@ TERROR_CODE process_input_tbus()
         for(i = 0; i < head->cid_list_num; ++i)
         {
             tconnd_socket_t *socket = NULL;
+            if(i >= SIP_BROADCAST_NUM)
+            {
+                ERROR_LOG("cid [%u] >= SIP_BROADCAST_NUM [%u]", head->cid_list[i].id, SIP_BROADCAST_NUM);
+                break;
+            }
             
             if(!tlibc_mempool_id_test(&g_socket_pool, head->cid_list[i].id))
             {

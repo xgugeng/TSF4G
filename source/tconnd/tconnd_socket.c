@@ -345,14 +345,15 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             WARN_LOG("setsockopt errno [%d], %s.", errno, strerror(errno));
         }
     }
-    if(r <= 0)
+
+    if((r < 0) && ((errno == EAGAIN) || (errno == EINTR)))
     {
-        if((errno == EAGAIN) || (errno == EINTR))
-        {
-            ret = E_TS_ERRNO;
-            goto done;
-        }
-        
+        ret = E_TS_ERRNO;
+        goto done;
+    }
+
+    if(r <= 0)
+    {        
         pkg->cmd = e_sip_req_cmd_recv;
         pkg->cid.id = self->id;
         pkg->cid.sn = self->mempool_entry.sn;
@@ -360,7 +361,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         sip_req_t_code(pkg);
         tbus_send_end(g_output_tbus, (uint32_t)header_size);
         ret = E_TS_CLOSE;
-        DEBUG_LOG("socket [%"PRIu64"] closed by client.", self->mempool_entry.sn);
+        DEBUG_LOG("socket [%u, %"PRIu64"] closed by client.", self->id, self->mempool_entry.sn);
         goto done;
     }
     

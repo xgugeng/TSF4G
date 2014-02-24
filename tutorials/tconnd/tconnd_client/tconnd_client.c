@@ -23,6 +23,11 @@
 #include <signal.h>
 #include <assert.h>
 
+#ifdef TLOG_PRINT_LEVEL
+#undef TLOG_PRINT_LEVEL
+#endif//TLOG_PRINT_LEVEL
+#define TLOG_PRINT_LEVEL e_tlog_warn
+
 #include "tlog/tlog_instance.h"
 
 
@@ -31,20 +36,27 @@
 #include "tcommon/sip.h"
 
 #define PORT 7001
-#define BUFF_SIZE 1024
+
 int g_epollfd;
 tlibc_timer_t g_timer;
 #define ROBOT_MAX_EVENTS 1024
 
 
+//#define ROBOT_NUM 1000
+#define ROBOT_NUM 500
 
-#define ROBOT_NUM 300
-uint32_t g_limit = 1000 * 1000000;
 
-/*
-#define ROBOT_NUM 1
-uint32_t g_limit = 1000;// * 1000000;
-*/
+#define BLOCK_NUM 1024 *1024
+//#define BLOCK_NUM 1024
+
+#define BLOCK_SIZE 1024 + BSCP_HEAD_T_SIZE
+
+uint64_t block_send_ms[BLOCK_NUM];//每块发送的时间
+size_t block_send_num;//总共发送了多少块
+uint64_t block_recv_ms[BLOCK_NUM];//收到回包的时间
+size_t block_recv_num;//总共发送了多少块
+
+
 
 int g_connected = FALSE;
 
@@ -111,22 +123,40 @@ static void robot_halt()
 
 static void robot_on_establish(robot_s *self)
 {
-    char buff[BUFF_SIZE];
+    char buff[BLOCK_SIZE];
     bscp_head_t *pkg_ptr = (bscp_head_t *)buff;
     char *data_ptr = buff + BSCP_HEAD_T_SIZE;
     bscp_head_t len;
-    size_t total_size;
     ssize_t send_size;
-    
-    snprintf(data_ptr, BUFF_SIZE - BSCP_HEAD_T_SIZE, "hello %ld", time(0));
-    len = 1024;
+    uint64_t cur_time_ms = get_current_ms();
+/*
+    if(block_send_num >= BLOCK_NUM)
+    {
+        return;
+    }
+    */
+    *(uint64_t*)data_ptr = cur_time_ms;
+    len = BLOCK_SIZE - BSCP_HEAD_T_SIZE;
     *pkg_ptr = len;
+    
     bscp_head_t_code(*pkg_ptr);
-    total_size = (size_t)len + 2;
 
-    send_size = send(self->socketfd, buff, total_size, 0);
+    send_size = send(self->socketfd, buff, BLOCK_SIZE, 0);
     if(send_size < 0)
     {
+        if(errno == EAGAIN)
+        {
+            return;
+        }
+        
+        if(g_connected)
+        {
+            --g_cur_connection;
+            ++g_server_close_connections;
+        }
+        close(self->socketfd);
+        self->state = e_closed;        
+        
         if((errno != EINTR) && (errno != EAGAIN) && (errno != ECONNRESET) && (errno != EPIPE))
         {
             ERROR_PRINT("robot [%d] send errno [%d], %s", self->id, errno, strerror(errno));
@@ -135,35 +165,26 @@ static void robot_on_establish(robot_s *self)
         {
             WARN_PRINT("robot [%d] send errno [%d], %s", self->id, errno, strerror(errno));
         }
-
-        if(g_connected)
-        {        
-            --g_cur_connection;
-            ++g_client_close_connections;
-        }
-        
-        
-        close(self->socketfd);
-        self->state = e_closed;        
-    }
-    else if(send_size != total_size)
-    {
-        close(self->socketfd);
-        self->state = e_closed;
-        if(g_connected)
-        {        
-            --g_cur_connection;
-            ++g_client_close_connections;
-        }        
-
-        WARN_PRINT("robot [%d] closed by client, total_size [%zu] send_size [%zu] g_total_send [%zu]."
-        , self->id, total_size, send_size, g_total_send);
     }
     else
     {
-        DEBUG_PRINT("robot [%d] send buff [%zi].", self->id, total_size);
+        size_t cur_block_num;
+        size_t block_size = BLOCK_SIZE;
+		
 		g_total_send += (size_t)send_size;
+		cur_block_num = g_total_send / block_size;
+		if(cur_block_num > BLOCK_NUM)
+		{
+    		cur_block_num = BLOCK_NUM;
+		}
+
+        for(;block_send_num < cur_block_num; ++block_send_num)
+        {
+            block_send_ms[block_send_num] = cur_time_ms;
+            DEBUG_PRINT("robot [%d] send buff [%zi].", self->id, send_size);
+        }
     }
+
 }
 
 #define THINKING_INTERVAL 500
@@ -196,7 +217,7 @@ static void robot_on_closed(robot_s *self)
 	}
 
     if(setsockopt(self->socketfd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)) == -1)
-	{	
+	{
         ERROR_PRINT("robot [%d] setsockopt errno[%d], %s.", self->id, errno, strerror(errno));
         exit(1);
 	}
@@ -382,46 +403,60 @@ static void robot_init(robot_s *self, int id)
     }
 }
 
-size_t g_lmb = 0;
+#define RECV_BUFF_SIZE 1024 * 1024
+size_t lmb = 0;
 
 static void robot_on_recv(robot_s *self)
 {
-    char buff[BUFF_SIZE];
-    ssize_t recv_size;
-    for(;;)
-    {
-        recv_size = recv(self->socketfd, buff, BUFF_SIZE, 0);
-        if(recv_size <= 0)
+    char buff[RECV_BUFF_SIZE];
+    size_t total_size = BLOCK_SIZE - BSCP_HEAD_T_SIZE;
+    ssize_t r;
+	size_t cur_block_num;
+	uint64_t cur_time_ms;
+
+    r = recv(self->socketfd, buff, RECV_BUFF_SIZE, 0);
+    if((r < 0) && (errno == EAGAIN))
+    {           
+        return;
+    }
+    if(r <= 0)
+    {        
+        ERROR_PRINT("robot [%d] close by server.", self->id);
+        close(self->socketfd);
+        self->state= e_closed;
+        if(g_connected)
         {
-            if (errno == EAGAIN)
-            {
-                break;
-            }
-            close(self->socketfd);
-            self->state= e_closed;
-            WARN_PRINT("robot [%d] close by server.", self->id);
             ++g_server_close_connections;
             --g_cur_connection;
-            break;
         }
-		else
-		{
-			size_t mb;
+        return;        
+    }
 
-			g_total_recv += (size_t)recv_size;
-
-			mb = g_total_recv / (1024 * 1024);
-			if((mb != g_lmb) && (mb % 100 == 0))
-			{
-				DEBUG_PRINT("%zubm send.", mb);
-				g_lmb = mb;
-			}
-
-			if(g_total_recv >= g_limit)
-			{
-				robot_halt();
-			}
-		}
+    cur_time_ms = get_current_ms();
+	
+	g_total_recv += (size_t)r;
+	cur_block_num = g_total_recv / total_size;
+    if(cur_block_num >= BLOCK_NUM)
+    {
+        cur_block_num = BLOCK_NUM;
+    }
+    
+    for(;block_recv_num < cur_block_num; ++block_recv_num)
+    {
+        size_t mb;
+        block_recv_ms[block_recv_num] = cur_time_ms;
+        
+        mb = g_total_recv / (1024 * 1024);
+        if(mb - lmb > 100)
+        {
+            WARN_PRINT("%zubm recv.", mb);
+            lmb = mb;
+        }
+    }
+    
+    if(block_recv_num >= BLOCK_NUM)
+    {
+        robot_halt();                
     }
 }
 
@@ -472,6 +507,9 @@ int main()
         exit(1);
     }
 
+    block_send_num = 0;
+    block_recv_num = 0;
+
 
 
     g_epollfd = epoll_create(ROBOT_NUM);
@@ -497,7 +535,7 @@ int main()
         {
             if(errno == EINTR)
             {
-                ++idle_times;
+                busy = TRUE;
             }
             else
             {
