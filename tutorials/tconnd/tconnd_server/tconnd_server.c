@@ -121,6 +121,8 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 limit = body_ptr + req->size;
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
+                    int i;
+                    
                     bscp_head_t pkg_size = *(const bscp_head_t*)iter;
 //                    const char* pkg_content = iter + sizeof(bscp_head_t);
 
@@ -130,9 +132,12 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                     DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u", req->cid.sn, pkg_size);
                     
 
-                    rsp.size = BLOCK_SIZE;
+                    for(i = 0; i < 10; ++i)
+                    {
+                        rsp.size = BLOCK_SIZE / 10;
 
-                    block_send_pkg(otb, &rsp, buff, BLOCK_SIZE);
+                        block_send_pkg(otb, &rsp, buff, rsp.size);
+                    }
                 }
             }
             return req->size;

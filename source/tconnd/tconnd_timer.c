@@ -13,25 +13,11 @@
 #include <errno.h>
 
 uint64_t       g_cur_ticks;
-/*
-//static uint64_t       g_start_ticks;
-
-static uint64_t get_current_ms()
-{
-	struct timeval tv;
-	gettimeofday(&tv, NULL);
-
-	return (uint64_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
-}
-
-
-*/
 
 static void tconnd_timer_signal_handler(int signo)
 {
     ++g_cur_ticks;
 }
-
 
 TERROR_CODE tconnd_timer_init()
 {
@@ -65,9 +51,6 @@ TERROR_CODE tconnd_timer_init()
         goto done;
     }
 
-//    g_cur_ticks = get_current_ms();
-//    g_start_ticks = get_current_ms();
-
     g_cur_ticks = 0;
 done:
     return ret;
@@ -77,7 +60,6 @@ void tconnd_timer_process()
 {
     TLIBC_LIST_HEAD *iter, *next;
     tconnd_socket_t *s = NULL;
-//    g_cur_ticks = get_current_ms();
     
     for(iter = g_pending_socket_list.next; iter != &g_pending_socket_list; iter = next)
     {

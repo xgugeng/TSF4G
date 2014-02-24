@@ -154,10 +154,8 @@ again:
     send_size = writev(self->socketfd, self->iov, self->iov_num);
     if(send_size < 0)
     {    
-        //只有被时钟终端搞掉的writev会可以被重试
         if((errno == EINTR) && ((g_cur_ticks != cur_tick)))
         {
-            cur_tick = g_cur_ticks;
             goto again;
         }
         

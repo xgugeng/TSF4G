@@ -122,6 +122,12 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
 		ret = E_TS_WOULD_BLOCK;
 		goto done;
 	case e_tbus_cmd_package:
+		if(header->size > read_size - (tbus_atomic_size_t)sizeof(tbus_header_s))
+		{
+		    ret = E_TS_BAD_PACKAGE;
+		    goto done;
+		}
+		
 		*buf = tb->buff + sizeof(tbus_header_s) + head_offset;
 		*len = header->size;
 		break;
