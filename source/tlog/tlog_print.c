@@ -7,7 +7,8 @@
 #include <unistd.h>
 
 
-void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level, va_list arglist)
+void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level,
+    const char* file, uint32_t line, va_list arglist)
 {
     struct timeval timestamp;
     struct tm   tm;
@@ -40,8 +41,8 @@ void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level, va_list a
         "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u : ",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
         tm.tm_hour, tm.tm_min, tm.tm_sec
-        ,level_name, __FILE__, __LINE__
-        );
+        ,level_name, file, line);
+
         
     if(r > 0)
     {
@@ -66,7 +67,7 @@ void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level, va_list a
 
 
 
-void tlog_print(int fd, tlog_level_t level, ...)
+void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...)
 {
     struct iovec iov[4];
     char message[TLOG_MESSAGE_LENGTH];
@@ -75,8 +76,8 @@ void tlog_print(int fd, tlog_level_t level, ...)
 
     message_len = TLOG_MESSAGE_LENGTH;
 
-    va_start(arglist, level);
-    tlog_make_message(message, &message_len, level, arglist);
+    va_start(arglist, line);
+    tlog_make_message(message, &message_len, level, file, line, arglist);
     va_end(arglist);
     
     switch(level)

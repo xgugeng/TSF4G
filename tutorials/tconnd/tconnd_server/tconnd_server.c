@@ -166,7 +166,7 @@ int main()
     struct sigaction  sa;
 	size_t idle_times = 0;
 	
-    INFO_PRINT("Hello world!%d");
+    INFO_PRINT("Hello world!");
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
