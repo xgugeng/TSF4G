@@ -37,7 +37,7 @@ tbus_t *otb;
 static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, size_t data_size)
 {
     char *addr;
-    size_t len = 0;
+    tbus_atomic_size_t len = 0;
     TERROR_CODE ret;
     int idle = 0;
     size_t head_size;
@@ -49,10 +49,10 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
     head_size = SIP_RSP_T_SIZE(pkg);
 
     
-    len = head_size + data_size;
+    len = (tbus_atomic_size_t)(head_size + data_size);
     for(;;)
     {
-        ret = tbus_send_begin(tb, &addr, (uint32_t*)&len);
+        ret = tbus_send_begin(tb, &addr, &len);
         if(ret == E_TS_NOERROR)
         {
             memcpy(addr, pkg, head_size);         
@@ -63,7 +63,7 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
                 memcpy(addr, data, data_size);
             }
             
-            tbus_send_end(tb, (uint32_t)(head_size + data_size));
+            tbus_send_end(tb, (tbus_atomic_size_t)(head_size + data_size));
             break;
         }
         else if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
@@ -169,7 +169,7 @@ int main()
     sip_req_t *pkg;
 	int ishm_id, oshm_id;
 	size_t len;
-	size_t message_len = 0;
+	tbus_atomic_size_t message_len = 0;
 	TERROR_CODE ret;
     struct sigaction  sa;
 	size_t idle_times = 0;
@@ -206,10 +206,10 @@ int main()
 
 	for(;!g_sig_term;)
 	{
-		ret = tbus_read_begin(itb, &message, (uint32_t*)&message_len);
+		ret = tbus_read_begin(itb, &message, &message_len);
 		if(ret == E_TS_NOERROR)
 		{
-		    len = message_len;
+		    len = (size_t)message_len;
 		    while(len > 0)
 		    {
 		        sip_size_t body_size;
@@ -226,7 +226,7 @@ int main()
                 len -= SIP_REQ_SIZE + body_size;
                 message += SIP_REQ_SIZE + body_size;
 	    	}			
-			tbus_read_end(itb, (uint32_t)message_len);
+			tbus_read_end(itb, message_len);
 			idle_times = 0;
 			continue;
 		}

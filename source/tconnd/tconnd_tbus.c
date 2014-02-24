@@ -67,14 +67,14 @@ TERROR_CODE process_input_tbus()
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 	char*message;
-	size_t message_len = 0;
+	tbus_atomic_size_t message_len = 0;
 	size_t len;
 	uint32_t i;
     TLIBC_LIST_HEAD writable_list;
     TLIBC_LIST_HEAD *iter;
 
 
-    ret = tbus_read_begin(g_input_tbus, &message, (uint32_t*)&message_len);
+    ret = tbus_read_begin(g_input_tbus, &message, &message_len);
     if(ret == E_TS_WOULD_BLOCK)
     {
         goto done;
@@ -85,7 +85,7 @@ TERROR_CODE process_input_tbus()
         goto done;
     }
 
-    len = message_len;
+    len = (size_t)message_len;
     tlibc_list_init(&writable_list);
     while(len > 0)
     {
@@ -118,7 +118,7 @@ TERROR_CODE process_input_tbus()
             tconnd_socket_t *socket = NULL;
             if(i >= SIP_BROADCAST_NUM)
             {
-                ERROR_LOG("cid [%u] >= SIP_BROADCAST_NUM [%u]", head->cid_list[i].id, SIP_BROADCAST_NUM);
+                ERROR_LOG("cid [%u] >= SIP_BROADCAST_NUM [%u]", head->cid_list_num, SIP_BROADCAST_NUM);
                 break;
             }
             
@@ -133,7 +133,7 @@ TERROR_CODE process_input_tbus()
             if(!tlibc_mempool_ptr_test(socket, mempool_entry, head->cid_list[i].sn))
             {
                 WARN_LOG("socket [%u, %"PRIu64"] head->cmd = %d [%u, %"PRIu64"] mismatch."
-                    , socket->id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
+                    , head->cid_list[i].id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
                 continue;
             }
             
@@ -170,7 +170,7 @@ TERROR_CODE process_input_tbus()
         }        
     }
 
-    tbus_read_end(g_input_tbus, (uint32_t)message_len);    
+    tbus_read_end(g_input_tbus, message_len);    
 done:
     return ret;
 }

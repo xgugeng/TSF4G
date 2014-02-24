@@ -23,22 +23,22 @@ int main()
 	{
 		TERROR_CODE ret;
 		char data[MAX_MESSAGE_LENGTH];
-		size_t data_size;
+		tbus_atomic_size_t data_size;
 		
 		char *message;
-		size_t message_size = 0;
+		tbus_atomic_size_t message_size = 0;
 		
 		snprintf(data, MAX_MESSAGE_LENGTH, "hello %d", i);
 		data[MAX_MESSAGE_LENGTH - 1] = 0;
 
-		data_size = strlen(data) + 1;
+		data_size = (tbus_atomic_size_t)(strlen(data) + 1);
 		message_size = data_size;
 		
-		ret = tbus_send_begin(tb, &message, (uint32_t*)&message_size);
+		ret = tbus_send_begin(tb, &message, &message_size);
 		if(ret == E_TS_NOERROR)
 		{
-			memcpy(message, data, data_size);
-			tbus_send_end(tb, (uint32_t)data_size);
+			memcpy(message, data, (size_t)data_size);
+			tbus_send_end(tb, (tbus_atomic_size_t)data_size);
 			++i;
 			continue;
 		}

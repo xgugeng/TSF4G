@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-TERROR_CODE tbus_init(tbus_t *tb, uint32_t size)
+TERROR_CODE tbus_init(tbus_t *tb, tbus_atomic_size_t size)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
@@ -16,22 +16,22 @@ TERROR_CODE tbus_init(tbus_t *tb, uint32_t size)
 		ret = E_TS_NO_MEMORY;
 		goto done;
 	}
-	tb->size = (uint32_t)(size - TLIBC_OFFSET_OF(tbus_t, buff));
+	tb->size = (size - (tbus_atomic_size_t)TLIBC_OFFSET_OF(tbus_t, buff));
 	return E_TS_NOERROR;
 done:
 	return ret;
 }
 
 
-TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, uint32_t *len)
+TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
 {
     TERROR_CODE ret = E_TS_NOERROR;
-	uint32_t write_size;	
-	uint32_t head_offset = tb->head_offset;
-	uint32_t tail_offset = tb->tail_offset;
+	tbus_atomic_size_t write_size;	
+	tbus_atomic_size_t head_offset = tb->head_offset;
+	tbus_atomic_size_t tail_offset = tb->tail_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
-	if(*len + sizeof(tbus_header_s) + 1 > tb->size)
+	if(*len + (tbus_atomic_size_t)sizeof(tbus_header_s) + 1 > tb->size)
 	{
 	    ret = E_TS_NO_MEMORY;
 		goto done;
@@ -47,7 +47,7 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, uint32_t *len)
 	}
 	
 
-	if(write_size < sizeof(tbus_header_s) + *len)
+	if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_s) + *len)
 	{
 		if((head_offset <= tail_offset) && (head_offset != 0))
 		{
@@ -64,30 +64,30 @@ TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, uint32_t *len)
 	}
 
 	*buf = tb->buff + tail_offset + sizeof(tbus_header_s);
-	*len = write_size - (uint32_t)sizeof(tbus_header_s);
+	*len = write_size - (tbus_atomic_size_t)sizeof(tbus_header_s);
 
 done:
     return ret;
 }
 
-void tbus_send_end(tbus_t *tb, uint32_t len)
+void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
 {
-	uint32_t tail_offset = tb->tail_offset;
+	tbus_atomic_size_t tail_offset = tb->tail_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
 	header->cmd = e_tbus_cmd_package;
 	header->size = len;
 
-	tail_offset += (uint32_t)sizeof(tbus_header_s) + len;
+	tail_offset += (tbus_atomic_size_t)sizeof(tbus_header_s) + len;
 	tb->tail_offset = tail_offset;
 }
 
-TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, uint32_t *len)
+TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
 {
     TERROR_CODE ret = E_TS_NOERROR;
-	uint32_t read_size;
-	uint32_t tail_offset = tb->tail_offset;
-	uint32_t head_offset = tb->head_offset;
+	tbus_atomic_size_t read_size;
+	tbus_atomic_size_t tail_offset = tb->tail_offset;
+	tbus_atomic_size_t head_offset = tb->head_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + head_offset);
 
 	if(head_offset <= tail_offset)
@@ -134,9 +134,9 @@ done:
     return ret;
 }
 
-void tbus_read_end(tbus_t *tb, uint32_t len)
+void tbus_read_end(tbus_t *tb, tbus_atomic_size_t len)
 {
-	uint32_t head_offset = tb->head_offset + (uint32_t)sizeof(tbus_header_s) + len;
+	tbus_atomic_size_t head_offset = tb->head_offset + (tbus_atomic_size_t)sizeof(tbus_header_s) + len;
 	if(head_offset >= tb->size)
 	{
 		head_offset = 0;

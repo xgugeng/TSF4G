@@ -185,13 +185,13 @@ TERROR_CODE tconnd_listen()
     int socketfd;	
     socklen_t cnt_len;
     struct sockaddr_in sockaddr;	
-	size_t tbus_writer_size;
+	tbus_atomic_size_t tbus_writer_size;
 	sip_req_t *pkg;
 	int nb;
 
 //1, 检查tbus是否能发送新的连接包
 	tbus_writer_size = SIP_REQ_SIZE;
-	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, (uint32_t*)&tbus_writer_size);
+	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, &tbus_writer_size);
 	if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
 	{
 //	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");

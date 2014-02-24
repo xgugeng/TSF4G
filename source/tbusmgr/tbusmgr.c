@@ -130,7 +130,7 @@ int main(int argc, char**argv)
 					goto error_free_memory;
 				}
 				tbus_ptr = (tbus_t*)shm_ptr;
-				ret = tbus_init(tbus_ptr, (uint32_t)shm_size);
+				ret = tbus_init(tbus_ptr, (tbus_atomic_size_t)shm_size);
 				if(ret != E_TS_NOERROR)
 				{
 					ERROR_PRINT("tbus_init(%p) returned an error[%d].", tbus_ptr, ret);
