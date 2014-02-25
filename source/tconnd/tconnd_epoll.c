@@ -4,7 +4,7 @@
 #include "tconnd/tconnd_reactor.h"
 #include "tconnd/tconnd_socket.h"
 #include "tconnd/tconnd_config.h"
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 #include "tconnd/tconnd_listen.h"
 #include <unistd.h>
 #include <assert.h>

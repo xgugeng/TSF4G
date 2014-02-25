@@ -2,7 +2,7 @@ include ../../common.mk
 
 NAME=tbusmgr
 #CINC+=
-DEPLIBS+=-ltlibc -ltbus -ltcommon
+DEPLIBS+=-ltlibc -ltbus -ltcommon -ltlog
 
 #以下为通用部分
 .PHONY: all clean

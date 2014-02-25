@@ -6,7 +6,7 @@
 #include "tconnd/tconnd_socket.h"
 #include "tconnd/tconnd_mempool.h"
 #include "tconnd/tconnd_config.h"
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 #include "tbus/tbus.h"
 
 #include <sys/ipc.h>

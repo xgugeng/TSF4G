@@ -16,7 +16,7 @@
 #include "tconnd/tconnd_epoll.h"
 #include "tconnd/tconnd_config.h"
 #include "tconnd/tconnd_listen.h"
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 
 #include <sys/ioctl.h>
 #include <sys/epoll.h>

@@ -3,7 +3,7 @@
 #include "tconnd/tconnd_socket.h"
 #include <assert.h>
 #include "tconnd/tconnd_config.h"
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 #include "tconnd/tconnd_timer.h"
 
 tlibc_mempool_t g_socket_pool;

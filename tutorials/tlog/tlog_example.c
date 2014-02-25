@@ -1,4 +1,4 @@
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 #include "tlog/tlog_print.h"
 
 

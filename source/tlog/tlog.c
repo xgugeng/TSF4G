@@ -84,6 +84,7 @@ static void rolling_file_log(tlog_rolling_file_instance_t *self,
 	}
 	
 	fwrite(message, 1, message_size, self->fout);
+	fputc('\n', self->fout);
 	fflush(self->fout);
 	
 done:

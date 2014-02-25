@@ -10,7 +10,7 @@
 #include "tconnd/tconnd_socket.h"
 
 
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 
 #include <unistd.h>
 #include <errno.h>

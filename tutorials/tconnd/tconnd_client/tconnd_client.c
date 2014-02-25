@@ -28,7 +28,7 @@
 #endif//TLOG_PRINT_LEVEL
 #define TLOG_PRINT_LEVEL e_tlog_warn
 
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 
 
 

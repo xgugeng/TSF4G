@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "tlog/tlog_instance.h"
+#include "tlog/tlog_log.h"
 
 static bool sig_term;
 
