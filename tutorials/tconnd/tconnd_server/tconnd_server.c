@@ -5,7 +5,7 @@
 #ifdef TLOG_PRINT_LEVEL
 #undef TLOG_PRINT_LEVEL
 #endif//TLOG_PRINT_LEVEL
-#define TLOG_PRINT_LEVEL e_tlog_debug
+#define TLOG_PRINT_LEVEL e_tlog_warn
 
 
 
@@ -39,8 +39,8 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
     char *addr;
     tbus_atomic_size_t len = 0;
     TERROR_CODE ret;
-    int idle = 0;
     size_t head_size;
+
 
 
     DEBUG_PRINT("block_send_pkg pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%"PRIu64" pkg.size = %u data_size = %zu."
@@ -64,16 +64,12 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
             }
             
             tbus_send_end(tb, (tbus_atomic_size_t)(head_size + data_size));
+            DEBUG_PRINT("tbus send data [%d], head [%d] tail [%d].", (head_size + data_size), itb->head_offset, itb->tail_offset);
             break;
         }
         else if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
         {
-            ++idle;
-            if(idle > 30)
-            {
-				idle = 0;
-                usleep(1000);
-            }
+            break;
         }
         else
         {
@@ -85,7 +81,8 @@ static void block_send_pkg(tbus_t *tb, const sip_rsp_t *pkg, const char* data, s
 
 #define BLOCK_SIZE 1024
 
-char buff[BLOCK_SIZE];
+static char buff[BLOCK_SIZE];
+
 static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 {
     sip_rsp_t rsp;
@@ -138,7 +135,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                     DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
                     
 
-                    rsp.size = pkg_size;
+                    rsp.size = BLOCK_SIZE;
 
                     block_send_pkg(otb, &rsp, buff, BLOCK_SIZE);
                 }
@@ -210,6 +207,7 @@ int main()
 		if(ret == E_TS_NOERROR)
 		{
 		    len = (size_t)message_len;
+//		    ERROR_PRINT("tbus receive begin data [%u] tail [%d].", message_len, itb->tail_offset);
 		    while(len > 0)
 		    {
 		        sip_size_t body_size;
@@ -227,6 +225,7 @@ int main()
                 message += SIP_REQ_SIZE + body_size;
 	    	}			
 			tbus_read_end(itb, message_len);
+//            ERROR_PRINT("tbus receive end data [%u] tail [%d].", message_len, itb->tail_offset);
 			idle_times = 0;
 			continue;
 		}
@@ -236,7 +235,7 @@ int main()
 			if(idle_times > 30)
 			{
 				idle_times = 0;
-				usleep(1000);
+				usleep(100);
 			}			
 		}
 		else

@@ -43,11 +43,11 @@ tlibc_timer_t g_timer;
 
 
 //#define ROBOT_NUM 1000
-#define ROBOT_NUM 500
+#define ROBOT_NUM 350
 
 
-#define BLOCK_NUM 1024 *1024
-//#define BLOCK_NUM 1024
+//#define BLOCK_NUM 1024 *1024
+#define BLOCK_NUM 1024 * 1024
 
 #define BLOCK_SIZE 1024 + BSCP_HEAD_T_SIZE
 
@@ -58,11 +58,7 @@ size_t block_recv_num;//总共发送了多少块
 
 
 
-int g_connected = FALSE;
-
-
-uint64_t g_start_ms;
-uint64_t g_connected_ms;
+uint64_t g_start_ms = 0;
 size_t g_total_recv = 0;
 size_t g_total_send = 0;
 
@@ -106,8 +102,7 @@ static uint64_t get_current_ms()
 static void robot_halt()
 {
     uint64_t current_time_ms = get_current_ms();
-    uint64_t connect_time_ms = g_connected_ms - g_start_ms;
-    uint64_t send_and_recv_time_ms = current_time_ms - g_connected_ms;
+    uint64_t send_and_recv_time_ms = current_time_ms - g_start_ms;
 
     ERROR_PRINT("summary:");    
     WARN_PRINT("g_total_connect %u", g_total_connection);
@@ -116,7 +111,6 @@ static void robot_halt()
     WARN_PRINT("g_client_close_connections %u", g_client_close_connections);
     WARN_PRINT("g_total_send %.2lfmb", (double)g_total_send / (1024 * 1024));
 	WARN_PRINT("g_total_recv %.2lfmb", (double)g_total_recv / (1024 * 1024));	
-    WARN_PRINT("connect_time_s %.2lf", (double)connect_time_ms / 1000);
     WARN_PRINT("send_and_recv_time_s %.2lf", (double)send_and_recv_time_ms / 1000);
     exit(0);
 }
@@ -149,11 +143,9 @@ static void robot_on_establish(robot_s *self)
             return;
         }
         
-        if(g_connected)
-        {
-            --g_cur_connection;
-            ++g_server_close_connections;
-        }
+        --g_cur_connection;
+        ++g_server_close_connections;
+
         close(self->socketfd);
         self->state = e_closed;        
         
@@ -323,7 +315,7 @@ static void robot_timeout(const tlibc_timer_entry_t *super)
 
 robot_s g_robot[ROBOT_NUM];
 
-
+/*
 static void robot_on_connect(robot_s *self)
 {
     int i;
@@ -371,7 +363,7 @@ static void robot_on_connect(robot_s *self)
         tlibc_timer_push(&g_timer, &self->entry);
     }
 }
-
+*/
 
 static void robot_init(robot_s *self, int id)
 {
@@ -395,10 +387,20 @@ static void robot_init(robot_s *self, int id)
             exit(1);
         }
 
+        
+
         robot_on_establish(self);
         if(self->state == e_connecting)
         {
+            self->state = e_establish;
+            
+            TIMER_ENTRY_BUILD(&self->entry, g_timer.jiffies, robot_timeout);
+            tlibc_timer_push(&g_timer, &self->entry);
             break;
+        }
+        else
+        {
+            exit(1);
         }
     }
 }
@@ -424,11 +426,9 @@ static void robot_on_recv(robot_s *self)
         ERROR_PRINT("robot [%d] close by server.", self->id);
         close(self->socketfd);
         self->state= e_closed;
-        if(g_connected)
-        {
-            ++g_server_close_connections;
-            --g_cur_connection;
-        }
+        ++g_server_close_connections;
+        --g_cur_connection;
+
         return;        
     }
 
@@ -522,8 +522,8 @@ int main()
     {        
         robot_init(&g_robot[i], i);
     }
-
-
+    g_cur_connection = ROBOT_NUM;
+    
     
     for(;!g_sig_term;)
     {
@@ -548,15 +548,15 @@ int main()
             for(i = 0;i < events_num; ++i)
             {
                 robot_s *socket = events[i].data.ptr;
-                
+                /*
                 if(socket->state == e_connecting)
                 {
                     robot_on_connect(socket);
                 }
                 else if(socket->state == e_establish)
-                {
+                {*/
                     robot_on_recv(socket);
-                }
+                //}
             }
         }
 

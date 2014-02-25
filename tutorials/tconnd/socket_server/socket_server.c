@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
 				exit(1);
 			}
 			errno = 0;
-			g_size = strtoull(arg, NULL, 10);
+			g_size = (size_t)strtoull(arg, NULL, 10);
 			if(errno != 0)
 			{
 				ERROR_PRINT("strtoull return errno [%d], %s.", errno, strerror(errno));
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
 				exit(1);
 			}
 			errno = 0;
-			g_block_size = strtoull(arg, NULL, 10);
+			g_block_size = (size_t)strtoull(arg, NULL, 10);
 			if(errno != 0)
 			{
 				ERROR_PRINT("strtoull return errno [%d], %s.", errno, strerror(errno));
@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
 				exit(1);
 			}
 			errno = 0;
-			g_rcvbuf = strtoull(arg, NULL, 10);
+			g_rcvbuf = (size_t)strtoull(arg, NULL, 10);
 			if(errno != 0)
 			{
 				ERROR_PRINT("strtoull return errno [%d], %s.", errno, strerror(errno));

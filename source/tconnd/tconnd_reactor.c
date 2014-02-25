@@ -135,7 +135,7 @@ void tconnd_reactor_loop()
 		case E_TS_WOULD_BLOCK:
     		{
     			++idle_count;
-    			if(idle_count > 10)
+    			if(idle_count > 30)
     			{
     				if((usleep(1 * 1000) != 0) && (errno != EINTR))
     				{

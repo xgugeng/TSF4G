@@ -12,8 +12,20 @@
 #include <signal.h>
 #include <errno.h>
 
-
 uint64_t       g_cur_ticks;
+/*
+//static uint64_t       g_start_ticks;
+
+static uint64_t get_current_ms()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+
+	return (uint64_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
+
+
+*/
 
 static void tconnd_timer_signal_handler(int signo)
 {
@@ -23,9 +35,12 @@ static void tconnd_timer_signal_handler(int signo)
 
 TERROR_CODE tconnd_timer_init()
 {
+    TERROR_CODE ret = E_TS_NOERROR;
+
+
     struct sigaction  sa;
     struct itimerval  itv;
-    TERROR_CODE ret = E_TS_NOERROR;
+
     
     memset(&sa, 0, sizeof(struct sigaction));
     sa.sa_handler = tconnd_timer_signal_handler;
@@ -38,10 +53,10 @@ TERROR_CODE tconnd_timer_init()
         goto done;
     }
     
-    itv.it_interval.tv_sec = g_config.interval/ 1000;
-    itv.it_interval.tv_usec = (g_config.interval % 1000) * 1000;
-    itv.it_value.tv_sec = g_config.interval / 1000;
-    itv.it_value.tv_usec = (g_config.interval % 1000 ) * 1000;
+    itv.it_interval.tv_sec = (time_t)g_config.interval/ 1000;
+    itv.it_interval.tv_usec = (suseconds_t)(g_config.interval % 1000) * 1000;
+    itv.it_value.tv_sec = (time_t)g_config.interval / 1000;
+    itv.it_value.tv_usec = (suseconds_t)(g_config.interval % 1000 ) * 1000;
     
     if (setitimer(ITIMER_REAL, &itv, NULL) == -1)
     {
@@ -49,8 +64,11 @@ TERROR_CODE tconnd_timer_init()
         ret = E_TS_ERROR;
         goto done;
     }
+
+//    g_cur_ticks = get_current_ms();
+//    g_start_ticks = get_current_ms();
+
     g_cur_ticks = 0;
-    
 done:
     return ret;
 }
@@ -59,6 +77,8 @@ void tconnd_timer_process()
 {
     TLIBC_LIST_HEAD *iter, *next;
     tconnd_socket_t *s = NULL;
+//    g_cur_ticks = get_current_ms();
+    
     for(iter = g_pending_socket_list.next; iter != &g_pending_socket_list; iter = next)
     {
         s = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, g_pending_socket_list);        

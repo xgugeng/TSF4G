@@ -84,6 +84,11 @@ TERROR_CODE process_input_tbus()
         ERROR_LOG("tbus_read_begin return %d", ret);
         goto done;
     }
+    if(message_len > 1048)
+    {
+        printf("haha %d\n", message_len);
+        exit(1);
+    }
 
     len = (size_t)message_len;
     tlibc_list_init(&writable_list);
@@ -171,6 +176,7 @@ TERROR_CODE process_input_tbus()
     }
 
     tbus_read_end(g_input_tbus, message_len);    
+    DEBUG_LOG("process tbus data [%d].", message_len);
 done:
     return ret;
 }

@@ -130,9 +130,15 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
     ssize_t send_size;
     uint64_t cur_tick;
 
+    if(self->iov_num > 1)
+    {
+        INFO_LOG("socket [%d, %"PRIu64"] iov_num [%d].", self->id, self->mempool_entry.sn, self->iov_num);
+    }
+
+
     if(self->status != e_tconnd_socket_status_established)
     {
-        DEBUG_LOG("socket [%"PRIu64"] status != e_tconnd_socket_status_established", self->mempool_entry.sn);
+        DEBUG_LOG("socket [%d, %"PRIu64"] status != e_tconnd_socket_status_established", self->id, self->mempool_entry.sn);
         ret = E_TS_CLOSE;
         goto done;
     }
@@ -178,11 +184,11 @@ again:
     {
         int i;
         
-        DEBUG_LOG("self->iov_num = %d", self->iov_num);
+        DEBUG_LOG("socket[%d, %llu] self->iov_num = %d", self->id, self->mempool_entry.sn, self->iov_num);
         for(i = 0;i < self->iov_num; ++i)
         {
-            DEBUG_LOG("self->iov[i].iov_base = %zu", (char*)self->iov[i].iov_base - g_input_tbus->buff);
-            DEBUG_LOG("self->iov[i].iov_len = %zu", self->iov[i].iov_len);
+            DEBUG_LOG("socket[%d, %llu] self->iov[i].iov_base = %zu", self->id, self->mempool_entry.sn, (char*)self->iov[i].iov_base - g_input_tbus->buff);
+            DEBUG_LOG("socket[%d, %llu] self->iov[i].iov_len = %zu", self->id, self->mempool_entry.sn, self->iov[i].iov_len);
         }
     }
 #endif//
@@ -349,6 +355,8 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         WARN_LOG("socket [%u, %"PRIu64"] try to receive data with no package buff.", self->id, self->mempool_entry.sn);
         goto done;
     }
+    
+    assert(body_size <= total_size);
 
     r = recv(self->socketfd, body_ptr, (size_t)body_size, 0);
     if(g_config.quickack)
@@ -382,7 +390,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     {
         DEBUG_LOG("socket [%"PRIu64"] have remain package_buff , size = %zu", self->mempool_entry.sn, self->package_buff->size);
 
-        memcpy(package_ptr, self->package_buff->head, self->package_buff->size);        
+        memcpy(package_ptr, self->package_buff->head, self->package_buff->size);
 
         tlibc_list_del(&self->g_package_socket_list);
         tlibc_mempool_free(&g_package_pool, package_buff_t, mempool_entry, self->package_buff);
@@ -407,8 +415,12 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             }
             remain_size = *(bscp_head_t*)iter;
             bscp_head_t_decode(remain_size);
+
+            DEBUG_LOG("receive a pakcage with length [%u]", remain_size);
             if(remain_size > g_config.package_size)
             {
+                DEBUG_LOG("package length [%u] > g_config.package_size[%u]"
+                    , remain_size, g_config.package_size);
                 ret = E_TS_CLOSE;
                 goto done;            
             }

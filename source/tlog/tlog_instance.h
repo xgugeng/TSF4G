@@ -10,10 +10,10 @@ extern tlog_t g_tlog_instance;
 {\
     if(lv <= (inst)->config.level )\
     {\
-        char message[TLOG_MESSAGE_LENGTH];\
-        size_t message_len;\
-        TLOG_MAKE_MESSAGE(message, TLOG_MESSAGE_LENGTH, message_len, lv, __VA_ARGS__)\
-	    tlog_write(inst, message, message_len);\
+        char _tlog_message[TLOG_MESSAGE_LENGTH];\
+        size_t _tlog_message_len;\
+        TLOG_MAKE_MESSAGE(_tlog_message, TLOG_MESSAGE_LENGTH, _tlog_message_len, lv, __VA_ARGS__)\
+	    tlog_write(inst, _tlog_message, _tlog_message_len);\
 	}\
 }
 

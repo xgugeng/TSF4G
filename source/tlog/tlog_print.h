@@ -25,58 +25,59 @@
 #define TLOG_RST_COLOR_LEN 4
 
 
+//void tlog_make_message(const char *msg, char* msg_limit, tlog_level_t level, ...);
 
 #define TLOG_MAKE_MESSAGE(msg, msg_limit, msg_len, level, ...)\
 {\
-    struct timeval timestamp;\
-    struct tm   tm;\
-    const char* level_name = "";\
-    int _len;\
+    struct timeval _tlog_print_timestamp;\
+    struct tm   _tlog_print_tm;\
+    const char* _tlog_print_level_name = "";\
+    int _tlog_print_len;\
     switch(level)\
     {\
     case e_tlog_error:\
-        level_name = "error";\
+        _tlog_print_level_name = "error";\
         break;\
     case e_tlog_warn:\
-        level_name = "warn";\
+        _tlog_print_level_name = "warn";\
         break;\
     case e_tlog_info:\
-        level_name = "info";\
+        _tlog_print_level_name = "info";\
         break;\
     case e_tlog_debug:\
-        level_name = "debug";\
+        _tlog_print_level_name = "debug";\
         break;\
     }\
-    gettimeofday(&timestamp, NULL);\
-    localtime_r(&timestamp.tv_sec, &tm);\
-    msg_len = 0;\
-    _len = snprintf(msg, msg_limit,\
+    gettimeofday(&_tlog_print_timestamp, NULL);\
+    localtime_r(&_tlog_print_timestamp.tv_sec, &_tlog_print_tm);\
+    (msg_len) = 0;\
+    _tlog_print_len = snprintf(msg, msg_limit,\
         "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u : ",\
-        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,\
-        tm.tm_hour, tm.tm_min, tm.tm_sec\
-        ,level_name, __FILE__, __LINE__\
+        _tlog_print_tm.tm_year + 1900, _tlog_print_tm.tm_mon + 1, _tlog_print_tm.tm_mday,\
+        _tlog_print_tm.tm_hour, _tlog_print_tm.tm_min, _tlog_print_tm.tm_sec\
+        ,_tlog_print_level_name, __FILE__, __LINE__\
         );\
-    if(_len >= 0)\
+    if(_tlog_print_len >= 0)\
     {\
-        msg_len += (size_t)_len;\
+        (msg_len) += (size_t)_tlog_print_len;\
     }\
-    if(msg_len < msg_limit)\
+    if((msg_len) < msg_limit)\
     {\
-        _len = snprintf(message + msg_len, msg_limit - msg_len\
+        _tlog_print_len = snprintf(msg + (msg_len), msg_limit - (msg_len)\
             , __VA_ARGS__);\
-        if(_len >= 0)\
+        if(_tlog_print_len >= 0)\
         {\
-            msg_len += (size_t)_len;\
+            (msg_len) += (size_t)_tlog_print_len;\
         }\
     }\
     if(msg_len < msg_limit)\
     {\
-        message[msg_len] = '\n';\
+        msg[msg_len] = '\n';\
         ++msg_len;\
     }\
 	else\
 	{\
-		message[msg_len - 1] = '\n';\
+		msg[msg_len - 1] = '\n';\
 	}\
 }
 
@@ -85,31 +86,31 @@
 {\
     if(lv <= TLOG_PRINT_LEVEL)\
     {\
-        struct iovec iov[3];\
-        char message[TLOG_MESSAGE_LENGTH];\
-        size_t message_len;\
-        TLOG_MAKE_MESSAGE(message, TLOG_MESSAGE_LENGTH, message_len, lv, __VA_ARGS__)\
+        struct iovec _tlog_print_iov[3];\
+        char _tlog_print_message[TLOG_MESSAGE_LENGTH];\
+        size_t _tlog_print_message_len;\
+        TLOG_MAKE_MESSAGE(_tlog_print_message, TLOG_MESSAGE_LENGTH, _tlog_print_message_len, lv, __VA_ARGS__)\
         switch(lv)\
         {\
         case e_tlog_error:\
-            iov[0].iov_base = TLOG_ERROR_COLOR;\
+            _tlog_print_iov[0].iov_base = TLOG_ERROR_COLOR;\
             break;\
         case e_tlog_warn:\
-            iov[0].iov_base = TLOG_WARN_COLOR;\
+            _tlog_print_iov[0].iov_base = TLOG_WARN_COLOR;\
             break;\
         case e_tlog_info:\
-            iov[0].iov_base = TLOG_INFO_COLOR;\
+            _tlog_print_iov[0].iov_base = TLOG_INFO_COLOR;\
             break;\
         case e_tlog_debug:\
-            iov[0].iov_base = TLOG_DEBUG_COLOR;\
+            _tlog_print_iov[0].iov_base = TLOG_DEBUG_COLOR;\
             break;\
         }\
-        iov[0].iov_len = TLOG_COLOR_LEN;\
-        iov[1].iov_base = message;\
-        iov[1].iov_len = message_len;\
-        iov[2].iov_base = TLOG_RST_COLOR;\
-        iov[2].iov_len = TLOG_RST_COLOR_LEN;\
-        writev(fd, iov, 3);\
+        _tlog_print_iov[0].iov_len = TLOG_COLOR_LEN;\
+        _tlog_print_iov[1].iov_base = _tlog_print_message;\
+        _tlog_print_iov[1].iov_len = _tlog_print_message_len;\
+        _tlog_print_iov[2].iov_base = TLOG_RST_COLOR;\
+        _tlog_print_iov[2].iov_len = TLOG_RST_COLOR_LEN;\
+        writev(fd, _tlog_print_iov, 3);\
     }\
 }
 
