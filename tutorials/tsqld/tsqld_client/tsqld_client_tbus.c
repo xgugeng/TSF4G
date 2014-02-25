@@ -202,7 +202,7 @@ static TERROR_CODE tsqld_client_tbus_recv()
         TLIBC_ERROR_CODE r;
         tsqld_protocol_t head;
         
-        tlibc_binary_reader_init(&br, cur, (size_t)(message_limit - cur));
+        tlibc_binary_reader_init(&br, cur, (uint32_t)(message_limit - cur));
         r = tlibc_read_tsqld_protocol_t(&br.super, &head);
         if(r != E_TLIBC_NOERROR)
         {

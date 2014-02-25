@@ -187,8 +187,7 @@ static TERROR_CODE init()
     {
         sql_hash_table_s *s = &g_sql_hash_table[i];
         s->sql = &g_config.sql_vec[i];
-        tlibc_hash_insert(&g_sql_hash, s->sql->name, strlen(s->sql->name)
-                , &s->entry);
+        tlibc_hash_insert(&g_sql_hash, s->sql->name, (uint32_t)strlen(s->sql->name), &s->entry);
     }
 
 	mysql_init(&g_mysql);

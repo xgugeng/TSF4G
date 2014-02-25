@@ -168,7 +168,7 @@ static void tsqld_tbus_on_tsqld_query(const tsqld_query_req_s *requery)
 {
     const sql_hash_table_s *sql = NULL;
 
-    const tlibc_hash_head_t *sql_hash = tlibc_hash_find_const(&g_sql_hash, requery->name, strlen(requery->name));
+    const tlibc_hash_head_t *sql_hash = tlibc_hash_find_const(&g_sql_hash, requery->name, (uint32_t)strlen(requery->name));
     if(sql == NULL)
     {
         goto done;
@@ -224,7 +224,7 @@ TERROR_CODE tsqld_tbus_proc()
         TLIBC_ERROR_CODE r;
         tsqld_protocol_t head;
         
-        tlibc_binary_reader_init(&br, cur, (size_t)(message_limit - cur));
+        tlibc_binary_reader_init(&br, cur, (uint32_t)(message_limit - cur));
         r = tlibc_read_tsqld_protocol_t(&br.super, &head);
         if(r != E_TLIBC_NOERROR)
         {
