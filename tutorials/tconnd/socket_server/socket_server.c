@@ -1,10 +1,6 @@
 /*
  * 网络上不断接受数据， 直到收到制定大小的数据为止
 */
-#ifdef TLOG_PRINT_LEVEL
-#undef TLOG_PRINT_LEVEL
-#endif//
-#define TLOG_PRINT_LEVEL e_tlog_debug
 
 #include <stdio.h>
 #include <string.h>

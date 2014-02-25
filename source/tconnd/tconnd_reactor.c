@@ -11,6 +11,8 @@
 
 
 #include "tlog/tlog_log.h"
+#include "tlog/tlog_print.h"
+
 
 #include <unistd.h>
 #include <errno.h>

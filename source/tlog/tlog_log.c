@@ -1,4 +1,6 @@
 #include "tlog_log.h"
+#include "tlog_print.h"
+
 #include "tlog/tlog.h"
 
 tlog_t g_tlog_instance;

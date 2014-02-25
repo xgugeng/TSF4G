@@ -73,12 +73,6 @@ void tlog_print(int fd, tlog_level_t level, ...)
     size_t message_len;
     va_list arglist;
 
-
-    if(level > TLOG_PRINT_LEVEL)
-    {
-        goto done;
-    }
-
     message_len = TLOG_MESSAGE_LENGTH;
 
     va_start(arglist, level);
@@ -111,7 +105,5 @@ void tlog_print(int fd, tlog_level_t level, ...)
     writev(fd, iov, 4);
     fsync(fd);
     
-done:
-    return;
 }
 

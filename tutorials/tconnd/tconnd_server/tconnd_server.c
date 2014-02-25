@@ -2,14 +2,9 @@
 #include "tcommon/sip.h"
 #include "tcommon/bscp.h"
 
-#ifdef TLOG_PRINT_LEVEL
-#undef TLOG_PRINT_LEVEL
-#endif//TLOG_PRINT_LEVEL
-#define TLOG_PRINT_LEVEL e_tlog_warn
-
-
-
 #include "tlog/tlog_log.h"
+#include "tlog/tlog_print.h"
+
 
 
 #include <sys/ipc.h>
@@ -127,12 +122,12 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                 for(iter = body_ptr; iter < limit; iter = next)
                 {
                     bscp_head_t pkg_size = *(const bscp_head_t*)iter;
-                    const char* pkg_content = iter + sizeof(bscp_head_t);
+//                    const char* pkg_content = iter + sizeof(bscp_head_t);
 
                     bscp_head_t_decode(pkg_size);
                     
                     next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
-                    DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u, pkg_content: %s.", req->cid.sn, pkg_size, pkg_content);
+                    DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u", req->cid.sn, pkg_size);
                     
 
                     rsp.size = BLOCK_SIZE;
@@ -171,7 +166,7 @@ int main()
     struct sigaction  sa;
 	size_t idle_times = 0;
 	
-    INFO_PRINT("Hello world!");
+    INFO_PRINT("Hello world!%d");
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;

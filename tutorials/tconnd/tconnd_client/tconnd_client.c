@@ -23,12 +23,10 @@
 #include <signal.h>
 #include <assert.h>
 
-#ifdef TLOG_PRINT_LEVEL
-#undef TLOG_PRINT_LEVEL
-#endif//TLOG_PRINT_LEVEL
-#define TLOG_PRINT_LEVEL e_tlog_warn
 
 #include "tlog/tlog_log.h"
+#include "tlog/tlog_print.h"
+
 
 
 

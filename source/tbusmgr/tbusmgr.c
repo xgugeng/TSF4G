@@ -4,11 +4,9 @@
 #include <errno.h>
 #include <limits.h>
 
-#ifdef TLOG_PRINT_LEVEL
-#undef TLOG_PRINT_LEVEL
-#endif//TLOG_PRINT_LEVEL
-#define TLOG_PRINT_LEVEL e_tlog_debug
-
+#ifdef INFO_PRINT_OFF
+#undef INFO_PRINT_OFF
+#endif
 
 #include "tlog/tlog_print.h"
 

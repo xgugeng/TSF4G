@@ -7,11 +7,8 @@
 #include <unistd.h>
 
 
-#ifndef TLOG_PRINT_LEVEL
-#define TLOG_PRINT_LEVEL e_tlog_debug
-#endif//TLOG_PRINT_LEVEL
-
 #define TLOG_MESSAGE_LENGTH 65536
+
 
 #define TLOG_ERROR_COLOR "\033[;31m"
 #define TLOG_WARN_COLOR "\033[;33m"
@@ -22,35 +19,34 @@
 #define TLOG_RST_COLOR "\033[0m"
 #define TLOG_RST_COLOR_LEN 4
 
-void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level, va_list arglist);
-
-
-void tlog_print(int fd, tlog_level_t level, ...);
-
-
-
-#if TLOG_PRINT_LEVEL <= e_tlog_error
+#ifndef ERROR_PRINT_OFF
 #define ERROR_PRINT(...) tlog_print(STDERR_FILENO, e_tlog_error, __VA_ARGS__)
 #else
 #define ERROR_PRINT(...)
 #endif
 
-#if TLOG_PRINT_LEVEL <= e_tlog_warn
+#ifndef WARN_PRINT_OFF
 #define WARN_PRINT(...) tlog_print(STDERR_FILENO, e_tlog_warn, __VA_ARGS__)
 #else
 #define WARN_PRINT(...)
 #endif
 
-#if TLOG_PRINT_LEVEL <= e_tlog_info
+#ifndef INFO_PRINT_OFF
 #define INFO_PRINT(...) tlog_print(STDOUT_FILENO, e_tlog_info, __VA_ARGS__)
 #else
 #define INFO_PRINT(...)
 #endif
 
-#if TLOG_PRINT_LEVEL <= e_tlog_debug
+#ifndef DEBUG_PRINT_OFF
 #define DEBUG_PRINT(...) tlog_print(STDOUT_FILENO, e_tlog_debug, __VA_ARGS__)
 #else
 #define DEBUG_PRINT(...)
 #endif
 
+
+void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level, va_list arglist);
+
+void tlog_print(int fd, tlog_level_t level, ...);
+
 #endif//_H_TLOG_PRINT_H
+

@@ -1,10 +1,6 @@
 /*
  * 网络上不断发送数据， 直到出错为止。
 */
-#ifdef TLOG_PRINT_LEVEL
-#undef TLOG_PRINT_LEVEL
-#endif//
-#define TLOG_PRINT_LEVEL e_tlog_debug
 
 #include <stdio.h>
 #include <string.h>
