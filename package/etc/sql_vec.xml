@@ -1,0 +1,15 @@
+<vector>
+		<sql_vec>
+			<name>user</name>
+			<sql>
+				select * from user;
+			</sql>
+		</sql_vec>
+
+		<sql_vec>
+			<name>item</name>
+			<sql>
+				select * from item;
+			</sql>
+		</sql_vec>
+</vector>
