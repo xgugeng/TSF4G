@@ -14,7 +14,7 @@
 #include "tlibc/core/tlibc_hash.h"
 #include "mysql.h"
 
-MYSQL g_mysql;
+MYSQL *g_mysql = NULL;
 
 #define PROGRAN_NAME "tsqld"
 #define TSQLD_VERSION "0.0.1"
@@ -79,9 +79,7 @@ static void load(int argc, char* argv[])
                 exit(1);
             }
             INFO_PRINT("tlog init(%s) succeed, check the log file for more information.", arg);
-            
-			exit(0);
-		}
+        }
 		else if (strcmp(arg, "-i") == 0)
 		{
 		    arg = argv[++i];
@@ -152,6 +150,7 @@ static TERROR_CODE init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
     size_t i;
+    const char*password;
 
     struct sigaction  sa;
 
@@ -175,7 +174,7 @@ static TERROR_CODE init()
 
 
 	ret = tsqld_tbus_init();
-	if(ret != E_TS_ERROR)
+	if(ret != E_TS_NOERROR)
 	{
 	    ret = E_TS_ERRNO;
         goto done;
@@ -190,7 +189,28 @@ static TERROR_CODE init()
         tlibc_hash_insert(&g_sql_hash, s->sql->name, (uint32_t)strlen(s->sql->name), &s->entry);
     }
 
-	mysql_init(&g_mysql);
+	g_mysql = mysql_init(NULL);
+	if(g_mysql == NULL)
+	{
+        ERROR_LOG("mysql_client_init Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+	}
+
+    if(g_config.password[0])
+    {
+        password = g_config.password;
+    }
+    else
+    {
+        password = NULL;
+    }
+    
+	if(mysql_real_connect(g_mysql, g_config.host, g_config.user, password, g_config.db
+	    , g_config.port, NULL, 0) == NULL)
+	{
+        ERROR_LOG("mysql_real_connect Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+        ret = E_TS_ERROR;
+        goto done;
+    }
 	
 	return E_TS_NOERROR;
 done:

@@ -1,6 +1,6 @@
 <vector>
 		<sql_vec>
-			<name>user</name>
+			<name>select</name>
 			<sql>
 				select * from user;
 			</sql>

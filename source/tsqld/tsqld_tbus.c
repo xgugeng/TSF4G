@@ -17,6 +17,8 @@
 #include <errno.h>
 #include "tlibc/core/tlibc_list.h"
 
+#include "errmsg.h"
+
 tbus_t *g_itb;
 tbus_t *g_otb;
 
@@ -167,15 +169,50 @@ void tsqld_tbus_flush()
 static void tsqld_tbus_on_tsqld_query(const tsqld_query_req_s *requery)
 {
     const sql_hash_table_s *sql = NULL;
+    int r;
+    MYSQL_RES *res = NULL;
+    unsigned int field_count;
+    unsigned int field_num;
+    MYSQL_FIELD *field_vec;
 
     const tlibc_hash_head_t *sql_hash = tlibc_hash_find_const(&g_sql_hash, requery->name, (uint32_t)strlen(requery->name));
-    if(sql == NULL)
+    if(sql_hash == NULL)
     {
         goto done;
     }
 
     sql = TLIBC_CONTAINER_OF(sql_hash, const sql_hash_table_s, entry);
+
+    r = mysql_real_query(g_mysql, sql->sql->sql, strlen(sql->sql->sql));
+    if(r != 0)
+    {
+        ERROR_LOG("mysql_real_query Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+        if((CR_SERVER_LOST  == r)||(CR_SERVER_GONE_ERROR  == r))        
+        {
+        
+            ERROR_LOG("lost mysql server.");
+            //需要重连
+        }
+        exit(1);
+    }
+
+
+    res = mysql_store_result(g_mysql);
+    if(res != NULL)
+    {
+        field_num = mysql_num_fields(res);
+        field_vec = mysql_fetch_fields(res);
+    }
+    else
+    {
     
+        field_count = mysql_field_count(g_mysql);
+        if(field_count != 0)
+        {
+            ERROR_LOG("failed to get result. %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+            //处理出错
+        }        
+    }
 
     INFO_PRINT(sql->sql->sql);
 done:
@@ -193,6 +230,7 @@ static void tsqld_tbus_pkg(const tsqld_protocol_t *req)
 		break;
     }
 }
+tsqld_protocol_t head;
 
 TERROR_CODE tsqld_tbus_proc()
 {
@@ -222,7 +260,7 @@ TERROR_CODE tsqld_tbus_proc()
     {
         TLIBC_BINARY_READER br;
         TLIBC_ERROR_CODE r;
-        tsqld_protocol_t head;
+
         
         tlibc_binary_reader_init(&br, cur, (uint32_t)(message_limit - cur));
         r = tlibc_read_tsqld_protocol_t(&br.super, &head);

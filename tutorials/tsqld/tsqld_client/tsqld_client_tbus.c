@@ -81,11 +81,12 @@ void tsqld_client_tbus_fini()
     shmdt(g_otb);
 }
 
+char head_buff[sizeof(tsqld_protocol_t)];
 void tsqld_client_tbus_send(const tsqld_protocol_t *head, const char* data, size_t data_size)
 {
     tbus_atomic_size_t total_size= 0;
     size_t head_size;
-    char head_buff[sizeof(tsqld_protocol_t)];    
+
     TLIBC_BINARY_WRITER bw;
     TLIBC_ERROR_CODE r;
     
@@ -166,12 +167,27 @@ void tsqld_client_tbus_flush()
 
 static void tsqld_client_tbus_recv_pkg(const tsqld_protocol_t *req)
 {
+    INFO_PRINT(req->body.query_rsp.sn);
 }
+
+static uint64_t g_sn = 0;
+tsqld_protocol_t g_send_head;
 
 static void tsqld_client_tbus_send_pkg()
 {
+
+
+    g_send_head.message_id = e_tsqld_query_req;
+    strncpy(g_send_head.body.query_req.name, "select", TSQLD_NAME_LENGTH);
+    g_send_head.body.query_req.sn = g_sn++;
+    
+
+    tsqld_client_tbus_send(&g_send_head, NULL, 0);
+    tsqld_client_tbus_flush();
+
 }
 
+tsqld_protocol_t g_recv_head;
 static TERROR_CODE tsqld_client_tbus_recv()
 {
     TERROR_CODE ret = E_TS_NOERROR;
@@ -200,16 +216,16 @@ static TERROR_CODE tsqld_client_tbus_recv()
     {
         TLIBC_BINARY_READER br;
         TLIBC_ERROR_CODE r;
-        tsqld_protocol_t head;
+
         
         tlibc_binary_reader_init(&br, cur, (uint32_t)(message_limit - cur));
-        r = tlibc_read_tsqld_protocol_t(&br.super, &head);
+        r = tlibc_read_tsqld_protocol_t(&br.super, &g_recv_head);
         if(r != E_TLIBC_NOERROR)
         {
             ERROR_LOG("tlibc_write_tsqld_protocol_t reutrn [%d].", r);
             goto read_end;
         }
-        tsqld_client_tbus_recv_pkg(&head);
+        tsqld_client_tbus_recv_pkg(&g_recv_head);
         cur += br.offset;
     }
 

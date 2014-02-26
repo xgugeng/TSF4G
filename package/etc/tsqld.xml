@@ -1,4 +1,9 @@
 <tsqld_config_t>
+	<host>localhost</host>
+	<port>3306</port>
+	<user>tsqld</user>
+	<password>tsqld</password>
+	<db>testdb</db>
 	<input_tbuskey>20001</input_tbuskey>
 	<output_tbuskey>20002</output_tbuskey>	
 	<!include "etc/sql_vec.xml"/>

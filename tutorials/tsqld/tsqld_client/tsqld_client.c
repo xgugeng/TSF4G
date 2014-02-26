@@ -53,9 +53,8 @@ static TERROR_CODE init()
 
 
 	ret = tsqld_client_tbus_init();
-	if(ret != E_TS_ERROR)
+	if(ret != E_TS_NOERROR)
 	{
-	    ret = E_TS_ERRNO;
         goto done;
 	}
 

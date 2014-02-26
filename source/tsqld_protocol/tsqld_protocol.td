@@ -24,7 +24,7 @@ union tsqld_message_body_u(tsqld_message_id selector)
 e_tsqld_query_req:	
 	tsqld_query_req_s query_req;
 e_tsqld_query_rsp:	
-	tsqld_query_req_s query_rsp;
+	tsqld_query_rsp_s query_rsp;
 };
 
 struct tsqld_protocol_t

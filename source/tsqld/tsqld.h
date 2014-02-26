@@ -17,7 +17,7 @@ typedef struct _sql_hash_table_s
 
 extern sql_hash_table_s g_sql_hash_table[TSQLD_SQL_NUM];
 extern tlibc_hash_t g_sql_hash;
-extern MYSQL g_mysql;
+extern MYSQL *g_mysql;
 
 
 
