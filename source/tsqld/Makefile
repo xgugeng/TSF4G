@@ -1,8 +1,9 @@
 include ../../common.mk
 
 NAME=tsqld
-#CINC+=
-DEPLIBS+=-ltbus -ltlibc -ltcommon -ltlog -ltsqld_protocol
+CINC+=-I/usr/local/mysql/include
+LDPATH+=-L/usr/local/mysql/lib
+DEPLIBS+=-ltbus -ltlibc -ltcommon -ltlog -ltsqld_protocol -lmysqlclient
 
 #以下为通用部分
 .PHONY: all clean

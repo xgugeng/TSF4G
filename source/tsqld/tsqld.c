@@ -12,6 +12,9 @@
 #include <stdint.h>
 #include "tcommon/terrno.h"
 #include "tlibc/core/tlibc_hash.h"
+#include "mysql.h"
+
+MYSQL g_mysql;
 
 #define PROGRAN_NAME "tsqld"
 #define TSQLD_VERSION "0.0.1"
@@ -187,7 +190,8 @@ static TERROR_CODE init()
         tlibc_hash_insert(&g_sql_hash, s->sql->name, strlen(s->sql->name)
                 , &s->entry);
     }
-	
+
+	mysql_init(&g_mysql);
 	
 	return E_TS_NOERROR;
 done:
