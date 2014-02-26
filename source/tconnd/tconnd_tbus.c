@@ -56,7 +56,7 @@ TERROR_CODE tconnd_tbus_init()
 	}
 	
 
-	goto done;	
+	return E_TS_NOERROR;
 shmdt_input:
     shmdt(g_input_tbus);
 done:
