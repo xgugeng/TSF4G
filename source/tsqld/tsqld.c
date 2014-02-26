@@ -11,12 +11,16 @@
 #include <errno.h>
 #include <stdint.h>
 #include "tcommon/terrno.h"
+#include "tlibc/core/tlibc_hash.h"
 
 #define PROGRAN_NAME "tsqld"
 #define TSQLD_VERSION "0.0.1"
 
 tsqld_config_t g_config;
 bool g_sig_term;
+sql_hash_table_s g_sql_hash_table[TSQLD_SQL_NUM];
+tlibc_hash_t g_sql_hash;
+
 
 
 static void version()
@@ -138,9 +142,13 @@ static void on_signal(int sig)
     }
 }
 
+
+tlibc_hash_bucket_t buckets[TSQLD_SQL_NUM];
+
 static TERROR_CODE init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
+    size_t i;
 
     struct sigaction  sa;
 
@@ -169,9 +177,19 @@ static TERROR_CODE init()
 	    ret = E_TS_ERRNO;
         goto done;
 	}
+
+    tlibc_hash_init(&g_sql_hash, buckets, TSQLD_SQL_NUM);
+
+    for(i = 0; i < g_config.sql_vec_num; ++i)
+    {
+        sql_hash_table_s *s = &g_sql_hash_table[i];
+        s->sql = &g_config.sql_vec[i];
+        tlibc_hash_insert(&g_sql_hash, s->sql->name, strlen(s->sql->name)
+                , &s->entry);
+    }
+	
 	
 	return E_TS_NOERROR;
-	
 done:
     return ret;
 }

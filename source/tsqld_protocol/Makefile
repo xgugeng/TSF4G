@@ -1,8 +1,8 @@
 include ../../common.mk
 
-NAME=tsqld
+NAME=tsqld_protocol
 #CINC+=
-DEPLIBS+=-ltbus -ltlibc -ltcommon -ltlog -ltsqld_protocol
+#DEPLIBS+=
 
 #以下为通用部分
 .PHONY: all clean
@@ -14,11 +14,11 @@ WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
 READER_CFILE=$(TDATA_FILE:.td=_reader.c)
 WRITER_CFILE=$(TDATA_FILE:.td=_writer.c)
 
-C_FILE=$(wildcard *.c) $(wildcard timer/*.c)
+C_FILE=$(wildcard *.c)
 OBJECT_FILE=$(C_FILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
 LIB=$(LIBRARY_PATH)/lib$(NAME).a
 APP=$(BINRARY_PATH)/$(NAME)
-TARGET=$(APP)
+TARGET=$(LIB)
 
 .PHONY: all clean
 
@@ -53,7 +53,7 @@ install:
 tags:
 	find /usr/local/tlibc/include/ -name "*.h" | xargs ctags -a --c-types=+p+x 
 	find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	find . -name "*.h" -or -name "*.c" | cscope -Rbq
+	find . -name "*.h" | cscope -Rbq
 
 clean:
 	find . -name "*.o" | xargs $(RM)
@@ -64,7 +64,3 @@ clean:
 	$(RM) $(WRITER_HFILE)
 	$(RM) $(READER_CFILE)
 	$(RM) $(WRITER_CFILE)
-	$(RM) tags
-	$(RM) cscope.in.out
-	$(RM) cscope.po.out
-	$(RM) cscope.out

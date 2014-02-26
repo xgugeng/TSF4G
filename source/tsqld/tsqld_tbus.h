@@ -2,7 +2,7 @@
 #define _H_TSQLD_TBUS_H
 
 #include "tcommon/terrno.h"
-#include "tsqld/tsqld_protocol_types.h"
+#include "tsqld_protocol/tsqld_protocol_types.h"
 #include <unistd.h>
 
 TERROR_CODE tsqld_tbus_init();

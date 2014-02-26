@@ -1,19 +1,17 @@
-#include "tsqld/tsqld_tbus.h"
+#include "tsqld_client_tbus.h"
 #include "tlog/tlog_print.h"
 #include "tlog/tlog_log.h"
 #include "tsqld_protocol/tsqld_protocol_writer.h"
-#include "tsqld_protocol/tsqld_protocol_reader.h"
-
 #include "tlibc/protocol/tlibc_binary_writer.h"
 #include "tlibc/protocol/tlibc_binary_reader.h"
-
+#include "tsqld_protocol/tsqld_protocol_reader.h"
 #include "tbus/tbus.h"
 #include "tcommon/terrno.h"
 #include <string.h>
 #include <assert.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-#include "tsqld/tsqld.h"
+#include "tsqld_client.h"
 #include <errno.h>
 #include "tlibc/core/tlibc_list.h"
 
@@ -26,14 +24,16 @@ static tbus_atomic_size_t g_write_size = 0;  //总共可以写入的长度
 static char *g_write_cur = NULL;             //当前写入的指针
 
 #define WRITE_LIMIT 1 * 1000000    //最大缓存长度
+#define INPUT_TBUSKEY 20002
+#define OUTPUT_TBUSKEY 20001
 
-TERROR_CODE tsqld_tbus_init()
+TERROR_CODE tsqld_client_tbus_init()
 {
     TERROR_CODE ret;
     int input_tbusid;
     int output_tbusid;
 
-	input_tbusid = shmget(g_config.input_tbuskey, 0, 0666);
+	input_tbusid = shmget(INPUT_TBUSKEY, 0, 0666);
 	if(input_tbusid == -1)
 	{
 	    ERROR_LOG("shmget errno[%d], %s.", errno, strerror(errno));
@@ -48,7 +48,7 @@ TERROR_CODE tsqld_tbus_init()
 		goto done;
 	}
 
-	output_tbusid = shmget(g_config.output_tbuskey, 0, 0666);
+	output_tbusid = shmget(OUTPUT_TBUSKEY, 0, 0666);
 	if(output_tbusid == -1)
 	{
         ERROR_LOG("shmget errno[%d], %s.", errno, strerror(errno));
@@ -75,13 +75,13 @@ done:
     return ret;
 }
 
-void tsqld_tbus_fini()
+void tsqld_client_tbus_fini()
 {
     shmdt(g_itb);
     shmdt(g_otb);
 }
 
-void tsqld_tbus_send(const tsqld_protocol_t *head, const char* data, size_t data_size)
+void tsqld_client_tbus_send(const tsqld_protocol_t *head, const char* data, size_t data_size)
 {
     tbus_atomic_size_t total_size= 0;
     size_t head_size;
@@ -155,7 +155,7 @@ done:
     return;
 }
 
-void tsqld_tbus_flush()
+void tsqld_client_tbus_flush()
 {
     if(g_write_size != 0)
     {
@@ -164,37 +164,15 @@ void tsqld_tbus_flush()
     }
 }
 
-static void tsqld_tbus_on_tsqld_query(const tsqld_query_req_s *requery)
+static void tsqld_client_tbus_recv_pkg(const tsqld_protocol_t *req)
 {
-    const sql_hash_table_s *sql = NULL;
-
-    const tlibc_hash_head_t *sql_hash = tlibc_hash_find_const(&g_sql_hash, requery->name, strlen(requery->name));
-    if(sql == NULL)
-    {
-        goto done;
-    }
-
-    sql = TLIBC_CONTAINER_OF(sql_hash, const sql_hash_table_s, entry);
-    
-
-    INFO_PRINT(sql->sql->sql);
-done:
-    return;
 }
 
-static void tsqld_tbus_pkg(const tsqld_protocol_t *req)
+static void tsqld_client_tbus_send_pkg()
 {
-    switch(req->message_id)
-    {
-    case e_tsqld_query_req:
-        tsqld_tbus_on_tsqld_query(&req->body.query_req);
-        break;
-	default:
-		break;
-    }
 }
 
-TERROR_CODE tsqld_tbus_proc()
+static TERROR_CODE tsqld_client_tbus_recv()
 {
     TERROR_CODE ret = E_TS_NOERROR;
     char*message, *cur, *message_limit;
@@ -231,7 +209,7 @@ TERROR_CODE tsqld_tbus_proc()
             ERROR_LOG("tlibc_write_tsqld_protocol_t reutrn [%d].", r);
             goto read_end;
         }
-        tsqld_tbus_pkg(&head);
+        tsqld_client_tbus_recv_pkg(&head);
         cur += br.offset;
     }
 
@@ -240,5 +218,17 @@ read_end:
     tbus_read_end(g_itb, message_len);
 done:
     return ret;
+}
+
+TERROR_CODE tsqld_client_tbus_proc()
+{
+	tsqld_client_tbus_send_pkg();
+
+	while(tsqld_client_tbus_recv() == E_TS_WOULD_BLOCK)
+	{
+		usleep(1000);
+	}
+
+	return E_TS_NOERROR;
 }
 

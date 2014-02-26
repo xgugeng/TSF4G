@@ -1,8 +1,8 @@
-import "tcommon/tcommon.td"
+import "tsqld_protocol/tsqld_protocol.td"
+
 
 const uint32 TSQLD_SQL_NUM = 65536;
 const uint32 TSQLD_SQL_LENGTH = 2048;
-const uint32 TSQLD_NAME_LENGTH = 1024;
 
 struct tsqld_sql_vec
 {
