@@ -230,7 +230,7 @@ static TERROR_CODE init()
             goto rollback_stmt;
         }
 
-        s->param_count = mysql_stmt_param_count(s->stmt);
+        s->param_count = (uint32_t)mysql_stmt_param_count(s->stmt);
         s->res = mysql_stmt_result_metadata(s->stmt);
         if(s->res)
         {

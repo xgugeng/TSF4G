@@ -127,7 +127,7 @@ tbus_atomic_size_t tbus_read_begin(tbus_t *tb, char** buf)
 		*buf = tb->buff + sizeof(tbus_header_s) + head_offset;
 		if(read_size < (size_t)header->size + sizeof(tbus_header_s))
 		{
-		    return read_size - sizeof(tbus_header_s);
+		    return read_size - (tbus_atomic_size_t)sizeof(tbus_header_s);
 		}
 		else
 		{
