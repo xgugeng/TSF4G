@@ -149,10 +149,11 @@ tlibc_hash_bucket_t buckets[TSQLD_SQL_NUM];
 static TERROR_CODE init()
 {
     TERROR_CODE ret = E_TS_NOERROR;
-    size_t i;
+    size_t i, cur_stmt;
     const char*password;
-
     struct sigaction  sa;
+
+    cur_stmt = 0;
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = on_signal;
@@ -179,20 +180,13 @@ static TERROR_CODE init()
 	    ret = E_TS_ERRNO;
         goto done;
 	}
-
-    tlibc_hash_init(&g_sql_hash, buckets, TSQLD_SQL_NUM);
-
-    for(i = 0; i < g_config.sql_vec_num; ++i)
-    {
-        sql_hash_table_s *s = &g_sql_hash_table[i];
-        s->sql = &g_config.sql_vec[i];
-        tlibc_hash_insert(&g_sql_hash, s->sql->name, (uint32_t)strlen(s->sql->name), &s->entry);
-    }
-
+  
 	g_mysql = mysql_init(NULL);
 	if(g_mysql == NULL)
 	{
+        ret = E_TS_ERROR;
         ERROR_LOG("mysql_client_init Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+        goto done;
 	}
 
     if(g_config.password[0])
@@ -209,10 +203,66 @@ static TERROR_CODE init()
 	{
         ERROR_LOG("mysql_real_connect Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
         ret = E_TS_ERROR;
-        goto done;
+        goto close_mysql;
     }
+
+
+    tlibc_hash_init(&g_sql_hash, buckets, TSQLD_SQL_NUM);
+    
+    for(cur_stmt = 0; cur_stmt < g_config.sql_vec_num; ++cur_stmt)
+    {
+        tsqld_sql_vec *sv = &g_config.sql_vec[cur_stmt];
+        sql_hash_table_s *s = &g_sql_hash_table[cur_stmt];
+        s->stmt = mysql_stmt_init(g_mysql);
+        if(s->stmt == NULL)
+        {
+            ERROR_LOG("mysql_stmt_init Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+            ret = E_TS_ERROR;
+            goto rollback_stmt;
+        }
+
+        s->sql = sv->sql;
+
+        if(mysql_stmt_prepare(s->stmt, s->sql, strlen(s->sql)))
+        {
+            ERROR_LOG("mysql_stmt_prepare Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+            ret = E_TS_ERROR;
+            goto rollback_stmt;
+        }
+
+        s->param_count = mysql_stmt_param_count(s->stmt);
+        s->res = mysql_stmt_result_metadata(s->stmt);
+        if(s->res)
+        {
+            //对于会返回结果的查询， 需要保存列信息
+            s->field_vec = mysql_fetch_fields(s->res);
+            if(s->field_vec == NULL)
+            {
+                ERROR_LOG("mysql_fetch_fields Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+                ret = E_TS_ERROR;
+                goto rollback_stmt;
+            }
+            s->field_vec_count = mysql_stmt_field_count(s->stmt);
+        }
+        else
+        {
+            s->field_vec = NULL;
+        }
+
+        tlibc_hash_insert(&g_sql_hash, sv->name, (uint32_t)strlen(sv->name), &s->entry);
+    }
+    cur_stmt = 0;
 	
 	return E_TS_NOERROR;
+rollback_stmt:
+    for(i = 0; i < cur_stmt; ++i)
+    {
+        sql_hash_table_s *s = &g_sql_hash_table[i];
+        mysql_stmt_close(s->stmt);
+    }
+
+close_mysql:
+    mysql_close(g_mysql);
 done:
     return ret;
 }

@@ -184,7 +184,6 @@ static void tsqld_client_tbus_send_pkg()
 
     tsqld_client_tbus_send(&g_send_head, NULL, 0);
     tsqld_client_tbus_flush();
-
 }
 
 tsqld_protocol_t g_recv_head;

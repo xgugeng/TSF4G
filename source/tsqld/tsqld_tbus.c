@@ -165,15 +165,22 @@ void tsqld_tbus_flush()
         g_write_size = 0;
     }
 }
+#define TSQLD_MAX_BIND_NUM 1024
 
 static void tsqld_tbus_on_tsqld_query(const tsqld_query_req_s *requery)
 {
     const sql_hash_table_s *sql = NULL;
     int r;
-    MYSQL_RES *res = NULL;
-    unsigned int field_count;
-    unsigned int field_num;
-    MYSQL_FIELD *field_vec;
+//    MYSQL_RES *res = NULL;
+//    unsigned int field_num;
+//    MYSQL_FIELD *field_vec;
+    MYSQL_BIND   par_bind[TSQLD_MAX_BIND_NUM];
+    MYSQL_BIND   res_bind[TSQLD_MAX_BIND_NUM];
+    my_bool     res_null[TSQLD_MAX_BIND_NUM];
+    char*str = "haha";
+    
+    int id;
+    char username[1024];
 
     const tlibc_hash_head_t *sql_hash = tlibc_hash_find_const(&g_sql_hash, requery->name, (uint32_t)strlen(requery->name));
     if(sql_hash == NULL)
@@ -183,38 +190,84 @@ static void tsqld_tbus_on_tsqld_query(const tsqld_query_req_s *requery)
 
     sql = TLIBC_CONTAINER_OF(sql_hash, const sql_hash_table_s, entry);
 
-    r = mysql_real_query(g_mysql, sql->sql->sql, strlen(sql->sql->sql));
+    
+    //这里要检查sql->param_count保证数组不会出界
+    par_bind[0].buffer_type = MYSQL_TYPE_STRING;
+    par_bind[0].buffer_length = strlen(str);
+    par_bind[0].buffer = str;
+    par_bind[0].is_null = 0;
+    par_bind[0].length = 0;
+    //实数类型的编码在mysql中需要特别当心
+
+
+    //bind的程度由sql语句决定
+    r = mysql_stmt_bind_param(sql->stmt, par_bind);
+    if(r)
+    {
+        ERROR_LOG("mysql_stmt_bind_param Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+        exit(1);
+    }
+    
+    r = mysql_stmt_execute(sql->stmt);
     if(r != 0)
     {
         ERROR_LOG("mysql_real_query Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
-        if((CR_SERVER_LOST  == r)||(CR_SERVER_GONE_ERROR  == r))        
-        {
-        
-            ERROR_LOG("lost mysql server.");
-            //需要重连
-        }
         exit(1);
     }
 
-
-    res = mysql_store_result(g_mysql);
-    if(res != NULL)
-    {
-        field_num = mysql_num_fields(res);
-        field_vec = mysql_fetch_fields(res);
-    }
-    else
-    {
     
-        field_count = mysql_field_count(g_mysql);
-        if(field_count != 0)
-        {
-            ERROR_LOG("failed to get result. %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
-            //处理出错
-        }        
-    }
+    if(sql->res)
+    {
+        id = 0;
+        unsigned long len;
+        assert(sql->field_vec != 0);
+        //当为长度类型时候不需要设置buffer_length
+        res_bind[0].buffer_type = sql->field_vec[0].type;
+        res_bind[0].length = 0;
+        res_bind[0].buffer= &id;
+        res_bind[0].is_null = &res_null[0];
 
-    INFO_PRINT(sql->sql->sql);
+
+        res_bind[1].buffer_type = sql->field_vec[1].type;
+        len = 1;//sizeof(username);
+        //这个类型要和mysql头文件中的一致， 不然会出错
+        assert(sizeof(res_bind[1].length) == sizeof(len));
+        res_bind[1].buffer_length = len;
+        //返回str的长度
+        res_bind[1].length = &len;
+        res_bind[1].buffer= username;
+        res_bind[1].is_null = &res_null[1];
+
+        //值的实际大小， 超过缓存值
+        if(len >= res_bind[1].buffer_length)
+        {
+            ERROR_LOG("not enough memory.");
+        }
+
+        //这里要检查返回结果的列， 以保证不会出错
+//        sql->field_count
+        
+
+        r = mysql_stmt_bind_result(sql->stmt, res_bind);
+        if(r)
+        {
+            ERROR_LOG("mysql_stmt_bind_result Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+            exit(1);
+        }
+
+        r = mysql_stmt_store_result(sql->stmt);
+        if(r)
+        {
+            ERROR_LOG("mysql_stmt_store_result Error %u: %s", mysql_errno(g_mysql), mysql_error(g_mysql));
+            exit(1);
+        }
+
+        while (mysql_stmt_fetch(sql->stmt) != MYSQL_NO_DATA)
+        {
+            printf("%d", id);
+        }
+    }
+    INFO_PRINT(sql->sql);
 done:
     return;
 }
