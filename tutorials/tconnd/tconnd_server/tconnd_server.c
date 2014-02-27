@@ -42,6 +42,7 @@ static void ts_flush()
 {
     if(write_size != 0)
     {
+        DEBUG_PRINT("%d\n", (write_cur - write_start));
         tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
         write_size = 0;
     }
@@ -56,39 +57,19 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
     total_size = (tbus_atomic_size_t)(head_size + data_size);
       
 
-    if(write_size == 0)
+    if(write_size < total_size)
     {
-        write_size = total_size;
-        if(tbus_send_begin(otb, &write_start, &write_size) != E_TS_NOERROR)
-        {
-            write_size = 0;
-            ERROR_PRINT("tbus no space, drop pkg->cmd [%d] pkg->size [%u].", pkg->cmd, pkg->size);
-            return;
-        }
+        write_size = tbus_send_begin(otb, &write_start);
         write_limit = write_start + write_size;
         write_cur = write_start;
-    }
-    else
-    {
-        if(write_limit - write_cur < total_size)
+        
+        if(write_size < total_size)
         {
-            tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
-            
-            write_size = total_size;
-            if(tbus_send_begin(otb, &write_start, &write_size) != E_TS_NOERROR)
-            {
-                write_size = 0;
-                ERROR_PRINT("tbus no space, drop pkg->cmd [%d] pkg->size [%u].", pkg->cmd, pkg->size);
-                return;
-            }
-            write_limit = write_start + write_size;
-            write_cur = write_start;
+            ERROR_PRINT("tbus no space, drop pkg->cmd [%d] pkg->size [%u].", pkg->cmd, pkg->size);
+//            exit(0);
+            return;
         }
     }
-    
-    assert(write_size != 0);
-    assert(write_cur != NULL);
-    assert(write_limit - write_cur >= total_size);    
 
 
     memcpy(write_cur, pkg, head_size);         
@@ -107,7 +88,8 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
     if(write_cur - write_start >= WRITE_LIMIT)
     {
         tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
-        write_size = 0;
+        assert(write_cur != write_start);
+        write_size -= (tbus_atomic_size_t)(write_cur - write_start);
     }
 }
 
@@ -210,7 +192,6 @@ int main()
 	int ishm_id, oshm_id;
 	size_t len;
 	tbus_atomic_size_t message_len = 0;
-	TERROR_CODE ret;
     struct sigaction  sa;
 	size_t idle_times = 0;
 	
@@ -246,8 +227,8 @@ int main()
 
 	for(;!g_sig_term;)
 	{
-		ret = tbus_read_begin(itb, &message, &message_len);
-        if(ret == E_TS_WOULD_BLOCK)
+		message_len = tbus_read_begin(itb, &message);
+        if(message_len == 0)
 		{
 			++idle_times;
 			if(idle_times > 30)
@@ -256,11 +237,6 @@ int main()
 				usleep(100);
 			}
 			continue;
-		}
-		else if(ret != E_TS_NOERROR)
-		{
-			ERROR_PRINT("tbus_read_begin error.");
-			exit(1);
 		}
 
         idle_times = 0;

@@ -75,19 +75,10 @@ TERROR_CODE process_input_tbus()
 
 
     
-    ret = tbus_read_begin(g_input_tbus, &message, &message_len);
-    if(ret == E_TS_WOULD_BLOCK)
+    message_len = tbus_read_begin(g_input_tbus, &message);
+    if(message_len == 0)
     {
-        goto done;
-    }
-    else if(ret == E_TS_BAD_PACKAGE)
-    {
-        ERROR_LOG("tbus receive a bad package.");
-        goto read_end;
-    }
-    else if(ret != E_TS_NOERROR)
-    {
-        ERROR_LOG("tbus_read_begin return %d", ret);
+        ret = E_TS_WOULD_BLOCK;
         goto done;
     }
 
@@ -114,7 +105,7 @@ TERROR_CODE process_input_tbus()
         {
             body_size = head->size;
             body_addr = message + head_size;
-            if(body_addr + body_size >= message_limit)
+            if(body_addr + body_size > message_limit)
             {
                 ERROR_LOG("sip_rst_t.size out of range.");
                 goto flush_socket;
@@ -182,7 +173,7 @@ flush_socket:
             tconnd_socket_delete(socket);
         }        
     }
-read_end:
+
     tbus_read_end(g_input_tbus, message_len);    
 
 

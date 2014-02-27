@@ -104,39 +104,19 @@ void tsqld_tbus_send(const tsqld_protocol_t *head, const char* data, size_t data
     total_size = (tbus_atomic_size_t)(head_size + data_size);
       
 
-    if(g_write_size == 0)
+    if(g_write_size < total_size)
     {
-        g_write_size = total_size;
-        if(tbus_send_begin(g_otb, &g_write_start, &g_write_size) != E_TS_NOERROR)
+        g_write_size = tbus_send_begin(g_otb, &g_write_start);
+        g_write_limit = g_write_start + g_write_size;
+        g_write_cur = g_write_start;
+        
+        if(g_write_size < total_size)
         {
-            g_write_size = 0;
             ERROR_LOG("tbus no space, drop mid [%d] data_size [%u].", head->message_id, data_size);
             return;
         }
-        g_write_limit = g_write_start + g_write_size;
-        g_write_cur = g_write_start;
     }
-    else
-    {
-        if(g_write_limit - g_write_cur < total_size)
-        {
-            tbus_send_end(g_otb, (tbus_atomic_size_t)(g_write_cur - g_write_start));
-            
-            g_write_size = total_size;
-            if(tbus_send_begin(g_otb, &g_write_start, &g_write_size) != E_TS_NOERROR)
-            {
-                g_write_size = 0;
-                ERROR_LOG("tbus no space, drop mid [%d] data_size [%u].", head->message_id, data_size);
-                return;
-            }
-            g_write_limit = g_write_start + g_write_size;
-            g_write_cur = g_write_start;
-        }
-    }
-    
-    assert(g_write_size != 0);
-    assert(g_write_cur != NULL);
-    assert(g_write_limit - g_write_cur >= total_size);    
+
 
 
     memcpy(g_write_cur, head_buff, head_size);         
@@ -150,7 +130,7 @@ void tsqld_tbus_send(const tsqld_protocol_t *head, const char* data, size_t data
     if(g_write_cur - g_write_start >= WRITE_LIMIT)
     {
         tbus_send_end(g_otb, (tbus_atomic_size_t)(g_write_cur - g_write_start));
-        g_write_size = 0;
+        g_write_size -= (tbus_atomic_size_t)(g_write_cur - g_write_start);
     }
 
 done:
@@ -291,19 +271,10 @@ TERROR_CODE tsqld_tbus_proc()
     char*message, *cur, *message_limit;
     tbus_atomic_size_t message_len = 0;
         
-    ret = tbus_read_begin(g_itb, &message, &message_len);
-    if(ret == E_TS_WOULD_BLOCK)
+    message_len = tbus_read_begin(g_itb, &message);
+    if(message == 0)
     {
-        goto done;
-    }
-    else if(ret == E_TS_BAD_PACKAGE)
-    {
-        ERROR_LOG("tbus receive a bad package.");
-        goto read_end;
-    }
-    else if(ret != E_TS_NOERROR)
-    {
-        ERROR_LOG("tbus_read_begin return %d", ret);
+        ret = E_TS_WOULD_BLOCK;
         goto done;
     }
 

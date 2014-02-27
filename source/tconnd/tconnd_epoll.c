@@ -114,7 +114,11 @@ TERROR_CODE tconnd_epool_proc()
         
         switch(r)
         {
+        case E_TS_NOERROR:
+            ret = E_TS_NOERROR;
+            break;
         case E_TS_TBUS_NOT_ENOUGH_SPACE:
+            ret = E_TS_WOULD_BLOCK;
             goto done;
         case E_TS_TOO_MANY_SOCKET:
             break;

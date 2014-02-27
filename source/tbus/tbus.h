@@ -37,13 +37,13 @@ struct _tbus_t
 
 TERROR_CODE tbus_init(tbus_t *tb, tbus_atomic_size_t size);
 
-
-TERROR_CODE tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf, TLIBC_INOUT tbus_atomic_size_t *len);
+//返回最长的连续空间
+tbus_atomic_size_t tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf);
 
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);
 
 
-TERROR_CODE tbus_read_begin(tbus_t *tb, TLIBC_OUT char** buf, TLIBC_OUT tbus_atomic_size_t *len);
+tbus_atomic_size_t tbus_read_begin(tbus_t *tb, TLIBC_OUT char** buf);
 
 void tbus_read_end(tbus_t *tb, tbus_atomic_size_t len);
 

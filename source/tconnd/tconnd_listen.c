@@ -153,6 +153,7 @@ TERROR_CODE tconnd_listen_init()
     	}
 	}
 
+    memset(&ev, 0, sizeof(ev));
     ev.events = (uint32_t)(EPOLLIN | EPOLLET);
     ev.data.ptr = &g_listen;  
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, socketfd, &ev) == -1)
@@ -191,16 +192,12 @@ TERROR_CODE tconnd_listen()
 
 //1, 检查tbus是否能发送新的连接包
 	tbus_writer_size = SIP_REQ_SIZE;
-	ret = tbus_send_begin(g_output_tbus, (char**)&pkg, &tbus_writer_size);
-	if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
+	tbus_writer_size = tbus_send_begin(g_output_tbus, (char**)&pkg);
+	if(tbus_writer_size < SIP_REQ_SIZE)
 	{
 //	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");
+        ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
 		goto done;
-	}
-	else if(ret != E_TS_NOERROR)
-	{
-        ERROR_LOG("tbus_send_begin return [%d]", ret);
-	    goto done;
 	}
 	
 //2, 检查是否能分配socket

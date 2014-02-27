@@ -241,8 +241,8 @@ static TERROR_CODE tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
         goto done;
     }
     tlibc_list_del(&self->g_pending_socket_list);
-    
-    
+
+    memset(&ev, 0, sizeof(ev));
     ev.events = (uint32_t)(EPOLLIN | EPOLLET);
     ev.data.ptr = self;  
     
@@ -304,7 +304,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     
     sip_req_t *pkg;
-    tbus_atomic_size_t total_size = 0;
+    tbus_atomic_size_t tbus_size = 0;
     ssize_t r;
     package_buff_t *package_buff = NULL;
     char *iter;
@@ -325,26 +325,20 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             ERROR_LOG("package_size [%zu] overflow.", self->package_buff->size);
         }
     }
-    body_size = 1;
     
-    total_size = header_size + package_size + body_size;
+    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr);
 
-    ret = tbus_send_begin(g_output_tbus, &header_ptr, &total_size);
-    if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
+    if(tbus_size < header_size + package_size + 1)
     {
+        ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
 //        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
-        goto done;
-    }
-    else if(ret != E_TS_NOERROR)
-    {
-        ERROR_LOG("tbus_send_begin return [%d]", ret);
         goto done;
     }
 
     pkg = (sip_req_t*)header_ptr;
     package_ptr = header_ptr + header_size;
     body_ptr = package_ptr + package_size;
-    body_size = total_size - header_size - package_size;
+    body_size = tbus_size - header_size - package_size;
 
 
     if(tlibc_mempool_empty(&g_package_pool))
@@ -354,8 +348,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         goto done;
     }
     
-    assert(body_size <= total_size);
-
     r = recv(self->socketfd, body_ptr, (size_t)body_size, 0);
     if(g_config.quickack)
     {

@@ -23,51 +23,49 @@ done:
 }
 
 
-TERROR_CODE tbus_send_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
+tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
-	tbus_atomic_size_t write_size;	
+	tbus_atomic_size_t write_size;
 	tbus_atomic_size_t head_offset = tb->head_offset;
 	tbus_atomic_size_t tail_offset = tb->tail_offset;
-	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
-
-	if(*len + (tbus_atomic_size_t)sizeof(tbus_header_s) + 1 > tb->size)
-	{
-	    ret = E_TS_NO_MEMORY;
-		goto done;
-	}
 
 	if(head_offset <= tail_offset)
 	{
-		write_size = tb->size - tail_offset - 1;
+        write_size = tb->size - tail_offset - 1;
+        if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_s))
+        {
+            if(head_offset != 0)
+            {
+                tb->tail_offset = 0;
+                tail_offset = 0;
+                write_size = head_offset - 1;
+            }
+        }
+        else if(head_offset > (size_t)write_size + 1)
+        {
+            tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
+            header->cmd = e_tbus_cmd_ignore;
+            
+            tb->tail_offset = 0;
+            tail_offset = 0;            
+            write_size = head_offset - 1;
+        }       
 	}
 	else		
 	{
-		write_size = head_offset - tail_offset - 1;
+		write_size = head_offset - tail_offset - 1;        
 	}
-	
 
-	if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_s) + *len)
+
+	if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_s))
 	{
-		if((head_offset <= tail_offset) && (head_offset != 0))
-		{
-		    if(write_size >= sizeof(tbus_header_s))
-		    {
-                header->cmd = e_tbus_cmd_ignore;
-                header->size = 0;
-		    }
-			tb->tail_offset = 0;
-			return tbus_send_begin(tb, buf, len);
-		}
-		ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
-		goto done;
+	    return 0;
 	}
-
-	*buf = tb->buff + tail_offset + sizeof(tbus_header_s);
-	*len = write_size - (tbus_atomic_size_t)sizeof(tbus_header_s);
-
-done:
-    return ret;
+	else
+	{
+    	*buf = tb->buff + tail_offset + sizeof(tbus_header_s);
+    	return write_size - (tbus_atomic_size_t)sizeof(tbus_header_s);
+	}
 }
 
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
@@ -75,6 +73,10 @@ void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
 	tbus_atomic_size_t tail_offset = tb->tail_offset;
 	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
 
+    if(len == 0)
+    {
+        return;
+    }
 	header->cmd = e_tbus_cmd_package;
 	header->size = len;
 
@@ -83,13 +85,11 @@ void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
 	tb->tail_offset = tail_offset;	
 }
 
-TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
+tbus_atomic_size_t tbus_read_begin(tbus_t *tb, char** buf)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
 	tbus_atomic_size_t read_size;
 	tbus_atomic_size_t tail_offset = tb->tail_offset;
 	tbus_atomic_size_t head_offset = tb->head_offset;
-	tbus_header_s *header = (tbus_header_s*)(tb->buff + head_offset);
 
 	if(head_offset <= tail_offset)
 	{
@@ -98,48 +98,42 @@ TERROR_CODE tbus_read_begin(tbus_t *tb, char** buf, tbus_atomic_size_t *len)
 	else
 	{
 		read_size = tb->size - head_offset - 1;
+		if(read_size < sizeof(tbus_header_s))
+    	{
+            tb->head_offset = 0;
+            head_offset = 0;
+            read_size = tail_offset;       
+    	}
+    	else
+    	{
+    	    tbus_header_s *header = (tbus_header_s*)(tb->buff + head_offset);
+            if(header->cmd == e_tbus_cmd_ignore)
+            {
+        	    tb->head_offset = 0;
+        	    head_offset = 0;
+        	    read_size = tail_offset - head_offset;
+            }
+    	}
 	}
 
-	if(read_size < sizeof(tbus_header_s))
+	if(read_size < (tbus_atomic_size_t)sizeof(tbus_header_s))
 	{
-		if(head_offset > tail_offset)
-		{
-			tb->head_offset = 0;
-			return tbus_read_begin(tb, buf, len);
-		}
-		ret = E_TS_WOULD_BLOCK;
-		goto done;
+	    return 0;
 	}
-
-
-	switch(header->cmd)
+	else
 	{
-	case e_tbus_cmd_ignore:
-		if(head_offset > tail_offset)
-		{
-			tb->head_offset = 0;
-			return tbus_read_begin(tb, buf, len);
-		}
-		ret = E_TS_WOULD_BLOCK;
-		goto done;
-	case e_tbus_cmd_package:
-		if(header->size > read_size - (tbus_atomic_size_t)sizeof(tbus_header_s))
-		{
-		    ret = E_TS_BAD_PACKAGE;
-		    *len = read_size - (tbus_atomic_size_t)sizeof(tbus_header_s);
-		    *buf = NULL;
-		    goto done;
-		}
+        tbus_header_s *header = (tbus_header_s*)(tb->buff + head_offset);
+        
 		*buf = tb->buff + sizeof(tbus_header_s) + head_offset;
-        *len = header->size;
-		break;
-	default:
-	    ret = E_TS_ERROR;
-		goto done;
+		if(read_size < (size_t)header->size + sizeof(tbus_header_s))
+		{
+		    return read_size - sizeof(tbus_header_s);
+		}
+		else
+		{
+            return header->size;
+        }
 	}
-	
-done:
-    return ret;
 }
 
 void tbus_read_end(tbus_t *tb, tbus_atomic_size_t len)

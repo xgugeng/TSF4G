@@ -21,7 +21,6 @@ int main()
 	
 	for(i = 0;i < 10;)
 	{
-		TERROR_CODE ret;
 		char data[MAX_MESSAGE_LENGTH];
 		tbus_atomic_size_t data_size;
 		
@@ -34,22 +33,19 @@ int main()
 		data_size = (tbus_atomic_size_t)(strlen(data) + 1);
 		message_size = data_size;
 		
-		ret = tbus_send_begin(tb, &message, &message_size);
-		if(ret == E_TS_NOERROR)
+		message_size = tbus_send_begin(tb, &message);
+		printf("message_size: %u\n", message_size);
+        printf("data_size: %u\n", data_size);
+		if(data_size <=  message_size)
 		{
 			memcpy(message, data, (size_t)data_size);
 			tbus_send_end(tb, (tbus_atomic_size_t)data_size);
 			++i;
 			continue;
 		}
-		if(ret == E_TS_TBUS_NOT_ENOUGH_SPACE)
-		{
-			usleep(1000);
-		}
 		else
 		{
-			printf("error.\n");
-			exit(1);
+			usleep(1000);
 		}
 	}
 	return 0;
