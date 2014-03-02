@@ -191,8 +191,7 @@ TERROR_CODE tconnd_listen()
 	int nb;
 
 //1, 检查tbus是否能发送新的连接包
-	tbus_writer_size = SIP_REQ_SIZE;
-	tbus_writer_size = tbus_send_begin(g_output_tbus, (char**)&pkg);
+	tbus_writer_size = tbus_send_begin(g_output_tbus, (char**)&pkg, SIP_REQ_SIZE);
 	if(tbus_writer_size < SIP_REQ_SIZE)
 	{
 //	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");

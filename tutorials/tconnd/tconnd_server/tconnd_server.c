@@ -33,18 +33,19 @@ tbus_t *otb;
 
 char *write_start = NULL;           //开始写入的指针
 char *write_limit = NULL;           //结束写入的指针
-tbus_atomic_size_t write_size = 0;  //总共可以写入的长度
 char *write_cur = NULL;             //当前写入的指针
 
 #define WRITE_LIMIT 1 * 1000000    //最大缓存长度
 
 static void ts_flush()
 {
-    if(write_size != 0)
+    if(write_cur > write_start)
     {
-        DEBUG_PRINT("%d\n", (write_cur - write_start));
+//        ERROR_PRINT("ts_flush %u, %u, %d\n", otb->head_offset, otb->tail_offset, (write_cur - write_start));
         tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
-        write_size = 0;
+        write_start = NULL;        
+        write_cur = NULL;
+        write_limit = NULL;
     }
 }
 
@@ -57,16 +58,21 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
     total_size = (tbus_atomic_size_t)(head_size + data_size);
       
 
-    if(write_size < total_size)
+    if(write_limit - write_cur < total_size)
     {
-        write_size = tbus_send_begin(otb, &write_start);
-        write_limit = write_start + write_size;
-        write_cur = write_start;
+        tbus_atomic_size_t write_size;
+        ts_flush();
+
+        write_size = tbus_send_begin(otb, &write_start, total_size);
+//        ERROR_PRINT("tbus_send_begin %u, %u, %u\n", otb->head_offset, otb->tail_offset, write_size);
+
+        write_cur = write_start;        
+        write_limit = write_cur + write_size;
+
         
-        if(write_size < total_size)
+        if(write_limit - write_cur < total_size)
         {
             ERROR_PRINT("tbus no space, drop pkg->cmd [%d] pkg->size [%u].", pkg->cmd, pkg->size);
-//            exit(0);
             return;
         }
     }
@@ -82,14 +88,12 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
     }
 
     
-    DEBUG_PRINT("ts_send pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%"PRIu64" pkg.size = %u data_size = %zu."
-        , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
+//    DEBUG_PRINT("ts_send pkg.cmd = %d, pkg.cid_list_num = %u, pkg.cid_list[0].id=%u, pkg.cid_list[0].sn=%"PRIu64" pkg.size = %u data_size = %zu."
+//        , pkg->cmd, pkg->cid_list_num, pkg->cid_list[0].id, pkg->cid_list[0].sn, pkg->size, data_size);
 
-    if(write_cur - write_start >= WRITE_LIMIT)
+    if(write_cur - write_start > WRITE_LIMIT)
     {
-        tbus_send_end(otb, (tbus_atomic_size_t)(write_cur - write_start));
-        assert(write_cur != write_start);
-        write_size -= (tbus_atomic_size_t)(write_cur - write_start);
+        ts_flush();
     }
 }
 
@@ -148,7 +152,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
                     bscp_head_t_decode(pkg_size);
                     
                     next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
-                    DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u", req->cid.sn, pkg_size);
+//                    DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u", req->cid.sn, pkg_size);
                     
 //分10小块发也不会影响网络的收发效率
 /*

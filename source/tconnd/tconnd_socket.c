@@ -290,6 +290,8 @@ done:
     return ret;
 }
 
+#include "tlog/tlog_print.h"
+
 TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 {
     TERROR_CODE ret = E_TS_NOERROR;
@@ -326,7 +328,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         }
     }
     
-    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr);
+    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr, header_size + package_size + 1);
 
     if(tbus_size < header_size + package_size + 1)
     {
@@ -334,6 +336,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 //        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
         goto done;
     }
+
 
     pkg = (sip_req_t*)header_ptr;
     package_ptr = header_ptr + header_size;
@@ -387,6 +390,10 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         self->package_buff = NULL;
     }
     limit_ptr = body_ptr + r;
+    if(g_output_tbus->size == 0)
+    {
+        ERROR_PRINT("haha\n");
+    }
     
     if(limit_ptr < package_ptr + BSCP_HEAD_T_SIZE)
     {
@@ -420,7 +427,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     
     if(limit_ptr - remain_ptr > 0)
-    {   
+    {
         tlibc_mempool_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
 
         package_buff->size = (size_t)(limit_ptr - remain_ptr);

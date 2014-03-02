@@ -41,7 +41,7 @@ tlibc_timer_t g_timer;
 
 
 //#define ROBOT_NUM 1000
-#define ROBOT_NUM 200
+#define ROBOT_NUM 1000
 
 
 //#define BLOCK_NUM 1024 *1024
