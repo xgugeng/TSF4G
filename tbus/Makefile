@@ -28,7 +28,7 @@ TDATA=tdata
 CC = gcc
 AR = ar
 RM = /bin/rm -f
-INSTALL=cp -pf
+INSTALL=cp -rpf
 
 ifdef MAKE_RELEASE
 CFLAGS = -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -O3 $(CINC) -DMAKE_RELEASE
@@ -100,8 +100,14 @@ $(WRITER_CFILE):$(TDATA_FILE)
 
 
 install:
+	@mkdir -p $(PREFIX)
+ifeq ($(EXECUTABLE),1)
 	$(REALINSTALL) $(BINARY) $(PREFIX)
 	$(REALINSTALL) $(ETC) $(PREFIX)
+else
+	$(REALINSTALL) $(INCLUDE) $(PREFIX)
+	$(REALINSTALL) $(LIBRARY) $(PREFIX)
+endif
 
 tags:
 	@find $(DEPLOCALINCLUDE) -name "*.h" | xargs ctags -a --c-types=+p+x 

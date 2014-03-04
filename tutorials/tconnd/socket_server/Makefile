@@ -100,11 +100,9 @@ $(WRITER_CFILE):$(TDATA_FILE)
 
 
 install:
-	$(REALINSTALL) $(BINARY) $(PREFIX)
-	$(REALINSTALL) $(ETC) $(PREFIX)
 
 tags:
-	@find $(DEPINCLUDE) -name "*.h" | xargs ctags -a --c-types=+p+x 
+	@find $(DEPLOCALINCLUDE) -name "*.h" | xargs ctags -a --c-types=+p+x 
 	@find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
 	@find . -name "*.h" -or -name "*.c" | cscope -Rbq
 

@@ -35,5 +35,5 @@ $(SUBMODSINSTALL):
 	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(INSTALLTARGET);
 
 $(SUBMODSRELEASE):
-	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(RELEASETARGET);
+	cd $(patsubst %.$(RELEASETARGET),%, $@)  && $(MAKE) $(RELEASETARGET);
 

@@ -1,4 +1,4 @@
-SUBMODS = tbus  tbusmgr  tcommon  tconnd  tlog  tutorials  utils
+SUBMODS = tcommon tbus tlog tbusmgr tconnd tutorials  utils
 
 CLEANTARGET = clean
 INSTALLTARGET = install
@@ -35,5 +35,5 @@ $(SUBMODSINSTALL):
 	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(INSTALLTARGET);
 
 $(SUBMODSRELEASE):
-	cd $(patsubst %.$(INSTALLTARGET),%, $@)  && $(MAKE) $(RELEASETARGET);
+	cd $(patsubst %.$(RELEASETARGET),%, $@)  && $(MAKE) $(RELEASETARGET);
 
