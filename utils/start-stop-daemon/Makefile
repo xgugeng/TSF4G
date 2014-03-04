@@ -1,8 +1,8 @@
-NAME=tbus_server
+NAME=start-stop-daemon
 EXECUTABLE=1
 PREFIX?=/usr/local/$(NAME)
-DEPTARET_DIR=../../../
-DEPTARGET=tcommon tbus tlog
+DEPTARET_DIR=..
+DEPTARGET=
 
 DEPLOCALINCLUDE=/usr/local/tlibc/include
 DEPLOCALLD=/usr/local/tlibc/lib
@@ -31,9 +31,9 @@ RM = /bin/rm -f
 INSTALL=cp -pf
 
 ifdef MAKE_RELEASE
-CFLAGS = -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -O3 $(CINC) -DMAKE_RELEASE
+CFLAGS = -Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -O3 $(CINC) -DMAKE_RELEASE
 else
-CFLAGS = -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -g -ggdb $(CINC) -DMAKE_DEBUG
+CFLAGS = -Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -g -ggdb $(CINC) -DMAKE_DEBUG
 endif
 
 

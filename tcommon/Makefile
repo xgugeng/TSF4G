@@ -1,7 +1,7 @@
-NAME=tbus_server
-EXECUTABLE=1
+NAME=tcommon
+EXECUTABLE=0
 PREFIX?=/usr/local/$(NAME)
-DEPTARET_DIR=../../../
+DEPTARET_DIR=..
 DEPTARGET=tcommon tbus tlog
 
 DEPLOCALINCLUDE=/usr/local/tlibc/include
@@ -104,7 +104,7 @@ install:
 	$(REALINSTALL) $(ETC) $(PREFIX)
 
 tags:
-	@find $(DEPINCLUDE) -name "*.h" | xargs ctags -a --c-types=+p+x 
+	@find $(DEPLOCALINCLUDE) -name "*.h" | xargs ctags -a --c-types=+p+x 
 	@find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
 	@find . -name "*.h" -or -name "*.c" | cscope -Rbq
 

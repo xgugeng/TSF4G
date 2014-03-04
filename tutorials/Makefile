@@ -1,4 +1,4 @@
-SUBMODS = tbus  tbusmgr  tcommon  tconnd  tlog  tutorials  utils
+SUBMODS = tbus	tconnd	tlog
 
 CLEANTARGET = clean
 INSTALLTARGET = install

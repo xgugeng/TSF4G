@@ -1,7 +1,7 @@
-NAME=tbus_server
+NAME=tconnd
 EXECUTABLE=1
 PREFIX?=/usr/local/$(NAME)
-DEPTARET_DIR=../../../
+DEPTARET_DIR=..
 DEPTARGET=tcommon tbus tlog
 
 DEPLOCALINCLUDE=/usr/local/tlibc/include
