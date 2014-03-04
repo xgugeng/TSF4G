@@ -5,7 +5,7 @@
 
 
 #include "tconnd_config_reader.h"
-#include "tlibc/protocol/tlibc_xml_reader.h"
+#include "protocol/tlibc_xml_reader.h"
 #include "tlog_print.h"
 #include "tconnd_config_types.h"
 

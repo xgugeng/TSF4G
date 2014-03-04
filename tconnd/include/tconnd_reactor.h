@@ -5,8 +5,8 @@
 #include "terrno.h"
 #include "tbus.h"
 
-#include "tlibc/core/tlibc_list.h"
-#include "tlibc/core/tlibc_mempool.h"
+#include "core/tlibc_list.h"
+#include "core/tlibc_mempool.h"
 
 
 #include <sys/epoll.h>

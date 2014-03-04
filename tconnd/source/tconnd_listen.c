@@ -3,9 +3,9 @@
 #include "tconnd_reactor.h"
 #include "tconnd_socket.h"
 #include "tbus.h"
-#include "tlibc/protocol/tlibc_binary_writer.h"
+#include "protocol/tlibc_binary_writer.h"
 #include "sip.h"
-#include "tlibc/core/tlibc_list.h"
+#include "core/tlibc_list.h"
 
 
 #include "tconnd_mempool.h"

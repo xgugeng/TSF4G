@@ -2,7 +2,7 @@
 #define _H_TCONND_EPOLL_H
 
 #include "terrno.h"
-#include "tlibc/core/tlibc_list.h"
+#include "core/tlibc_list.h"
 
 extern int                  g_epollfd;
 extern TLIBC_LIST_HEAD      g_package_socket_list;

@@ -11,7 +11,7 @@
 */
 
 #include <stdint.h>
-#include "tlibc/core/tlibc_util.h"
+#include "core/tlibc_util.h"
 #include "bscp_types.h"
 
 #define bscp_head_t_code(head) {tlibc_host16_to_little(head);}

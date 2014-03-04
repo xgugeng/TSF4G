@@ -1,5 +1,5 @@
 #include "tconnd_epoll.h"
-#include "tlibc/core/tlibc_list.h"
+#include "core/tlibc_list.h"
 #include "terrno.h"
 #include "tconnd_reactor.h"
 #include "tconnd_socket.h"

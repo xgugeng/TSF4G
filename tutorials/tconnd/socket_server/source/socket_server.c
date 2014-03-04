@@ -4,7 +4,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "tlibc/platform/tlibc_platform.h"
+#include "platform/tlibc_platform.h"
 
 #include <unistd.h>
 #include <time.h>

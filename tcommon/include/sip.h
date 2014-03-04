@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <unistd.h>
-#include "tlibc/core/tlibc_util.h"
+#include "core/tlibc_util.h"
 
 #pragma pack(push,1)
 typedef uint32_t sip_size_t;

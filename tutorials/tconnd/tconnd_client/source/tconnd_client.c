@@ -16,8 +16,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include "tlibc/core/tlibc_timer.h"
-#include "tlibc/core/tlibc_error_code.h"
+#include "core/tlibc_timer.h"
+#include "core/tlibc_error_code.h"
 #include <sys/time.h>
 #include <signal.h>
 #include <assert.h>

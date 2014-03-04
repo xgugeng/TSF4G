@@ -1,16 +1,16 @@
 #ifndef _H_TCONND_SOCKET_H
 #define _H_TCONND_SOCKET_H
 
-#include "tlibc/platform/tlibc_platform.h"
+#include "platform/tlibc_platform.h"
 #include <netinet/in.h>
 #include "terrno.h"
 #include "sip.h"
 #include <sys/uio.h>
 #include <limits.h>
 #include "bscp.h"
-#include "tlibc/core/tlibc_list.h"
+#include "core/tlibc_list.h"
 
-#include "tlibc/core/tlibc_mempool.h"
+#include "core/tlibc_mempool.h"
 
 
 

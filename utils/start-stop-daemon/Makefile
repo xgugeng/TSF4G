@@ -4,8 +4,8 @@ PREFIX?=/usr/local/$(NAME)
 DEPTARET_DIR=..
 DEPTARGET=
 
-DEPLOCALINCLUDE=/usr/local/tlibc/include
-DEPLOCALLD=/usr/local/tlibc/lib
+DEPLOCALINCLUDE=/usr/local/TLibC/include
+DEPLOCALLD=/usr/local/TLibC/lib
 DEPLOCALLIBS=tlibc
 
 CINC=-I include 

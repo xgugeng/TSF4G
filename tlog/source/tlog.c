@@ -1,7 +1,7 @@
 #include "tlog.h"
 #include "terrno.h"
 
-#include "tlibc/protocol/tlibc_xml_reader.h"
+#include "protocol/tlibc_xml_reader.h"
 #include "tlog_config_reader.h"
 
 #include <stdio.h>

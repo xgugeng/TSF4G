@@ -1,7 +1,7 @@
 #ifndef _H_TBUS
 #define _H_TBUS
 
-#include "tlibc/platform/tlibc_platform.h"
+#include "platform/tlibc_platform.h"
 
 #include "terrno.h"
 

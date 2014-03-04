@@ -1,7 +1,7 @@
 #ifndef _H_TLOG
 #define _H_TLOG
 
-#include "tlibc/platform/tlibc_platform.h"
+#include "platform/tlibc_platform.h"
 #include "tlog_config_types.h"
 
 #include <stdio.h>

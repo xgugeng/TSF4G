@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "tlibc/core/tlibc_util.h" 
+#include "core/tlibc_util.h" 
 #include "sip.h"
 #include "bscp.h"
 
