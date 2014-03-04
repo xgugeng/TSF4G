@@ -3,6 +3,10 @@
 #include "bscp.h"
 
 #include "tlog_log.h"
+#ifdef MAKE_RELEASE
+#define DEBUG_PRINT_OFF
+#define INFO_PRINT_OFF
+#endif
 #include "tlog_print.h"
 
 

@@ -24,6 +24,11 @@
 
 
 #include "tlog_log.h"
+#ifdef MAKE_RELEASE
+#define DEBUG_PRINT_OFF
+#define INFO_PRINT_OFF
+#endif
+
 #include "tlog_print.h"
 
 
@@ -40,7 +45,7 @@ tlibc_timer_t g_timer;
 
 
 //#define ROBOT_NUM 1000
-#define ROBOT_NUM 1000
+#define ROBOT_NUM 350
 
 
 //#define BLOCK_NUM 1024 *1024
