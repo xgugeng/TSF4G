@@ -1,3 +1,3 @@
 SUBMODS = start-stop-daemon
 
-include ../search_common.mk
+include ../search.mk

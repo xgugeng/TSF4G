@@ -8,4 +8,4 @@ CFLAGS = -Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarati
 endif
 DEPTARET_DIR?=../../
 
-include ../../build_common.mk
+include ../../build.mk
