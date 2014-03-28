@@ -62,7 +62,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
 		    ++i;
 		    if(i >= argc)
 		    {
-         		fprintf(stderr, "argument to '-I' is missing.");
+         		fprintf(stderr, "argument to '-I' is missing.\n");
 		        goto ERROR_RET;
 		    }
             tlibc_xml_add_include(&xml_reader, argv[i]);
@@ -97,7 +97,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
 
     if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
     {
-   		fprintf(stderr, "load push config file [%s] failed.", config_file);
+   		fprintf(stderr, "load push config file [%s] failed.\n", config_file);
         goto ERROR_RET;
     }
     
@@ -106,7 +106,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
     	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
     	if(lo)
     	{
-        	fprintf(stderr, "load xml [%s] failed at %d,%d - %d,%d.", lo->file_name, 
+        	fprintf(stderr, "load xml [%s] failed at %d,%d - %d,%d.\n", lo->file_name, 
         	    lo->first_line, lo->first_column, lo->last_line, lo->last_column);
     	}
     	else
@@ -134,13 +134,13 @@ static void on_signal(int sig)
     switch(sig)
     {
         case SIGTERM:
-            g_sigterm = false;
+            g_sigterm = true;
             break;
         case SIGUSR1:
-            g_sigusr1 = false;
+            g_sigusr1 = true;
             break;
         case SIGUSR2:
-            g_sigusr2 = false;
+            g_sigusr2 = true;
             break;
     }
 }
@@ -160,7 +160,9 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
         goto done;
 	}
 
-	if(sigaction(SIGTERM, &sa, NULL) != 0)
+	if((sigaction(SIGTERM, &sa, NULL) != 0)
+	|| (sigaction(SIGUSR1, &sa, NULL) != 0)
+	|| (sigaction(SIGUSR2, &sa, NULL) != 0))
 	{
     	ret = E_TS_ERRNO;
         goto done;
@@ -172,6 +174,7 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
     {
         if((sigusr1) && (g_sigusr1))
         {
+            g_sigusr1 = false;
             ret = sigusr1();
             if(ret != E_TS_NOERROR)
             {
@@ -179,8 +182,9 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             }
         }
 
-        if((sigusr2) && (g_sigusr1))
+        if((sigusr2) && (g_sigusr2))
         {
+            g_sigusr2 = false;
             ret = sigusr2();
             if(ret != E_TS_NOERROR)
             {
