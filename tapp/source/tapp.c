@@ -172,24 +172,32 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
     g_sigterm = false;
     for(;!g_sigterm;)
     {
-        if((sigusr1) && (g_sigusr1))
+        if(g_sigusr1)
         {
-            g_sigusr1 = false;
-            ret = sigusr1();
-            if(ret != E_TS_NOERROR)
+            g_sigusr1 = false;            
+            if(sigusr1)
             {
-                goto done;
+                ret = sigusr1();
+                if(ret != E_TS_NOERROR)
+                {
+                    goto done;
+                }
             }
+            idle_count = 0;
         }
 
-        if((sigusr2) && (g_sigusr2))
+        if(g_sigusr2)
         {
-            g_sigusr2 = false;
-            ret = sigusr2();
-            if(ret != E_TS_NOERROR)
+            g_sigusr2 = false;            
+            if(sigusr2)
             {
-                goto done;
+                ret = sigusr2();
+                if(ret != E_TS_NOERROR)
+                {
+                    goto done;
+                }
             }
+            idle_count = 0;
         }
 
         
