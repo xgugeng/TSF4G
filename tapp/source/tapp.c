@@ -124,19 +124,29 @@ ERROR_RET:
     exit(1);
 }
 
-static bool g_tapp_loop_switch = true;
+static bool g_sigterm = false;
+static bool g_sigusr1 = false;
+static bool g_sigusr2 = false;
+
+
 static void on_signal(int sig)
 {
     switch(sig)
     {
-        case SIGINT:
         case SIGTERM:
-            g_tapp_loop_switch = false;
+            g_sigterm = false;
+            break;
+        case SIGUSR1:
+            g_sigusr1 = false;
+            break;
+        case SIGUSR2:
+            g_sigusr2 = false;
             break;
     }
 }
 
-TERROR_CODE tapp_loop(tapp_process_t process, useconds_t usec, size_t idle_limit)
+TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_limit,
+                        tapp_func_t sigusr1, tapp_func_t sigusr2)
 {
     TERROR_CODE ret = E_TS_NOERROR;
     uint32_t idle_count = 0;
@@ -157,9 +167,28 @@ TERROR_CODE tapp_loop(tapp_process_t process, useconds_t usec, size_t idle_limit
 	}
 
 
-    g_tapp_loop_switch = true;
-    for(;g_tapp_loop_switch;)
+    g_sigterm = false;
+    for(;!g_sigterm;)
     {
+        if((sigusr1) && (g_sigusr1))
+        {
+            ret = sigusr1();
+            if(ret != E_TS_NOERROR)
+            {
+                goto done;
+            }
+        }
+
+        if((sigusr2) && (g_sigusr1))
+        {
+            ret = sigusr2();
+            if(ret != E_TS_NOERROR)
+            {
+                goto done;
+            }
+        }
+
+        
         ret = process();
         switch(ret)
         {
@@ -171,7 +200,7 @@ TERROR_CODE tapp_loop(tapp_process_t process, useconds_t usec, size_t idle_limit
                 ++idle_count;
                 if(idle_count >= idle_limit)
                 {
-                    if((usleep(usec) != 0) && (errno != EINTR))
+                    if((usleep(idle_usec) != 0) && (errno != EINTR))
                     {
                         ret = E_TS_ERRNO;
                         goto done;

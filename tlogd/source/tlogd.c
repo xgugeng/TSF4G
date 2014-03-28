@@ -17,6 +17,6 @@ static TERROR_CODE process()
 int main(int argc, char **argv)
 {
     tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config_t);
-    return tapp_loop(process, 1000, 30);
+    return tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL);
 }
 
