@@ -186,6 +186,14 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
         goto done;
 	}
 
+	
+	sa.sa_handler = SIG_IGN;
+    if(sigaction(SIGPIPE, &sa, NULL) != 0)
+    {
+    	ret = E_TS_ERRNO;
+        goto done;
+    }
+
 
     g_sigterm = false;
     for(;!g_sigterm;)

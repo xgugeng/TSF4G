@@ -24,10 +24,11 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
 typedef TERROR_CODE (*tapp_func_t)();
 /*
 *  首先会注册信号处理函数， 然后循环执行以下操作
-* 1. 如果收到SIGTERM 或SIGINT 信号，主循环会break
+* 1. 如果收到SIGTERM 或SIGINT 信号，主循环会break。
 * 2. 如果收到SIGUSR1 信号，执行sigusr1，如果出错则返回。
 * 3. 如果收到SIGUSR2 信号，执行sigusr2，如果出错则返回。
-* 4. 执行process
+* 4. 忽略SIGPIPE信号
+* 5. 执行process
 *      如果process 返回E_TS_NOERROR则会马上进入下一次process
 *      如果process 连续返回E_TS_WOULD_BLOCK 超过idle_limit次, 则usleep(usec)。
 *      如果process 出错， 那么tapp_loop函数会返回process的这个错误码。

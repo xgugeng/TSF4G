@@ -1,3 +1,4 @@
+#include "tapp.h"
 #include "tbus.h"
 #include "sip.h"
 #include "bscp.h"
@@ -181,46 +182,46 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
     return 0;
 }
 
-int g_sig_term = FALSE;
-static void on_signal(int sig)
+static TERROR_CODE process()
 {
-    switch(sig)
-    {
-        case SIGINT:
-        case SIGTERM:
-            g_sig_term = true;
-            break;
-    }
-}
+    sip_req_t *pkg;
+	size_t len;
+	tbus_atomic_size_t message_len = 0;
 
+    message_len = tbus_read_begin(itb, &message);
+    if(message_len == 0)
+    {
+        return E_TS_WOULD_BLOCK;
+    }
+    
+    len = (size_t)message_len;
+    while(len > 0)
+    {
+        sip_size_t body_size;
+        if(len < SIP_REQ_SIZE)
+        {
+            ERROR_PRINT("tlibc_read_tdgi_req_t error");
+            exit(1);
+        }
+        pkg = (sip_req_t*)message;
+        sip_req_t_decode(pkg);
+    
+        
+        body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
+        len -= SIP_REQ_SIZE + body_size;
+        message += SIP_REQ_SIZE + body_size;
+    }
+    tbus_read_end(itb, message_len);
+    ts_flush();
+    
+    return E_TS_NOERROR;
+}
 
 int main()
 {
-    sip_req_t *pkg;
 	int ishm_id, oshm_id;
-	size_t len;
-	tbus_atomic_size_t message_len = 0;
-    struct sigaction  sa;
-	size_t idle_times = 0;
 	
     INFO_PRINT("Hello world!");
-
-	memset(&sa, 0, sizeof(struct sigaction));
-	sa.sa_handler = SIG_IGN;
-    if(sigaction(SIGPIPE, &sa, NULL) != 0)
-    {
-        ERROR_PRINT("sigaction error[%d], %s.", errno, strerror(errno));
-        exit(1);
-    }
-
-    sa.sa_handler = on_signal;
-    if((sigaction(SIGTERM, &sa, NULL) != 0)
-        ||(sigaction(SIGINT, &sa, NULL) != 0))
-    {
-        ERROR_PRINT("sigaction error[%d], %s.", errno, strerror(errno));
-        exit(1);
-    }
-
 
     
 	ishm_id = shmget(iSHM_KEY, 0, 0666);
@@ -233,43 +234,6 @@ int main()
     srand((unsigned int)time(0));
 
 
-	for(;!g_sig_term;)
-	{
-		message_len = tbus_read_begin(itb, &message);
-        if(message_len == 0)
-		{
-			++idle_times;
-			if(idle_times > 30)
-			{
-				idle_times = 0;
-				usleep(100);
-			}
-			continue;
-		}
-
-        idle_times = 0;
-        len = (size_t)message_len;
-	    while(len > 0)
-	    {
-	        sip_size_t body_size;
-	        if(len < SIP_REQ_SIZE)
-	        {
-                ERROR_PRINT("tlibc_read_tdgi_req_t error");
-	            exit(1);
-	        }
-	        pkg = (sip_req_t*)message;
-	        sip_req_t_decode(pkg);
-
-	        
-            body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
-            len -= SIP_REQ_SIZE + body_size;
-            message += SIP_REQ_SIZE + body_size;
-    	}
-		tbus_read_end(itb, message_len);
-        ts_flush();
-		idle_times = 0;
-	}
-	
-	return 0;
+    return tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL);
 }
 

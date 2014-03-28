@@ -25,29 +25,12 @@ tconnd_config_t g_config;
 
 static TERROR_CODE init()
 {
-    struct sigaction  sa;
-
     if(tlog_init(&g_tlog_instance, g_config.log_config) != E_TS_NOERROR)
     {
         ERROR_PRINT("tlog init [%s] failed.", g_config.log_config);
         goto ERROR_RET;
     }
     INFO_PRINT("tlog init(%s) succeed, check the log file for more information.", g_config.log_config);
-
-
-
-	memset(&sa, 0, sizeof(struct sigaction));
-	if(sigemptyset(&sa.sa_mask) != 0)
-	{
-	    ERROR_LOG("sigemptyset errno[%d], %s.", errno, strerror(errno));
-		goto ERROR_RET;
-	}
-	sa.sa_handler = SIG_IGN;
-    if(sigaction(SIGPIPE, &sa, NULL) != 0)
-    {
-        ERROR_LOG("sigaction error[%d], %s.", errno, strerror(errno));
-	    goto ERROR_RET;
-    }
 
     if(tconnd_timer_init() != E_TS_NOERROR)
     {
