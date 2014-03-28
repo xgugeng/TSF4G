@@ -1,73 +1,164 @@
+#include "tapp.h"
+
+#include "tconnd_config_reader.h"
+#include "tconnd_config_types.h"
+
+
+#include "tconnd_timer.h"
+#include "tconnd_epoll.h"
+#include "tconnd_listen.h"
+#include "tconnd_mempool.h"
+#include "tconnd_tbus.h"
+#include "tconnd_socket.h"
+
+
+#include "tlog_log.h"
+#include "tlog_print.h"
+
 #include <stdio.h>
 #include <string.h>
-#include "tconnd_reactor.h"
+#include <signal.h>
+#include <errno.h>
 
-#define TCONND_VERSION "0.0.1"
 
-static void version()
+tconnd_config_t g_config;
+
+static TERROR_CODE init()
 {
-	printf("TConnd version %s\n", TCONND_VERSION);
+    struct sigaction  sa;
+
+    if(tlog_init(&g_tlog_instance, g_config.log_config) != E_TS_NOERROR)
+    {
+        ERROR_PRINT("tlog init [%s] failed.", g_config.log_config);
+        goto ERROR_RET;
+    }
+    INFO_PRINT("tlog init(%s) succeed, check the log file for more information.", g_config.log_config);
+
+
+
+	memset(&sa, 0, sizeof(struct sigaction));
+	if(sigemptyset(&sa.sa_mask) != 0)
+	{
+	    ERROR_LOG("sigemptyset errno[%d], %s.", errno, strerror(errno));
+		goto ERROR_RET;
+	}
+	sa.sa_handler = SIG_IGN;
+    if(sigaction(SIGPIPE, &sa, NULL) != 0)
+    {
+        ERROR_LOG("sigaction error[%d], %s.", errno, strerror(errno));
+	    goto ERROR_RET;
+    }
+
+    if(tconnd_timer_init() != E_TS_NOERROR)
+    {
+        goto tlog_fini;
+    }
+    
+    if(tconnd_mempool_init() != E_TS_NOERROR)
+    {
+        goto tlog_fini;
+    }
+    
+    if(tconnd_tbus_init() != E_TS_NOERROR)
+    {
+        goto mempool_fini;
+    }
+    
+    if(tconnd_epoll_init() != E_TS_NOERROR)
+    {
+        goto tbus_fini;
+    }
+
+    if(tconnd_listen_init() != E_TS_NOERROR)
+    {
+        goto epoll_fini;
+    }
+
+
+    INFO_PRINT("tconnd init succeed.");
+    return E_TS_NOERROR;
+    
+epoll_fini:
+    tconnd_epoll_fini();
+tbus_fini:
+    tconnd_tbus_fini();
+mempool_fini:
+    tconnd_mempool_fini();
+tlog_fini:
+    tlog_fini(&g_tlog_instance);
+ERROR_RET:
+    return E_TS_ERROR;
+
 }
 
-static void help()
+static TERROR_CODE process()
 {
-	fprintf(stderr, "Usage: tconnd [options] file\n");  
-	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "  -version                 Print the compiler version.\n");
-    fprintf(stderr, "  -help                    Print the useage.\n");
-	fprintf(stderr, "  file                     Set the config file.\n");
+    TERROR_CODE ret = E_TS_WOULD_BLOCK;
+    TERROR_CODE r;
+
+    r = tconnd_epool_proc();
+    if(r == E_TS_NOERROR)
+    {
+        ret = E_TS_NOERROR;
+    }
+    else if(r != E_TS_WOULD_BLOCK)
+    {
+        ret = r;
+        goto done;
+    }
+
+    r = process_input_tbus();
+    if(r == E_TS_NOERROR)
+    {
+        ret = E_TS_NOERROR;
+    }
+    else if(r != E_TS_WOULD_BLOCK)
+    {
+        ret = r;
+        goto done;
+    }
+
+    
+    tconnd_timer_process();
+    
+done:
+    return ret;
+
+}
+
+static void fini()
+{
+    INFO_PRINT("tconnd_reactor_fini.");
+
+    tconnd_listen_fini();
+    tconnd_epoll_fini();
+    tconnd_tbus_fini();
+    tconnd_mempool_fini();
+    tlog_fini(&g_tlog_instance);
 }
 
 int main(int argc, char **argv)
 {
-	int i, ret;
-	const char* config_file = NULL;
+    int ret = 0;
+    
+    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tconnd_config_t);
 
-	
-	for (i = 1; i < argc; ++i)
-	{
-		char* arg;
-
-		arg = strtok(argv[i], " ");
-		if (arg[0] == '-' && arg[1] == '-')
-		{
-			++arg;
-		}
-		if (strcmp(arg, "-help") == 0)
-		{
-			help();
-			goto ERROR_RET;
-		}
-		else if (strcmp(arg, "-version") == 0)
-		{
-			version();
-			goto ERROR_RET;
-		}
-		else
-		{
-		    config_file = arg;
-            break;
-		}
-
-		arg = strtok(NULL, " =");
-	}
-	if (config_file == NULL)
-	{
-		fprintf(stderr, "Missing config file specification\n");
-		help();
-		goto ERROR_RET;
-	}
-
-
-	ret = tconnd_reactor_init(config_file);
-	if(ret != E_TS_NOERROR)
+    
+	if(init() != E_TS_NOERROR)
 	{
 		goto ERROR_RET;
 	}   
 
-	tconnd_reactor_loop();
+    if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
+    {
+        ret = 0;
+    }
+    else
+    {
+        ret = 1;
+    }
 
-	tconnd_reactor_fini();
+	fini();
 
 	return 0;
 ERROR_RET:

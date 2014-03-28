@@ -24,7 +24,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
 typedef TERROR_CODE (*tapp_func_t)();
 /*
 *  首先会注册信号处理函数， 然后循环执行以下操作
-* 1. 如果收到SIGTERM 信号，主循环会break
+* 1. 如果收到SIGTERM 或SIGINT 信号，主循环会break
 * 2. 如果收到SIGUSR1 信号，执行sigusr1，如果出错则返回。
 * 3. 如果收到SIGUSR2 信号，执行sigusr2，如果出错则返回。
 * 4. 执行process

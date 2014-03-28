@@ -1,6 +1,5 @@
 #include "tconnd_listen.h"
 #include "terrno.h"
-#include "tconnd_reactor.h"
 #include "tconnd_socket.h"
 #include "tbus.h"
 #include "protocol/tlibc_binary_writer.h"
@@ -10,12 +9,13 @@
 
 #include "tconnd_mempool.h"
 #include "tconnd_tbus.h"
-#include "tconnd_config.h"
+#include "tconnd.h"
 #include "tconnd_timer.h"
 #include "tconnd_epoll.h"
 
 #include "tlog_log.h"
 
+#include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <string.h>
 #include <arpa/inet.h>

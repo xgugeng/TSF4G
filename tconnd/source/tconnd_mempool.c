@@ -2,7 +2,7 @@
 #include "core/tlibc_mempool.h"
 #include "tconnd_socket.h"
 #include <assert.h>
-#include "tconnd_config.h"
+#include "tconnd.h"
 #include "tlog_log.h"
 #include "tconnd_timer.h"
 

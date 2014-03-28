@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
+#include <getopt.h>
 
 static void version()
 {
@@ -17,107 +18,122 @@ static void version()
 
 static void usage()
 {
-    fprintf(stderr, "Usage: program [options] file\n\n");
-    fprintf(stderr, "Use program -help for a list of options\n");
+    fprintf(stderr, "Usage: tapp_program [options] file\n");
+    fprintf(stderr, "Use tapp_program --help for a list of options\n");
 }
 
 static void help()
 {
-	fprintf(stderr, "Usage: program [options] file\n");  
+	fprintf(stderr, "Usage: tapp_program [options] file\n");  
 	fprintf(stderr, "Options:\n");
-	fprintf(stderr, "  -version                 Print the compiler version.\n");
-    fprintf(stderr, "  -help                    Print the useage.\n");
-	fprintf(stderr, "  file                     Set the config file.\n");
+	fprintf(stderr, "  --version                 Print the compiler version.\n");
+    fprintf(stderr, "  --help                    Print the useage.\n");
+    fprintf(stderr, "  -I, --include dir         Add a directory to the list of directories\n");
+    fprintf(stderr, "                            searched for include directives\n");
+	fprintf(stderr, "  file                      Set the config file.\n");
 }
 
 void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t reader)
 {
 	TLIBC_XML_READER xml_reader;
-    const char *config_file = NULL;
-    int i;
+    int opt;
+    
     tlibc_xml_reader_init(&xml_reader);
-
-	for (i = 1; i < argc; ++i)
+    
+    for(;;)
 	{
-		char* arg;
+		int option_index = 0;
+		static struct option stlong_options[] = {
+			{"help",    no_argument,        0, 'h'},
+			{"version", no_argument,        0, 'v'},
+			{"include", required_argument,  0, 'I'},
+			{0,         0,                  0,  0 }
+		};
 
-		arg = strtok(argv[i], " ");
-		if (arg[0] == '-' && arg[1] == '-')
-		{
-			++arg;
-		}
-		
-		if (strcmp(arg, "-help") == 0)
-		{
-			help();
-			goto ERROR_RET;
-		}
-		else if (strcmp(arg, "-version") == 0)
-		{
-			version();
-			goto ERROR_RET;
-		}		
-		else if (strcmp(arg, "-I") == 0)
-		{
-		    ++i;
-		    if(i >= argc)
-		    {
-         		fprintf(stderr, "argument to '-I' is missing.\n");
-		        goto ERROR_RET;
-		    }
-            tlibc_xml_add_include(&xml_reader, argv[i]);
-			goto ERROR_RET;
-		}
-		else
-		{
-		    config_file = arg;
-		    ++i;
-            break;
+		opt = getopt_long (argc, argv, "hvI:",
+			stlong_options, &option_index);
+
+		if (opt == -1)		
+		{		    
+		    break;
 		}
 
-		arg = strtok(NULL, " =");
-	}
+		if((opt == ':') || (opt == '?'))
+		{
+		    usage();
+            goto ERROR_RET;
+        }
 
-	if(i != argc)
-	{
-    	usage();
-    	goto ERROR_RET;
-	}
-	if(reader)
-	{
-    	if (config_file == NULL)
-    	{
-    		fprintf(stderr, "Missing config file specification\n");
-    		help();
+		switch( opt )
+		{
+		case 'h':
+            help();
     		goto ERROR_RET;
-    	}
+    	case 'v':    	
+            version();
+            goto ERROR_RET;
+        case 'I':
+            tlibc_xml_add_include(&xml_reader, optarg);
+            break;
+        default:
+            fprintf(stderr, "Unrecognized option: \"%s\"\n", argv[optind]);
+            usage();
+            goto ERROR_RET;
+		}
 	}
 
-
-
-    if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
-    {
-   		fprintf(stderr, "load push config file [%s] failed.\n", config_file);
+	
+    if(argc - optind > 1)
+    {       
+        fprintf(stderr, "Only one file can given as argument.\n");
+        usage();
         goto ERROR_RET;
     }
     
-	if(reader(&xml_reader.super, config) != E_TLIBC_NOERROR)
+	if(reader)
 	{
-    	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
-    	if(lo)
+	    const char *config_file = NULL;
+	    if(argc - optind < 1)
+	    {
+            fprintf(stderr, "Missing file specification\n");
+            usage();
+            goto ERROR_RET;
+	    }
+	    config_file = argv[optind];
+
+        if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
+        {
+       		fprintf(stderr, "File[%s] read aborted.\n", config_file);
+            goto ERROR_RET;
+        }
+        
+    	if(reader(&xml_reader.super, config) != E_TLIBC_NOERROR)
     	{
-        	fprintf(stderr, "load xml [%s] failed at %d,%d - %d,%d.\n", lo->file_name, 
-        	    lo->first_line, lo->first_column, lo->last_line, lo->last_column);
+        	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
+        	if(lo)
+        	{
+            	fprintf(stderr, "XML parsing failed, %s %d,%d - %d,%d.\n", lo->file_name, 
+            	    lo->first_line, lo->first_column, lo->last_line, lo->last_column);
+        	}
+        	else
+        	{
+            	fprintf(stderr, "XML parsing failed, %s.", config_file);
+        	}   	
+    		
+    		tlibc_xml_reader_pop_file(&xml_reader);
+    		goto ERROR_RET;
     	}
-    	else
-    	{
-        	fprintf(stderr, "load xml [%s] failed.", config_file);
-    	}   	
-		
-		tlibc_xml_reader_pop_file(&xml_reader);
-		goto ERROR_RET;
+        tlibc_xml_reader_pop_file(&xml_reader);
 	}
-    tlibc_xml_reader_pop_file(&xml_reader);
+	else
+	{
+	    if(argc - optind > 0)
+	    {
+            fprintf(stderr, "The file is not being used.\n");
+            usage();
+            goto ERROR_RET;
+	    }
+	}
     
 	return;
 ERROR_RET:
@@ -133,6 +149,7 @@ static void on_signal(int sig)
 {
     switch(sig)
     {
+        case SIGINT:
         case SIGTERM:
             g_sigterm = true;
             break;
@@ -161,6 +178,7 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
 	}
 
 	if((sigaction(SIGTERM, &sa, NULL) != 0)
+	|| (sigaction(SIGINT, &sa, NULL) != 0)
 	|| (sigaction(SIGUSR1, &sa, NULL) != 0)
 	|| (sigaction(SIGUSR2, &sa, NULL) != 0))
 	{

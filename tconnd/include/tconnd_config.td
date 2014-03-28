@@ -25,7 +25,6 @@ struct tconnd_config_t
 	uint32								rcvbuf;							#SO_RCVBUF
 	uint32								nodelay;						#TCP_NODELAY
 	uint32								cork;							#TCP_CORK
-	uint32								quickack;						#TCP_QUICKACK
 	uint32								keepalive;						#SO_KEEPALIVE
 if(keepalive == 1)
 	uint32								keepidle;						#TCP_KEEPIDLE
