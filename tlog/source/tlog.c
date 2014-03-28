@@ -3,7 +3,8 @@
 
 #include "protocol/tlibc_xml_reader.h"
 #include "tlog_config_reader.h"
-#include "tlog_rolling_file.h"
+#include "tlog_rolling_file_instance.h"
+#include "tlog_shm_instance.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -40,7 +41,10 @@ TERROR_CODE tlog_init(tlog_t *self, const char *config_file)
 		switch(self->config.appender[i].type)
 		{
 		case e_tlog_rolling_file:
-			rolling_file_init(&self->instance.appender_instance[i].rolling_file, &self->config.appender[i].rolling_file);
+			tlog_rolling_file_instance_init(&self->instance.appender_instance[i].body.rolling_file, &self->config.appender[i].body.rolling_file);
+			break;
+		case e_tlog_shm:
+			tlog_shm_instance_init(&self->instance.appender_instance[i].body.shm, &self->config.appender[i].body.shm);
 			break;
 		}	
 	}
@@ -58,8 +62,11 @@ void tlog_write(tlog_t *self, const char *message, size_t message_size)
 		switch(self->config.appender[i].type)
 		{
 			case e_tlog_rolling_file:
-				rolling_file_log(&self->instance.appender_instance[i].rolling_file, &self->config.appender[i].rolling_file, message, message_size);
+				tlog_rolling_file_instance_log(&self->instance.appender_instance[i].body.rolling_file, &self->config.appender[i].body.rolling_file, message, message_size);
 				break;
+			case e_tlog_shm:
+			    tlog_shm_instance_log(&self->instance.appender_instance[i].body.shm, &self->config.appender[i].body.shm, message, message_size);
+			    break;
 		}
 	}
 }
@@ -73,8 +80,12 @@ void tlog_fini(tlog_t *self)
 		switch(self->config.appender[i].type)
 		{
 			case e_tlog_rolling_file:
-				rolling_file_fini(&self->instance.appender_instance[i].rolling_file);
+				tlog_rolling_file_instance_fini(&self->instance.appender_instance[i].body.rolling_file);
 				break;
+				
+            case e_tlog_shm:
+                tlog_shm_instance_fini(&self->instance.appender_instance[i].body.shm);
+                break;
 		}
 	}
 }

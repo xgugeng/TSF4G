@@ -1,8 +1,8 @@
-#include "tlog_rolling_file.h"
+#include "tlog_rolling_file_instance.h"
 #include <string.h>
 
 
-void rolling_file_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config)
+void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config)
 {
 	uint32_t i;	
 	char file_name[TSERVER_FILE_NAME_LENGH];
@@ -23,7 +23,7 @@ void rolling_file_init(tlog_rolling_file_instance_t *self, const tlog_rolling_fi
 	self->index = 0;
 }
 
-void rolling_file_log(tlog_rolling_file_instance_t *self, 
+void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, 
 		const tlog_rolling_file_t *config,
 		const char *message, size_t message_size)
 {
@@ -81,7 +81,7 @@ done:
 	return;
 }
 
-void rolling_file_fini(tlog_rolling_file_instance_t *self)
+void tlog_rolling_file_instance_fini(tlog_rolling_file_instance_t *self)
 {
 	if(self->fout != NULL)
 	{

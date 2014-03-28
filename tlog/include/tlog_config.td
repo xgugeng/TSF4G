@@ -13,6 +13,7 @@ enum tlog_level_t
 enum tlog_appender_type_t
 {
 	e_tlog_rolling_file = 0,
+    e_tlog_shm = 1,
 };
 
 struct tlog_rolling_file_t
@@ -22,10 +23,21 @@ struct tlog_rolling_file_t
 	uint32							max_backup_index;
 };
 
+struct tlog_shm_t
+{
+	int32                           input_tbuskey;
+};
+
+union tlog_appender_body(tlog_appender_type_t selector)
+{
+e_tlog_rolling_file: tlog_rolling_file_t rolling_file;
+e_tlog_shm: tlog_shm_t shm;
+};
+
 struct tlog_appender_t
 {
 	tlog_appender_type_t type;
-if(type == e_tlog_rolling_file) tlog_rolling_file_t rolling_file;
+	tlog_appender_body body(type);
 };
 
 struct tlog_config_t
