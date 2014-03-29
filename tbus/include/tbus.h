@@ -45,7 +45,7 @@ tbus_atomic_size_t tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf, tbus_atomic
 
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);
 
-
+//之所以返回一个非const指针， 是因为系统的iov结构体需要一个非const指针。
 tbus_atomic_size_t tbus_read_begin(tbus_t *tb, TLIBC_OUT char** buf);
 
 void tbus_read_end(tbus_t *tb, tbus_atomic_size_t len);

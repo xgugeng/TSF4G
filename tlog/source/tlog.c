@@ -16,9 +16,9 @@
 #include <errno.h>
 #include <unistd.h>
 
-static void init(tlog_t *self)
+static TERROR_CODE init(tlog_t *self)
 {
-    uint32_t i;
+    uint32_t i = 0;
     
     self->instance.appender_vec_num = self->config.appender_vec_num;
     for(i = 0; i < self->instance.appender_vec_num; ++i)
@@ -26,20 +26,40 @@ static void init(tlog_t *self)
         switch(self->config.appender_vec[i].type)
         {
         case e_tlog_appender_rolling_file:
-            tlog_appender_rolling_file_init(&self->instance.appender_vec[i].appender.rolling_file, &self->config.appender_vec[i].appender.rolling_file);
+            tlog_appender_rolling_file_init(&self->instance.appender_vec[i].appender.rolling_file
+                , &self->config.appender_vec[i].appender.rolling_file);            
             break;
         case e_tlog_appender_shm:
-            tlog_appender_shm_init(&self->instance.appender_vec[i].appender.shm, &self->config.appender_vec[i].appender.shm);
+            if(tlog_appender_shm_init(&self->instance.appender_vec[i].appender.shm
+                , &self->config.appender_vec[i].appender.shm) != E_TS_NOERROR)
+            {
+                goto roll_back;
+            }
             break;
         }   
     }
+    return E_TS_NOERROR;
+roll_back:
+    for(--i; i > 0; --i)
+    {
+        switch(self->config.appender_vec[i].type)
+        {
+        case e_tlog_appender_rolling_file:
+            tlog_appender_rolling_file_fini(&self->instance.appender_vec[i].appender.rolling_file);
+            break;
+        case e_tlog_appender_shm:
+            tlog_appender_shm_fini(&self->instance.appender_vec[i].appender.shm);            
+            break;
+        }   
+    }
+    return E_TS_ERROR;
 }
 
-void tlog_init(tlog_t *self, const tlog_config_t *config)
+TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config)
 {
     memcpy(&self->config, config, sizeof(tlog_config_t));
     
-    init(self);
+    return init(self);
 }
 
 TERROR_CODE tlog_init_from_file(tlog_t *self, const char *config_file)
@@ -78,7 +98,7 @@ TERROR_CODE tlog_init_from_file(tlog_t *self, const char *config_file)
 	}
     tlibc_xml_reader_pop_file(&xml_reader);
 
-    init(self);    
+    return init(self); 
 done:
     return ret;
 }

@@ -7,7 +7,7 @@
 
 typedef struct tlog_appender_shm_s
 {
-    tbus_t *itb;
+    tbus_t *otb;
 }tlog_appender_shm_t;
 
 TERROR_CODE tlog_appender_shm_init(tlog_appender_shm_t *self, const tlog_config_appender_shm_t *config);

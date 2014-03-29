@@ -1,13 +1,7 @@
 import "tcommon.td"
+import "tlog_sql.td"
 
 const uint16 TLOG_MAX_APPENDER_NUM = 32;
-const uint16 TLOG_MESSAGE_LENGTH = 0xffff;
-
-struct tlog_message_t
-{
-    vector<char, TLOG_MESSAGE_LENGTH> msg;
-};
-
 
 enum tlog_level_t
 {
@@ -37,7 +31,7 @@ struct tlog_config_appender_rolling_file_t
 
 struct tlog_config_appender_shm_t
 {
-	int32                           input_tbuskey;
+	int32                           output_tbuskey;
 };
 
 union tlog_config_appender_body(tlog_appender_type_t selector)

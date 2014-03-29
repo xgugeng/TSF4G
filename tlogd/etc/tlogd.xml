@@ -1,9 +1,9 @@
 <tlogd_config_t>
-	<tbuskey>20001</tbuskey>
-	<ip>127.0.0.1</ip>
+	<input_tbuskey>20001</input_tbuskey>
+	<ip>localhost</ip>
 	<port>7001</port>
-	<dbname>log</dbname>
+	<dbname>logdb</dbname>
 	<user>randyliu</user>
 	<password></password>
-	<sql>insert into logs value(?)</sql>
+	<sql>insert into tlog_message_t value(?)</sql>
 </tconnd_config_t>

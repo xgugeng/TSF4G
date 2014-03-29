@@ -24,6 +24,7 @@ DEPLOCALLIBS?=tlibc
 
 PREFIX?=/usr/local/$(NAME)
 TDATA_FILE?=$(wildcard $(INCLUDE)/*.td)
+SQL_TDATA_FILE?=
 CFILE?=$(wildcard $(SOURCE)/*.c)
 
 CINC?=-I $(INCLUDE) 
@@ -54,6 +55,8 @@ REALTDATA=$(TDATA) $(CINC)
 
 
 
+SQL_FILE=$(patsubst %.td, %_tables.sql, $(SQL_TDATA_FILE))
+
 TYPES_HFILE=$(patsubst %.td, %_types.h, $(TDATA_FILE))
 READER_HFILE=$(TDATA_FILE:.td=_reader.h)
 WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
@@ -75,7 +78,7 @@ endif
 
 .PHONY: all clean install tags
 
-all:$(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(TARGET)
+all:$(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(SQL_FILE) $(TARGET)
 
 $(LIB): $(OFILE) $(WRITER_OFILE) $(READER_OFILE) 
 	@mkdir -p $(LIBRARY)
@@ -92,6 +95,9 @@ release:
 
 %.o: %.c
 	$(REALCC) -o $@ -c $<
+
+$(SQL_FILE):$(SQL_TDATA_FILE)
+	$(REALTDATA) -o $(INCLUDE) -gen sql $^
 
 $(TYPES_HFILE):$(TDATA_FILE)
 	$(REALTDATA) -o $(INCLUDE) -gen types_h $^
@@ -125,4 +131,4 @@ tags:
 
 clean:
 	@find . -name "*.o" | xargs $(RM)
-	@$(RM) $(TARGET) $(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(READER_CFILE) $(READER_OFILE) $(WRITER_CFILE) $(WRITER_OFILE) tags cscope.in.out cscope.po.out cscope.out
+	@$(RM) $(TARGET) $(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(SQL_FILE) $(READER_CFILE) $(READER_OFILE) $(WRITER_CFILE) $(WRITER_OFILE) tags cscope.in.out cscope.po.out cscope.out

@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <string.h>
 
 void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* file, uint32_t line, va_list arglist)
@@ -61,8 +62,6 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
             msg += r;
         }
     }
-
-    message->msg_num = (uint32_t)len;
 }
 
 void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...)
@@ -93,7 +92,7 @@ void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...
 
     iov[0].iov_len = TLOG_COLOR_LEN;
     iov[1].iov_base = message.msg;
-    iov[1].iov_len = message.msg_num;
+    iov[1].iov_len = strlen(message.msg);
     iov[2].iov_base = TLOG_RST_COLOR;
     iov[2].iov_len = TLOG_RST_COLOR_LEN;
     iov[3].iov_base = "\n";

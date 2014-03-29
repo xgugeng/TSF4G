@@ -27,7 +27,9 @@ void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlo
 {
 	size_t file_size;
 	long ft;
+	size_t msg_len;
 
+    
 	if(self->fout == NULL)
 	{
 		self->fout = fopen(config->file_name, "wb+");
@@ -47,8 +49,9 @@ void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlo
 	{
 	    file_size = (size_t)ft;
 	}
-	
-	if(file_size + message->msg_num > config->max_file_size)
+
+	msg_len = strlen(message->msg);
+	if(file_size + msg_len > config->max_file_size)
 	{
 		char file_name[TSERVER_FILE_NAME_LENGH];
 		snprintf(file_name, TSERVER_FILE_NAME_LENGH, "%s.%u", config->file_name, self->index);
@@ -71,7 +74,7 @@ void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlo
 		fseek(self->fout, 0, SEEK_END);		
 	}
 	
-	fwrite(message->msg, 1, message->msg_num, self->fout);
+	fwrite(message->msg, 1, msg_len, self->fout);
 	fputc('\n', self->fout);
 	fflush(self->fout);
 	

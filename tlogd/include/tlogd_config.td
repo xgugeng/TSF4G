@@ -5,7 +5,7 @@ const uint32 TSERVER_SQL_LENGTH = 1024;
 
 struct tlogd_config_t
 {
-	int32								tbuskey;						#接收log所用的tbuskey, 协议为2字节包头表示包体长度 + 包体
+	int32								input_tbuskey;					#接收log所用的tbuskey, 协议为2字节包头表示包体长度 + 包体
 	string<TSERVER_IP_LENGTH> 			ip;								#数据库ip
 	uint16 								port;							#数据库端口
 	string<TSERVER_DBNAME_LENGTH>		dbname;							#数据库

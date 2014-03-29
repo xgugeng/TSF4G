@@ -11,5 +11,13 @@
 					</rolling_file>
 			</appender>
 		</appender_vec>
+		<appender_vec>
+			<type>e_tlog_appender_shm</type>
+			<appender>
+					<shm>
+						<output_tbuskey>20001</output_tbuskey>
+					</shm>
+			</appender>
+		</appender_vec>
 	</vector>
 </tlog_config_t>
