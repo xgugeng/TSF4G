@@ -8,13 +8,13 @@
 typedef struct tlog_shm_instance_s
 {
     tbus_t *itb;
+
+    const tlog_shm_t* config;
 }tlog_shm_instance_t;
 
 TERROR_CODE tlog_shm_instance_init(tlog_shm_instance_t *self, const tlog_shm_t *config);
 
-void tlog_shm_instance_log(tlog_shm_instance_t *self, 
-		const tlog_shm_t *config,
-		const char *message, size_t message_size);
+void tlog_shm_instance_log(tlog_shm_instance_t *self, const tlog_message_t *message);
 
 void tlog_shm_instance_fini(tlog_shm_instance_t *self);
 

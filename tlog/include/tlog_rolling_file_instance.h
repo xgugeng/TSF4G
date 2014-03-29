@@ -8,14 +8,14 @@ typedef struct tlog_rolling_file_instance_s
 {
 	FILE *fout;
 	uint32_t index;
+
+	const tlog_rolling_file_t *config;
 }tlog_rolling_file_instance_t;
 
 
 void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config);
 
-void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, 
-		const tlog_rolling_file_t *config,
-		const char *message, size_t message_size);
+void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, const tlog_message_t *message);
 
 
 void tlog_rolling_file_instance_fini(tlog_rolling_file_instance_t *self);

@@ -3,11 +3,13 @@
 	<vector>
 		<appender>
 			<type>e_tlog_rolling_file</type>
-			<rolling_file>
-				<file_name>logs/tlog_example.log</file_name>
-				<max_file_size>1024</max_file_size>
-				<max_backup_index>5</max_backup_index>
-			</rolling_file>
+			<body>
+					<rolling_file>
+						<file_name>logs/tlog_example.log</file_name>
+						<max_file_size>1024</max_file_size>
+						<max_backup_index>5</max_backup_index>
+					</rolling_file>
+			</body>
 		</appender>
 	</vector>
 </tlog_config_t>

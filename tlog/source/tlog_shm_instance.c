@@ -20,14 +20,13 @@ TERROR_CODE tlog_shm_instance_init(tlog_shm_instance_t *self, const tlog_shm_t *
 	    ret = E_TS_ERRNO;
 		goto done;
 	}
+	self->config = config;
 	
 done:
     return ret;
 }
 
-void tlog_shm_instance_log(tlog_shm_instance_t *self, 
-		const tlog_shm_t *config,
-		const char *message, size_t message_size)
+void tlog_shm_instance_log(tlog_shm_instance_t *self, const tlog_message_t *message)
 {
 }
 

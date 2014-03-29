@@ -53,7 +53,7 @@ done:
 	return ret;
 }
 
-void tlog_write(tlog_t *self, const char *message, size_t message_size)
+void tlog_write(tlog_t *self, const tlog_message_t *message)
 {
 	uint32_t i;
 	
@@ -62,10 +62,10 @@ void tlog_write(tlog_t *self, const char *message, size_t message_size)
 		switch(self->config.appender[i].type)
 		{
 			case e_tlog_rolling_file:
-				tlog_rolling_file_instance_log(&self->instance.appender_instance[i].body.rolling_file, &self->config.appender[i].body.rolling_file, message, message_size);
+				tlog_rolling_file_instance_log(&self->instance.appender_instance[i].body.rolling_file, message);
 				break;
 			case e_tlog_shm:
-			    tlog_shm_instance_log(&self->instance.appender_instance[i].body.shm, &self->config.appender[i].body.shm, message, message_size);
+			    tlog_shm_instance_log(&self->instance.appender_instance[i].body.shm, message);
 			    break;
 		}
 	}

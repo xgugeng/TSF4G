@@ -21,18 +21,24 @@ void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const t
 
 	self->fout = NULL;
 	self->index = 0;
+	self->config = config;
 }
 
-void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, 
-		const tlog_rolling_file_t *config,
-		const char *message, size_t message_size)
+void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, const tlog_message_t *message)
 {
 	size_t file_size;
 	long ft;
+    const tlog_rolling_file_t *config = NULL;
+
+    config = self->config;
+	if(config == NULL)
+	{
+        goto done;
+	}
 
 	if(self->fout == NULL)
 	{
-		self->fout = fopen(config->file_name, "wb+");
+		self->fout = fopen(self->config->file_name, "wb+");
 		if(self->fout == NULL)
 		{
 			goto done;
@@ -50,7 +56,7 @@ void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self,
 	    file_size = (size_t)ft;
 	}
 	
-	if(file_size + message_size > config->max_file_size)
+	if(file_size + message->msg_num > config->max_file_size)
 	{
 		char file_name[TSERVER_FILE_NAME_LENGH];
 		snprintf(file_name, TSERVER_FILE_NAME_LENGH, "%s.%u", config->file_name, self->index);
@@ -73,7 +79,7 @@ void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self,
 		fseek(self->fout, 0, SEEK_END);		
 	}
 	
-	fwrite(message, 1, message_size, self->fout);
+	fwrite(message->msg, 1, message->msg_num, self->fout);
 	fputc('\n', self->fout);
 	fflush(self->fout);
 	

@@ -1,6 +1,13 @@
 import "tcommon.td"
 
 const uint16 TLOG_MAX_APPENDER_NUM = 32;
+const uint16 TLOG_MESSAGE_LENGTH = 0xffff;
+
+struct tlog_message_t
+{
+    vector<char, TLOG_MESSAGE_LENGTH> msg;
+};
+
 
 enum tlog_level_t
 {
