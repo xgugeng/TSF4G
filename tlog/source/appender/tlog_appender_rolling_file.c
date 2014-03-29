@@ -2,7 +2,7 @@
 #include <string.h>
 
 
-void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const tlog_config_appender_rolling_file_t *config)
+void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config)
 {
 	uint32_t i;	
 	char file_name[TSERVER_FILE_NAME_LENGH];
@@ -23,7 +23,7 @@ void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const t
 	self->index = 0;
 }
 
-void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, const tlog_config_appender_rolling_file_t *config, const tlog_message_t *message)
+void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config, const tlog_message_t *message)
 {
 	size_t file_size;
 	long ft;
@@ -79,7 +79,7 @@ done:
 	return;
 }
 
-void tlog_rolling_file_instance_fini(tlog_rolling_file_instance_t *self)
+void tlog_appender_rolling_file_fini(tlog_appener_rolling_file_t *self)
 {
 	if(self->fout != NULL)
 	{

@@ -25,12 +25,7 @@ tconnd_config_t g_config;
 
 static TERROR_CODE init()
 {
-    if(tlog_init(&g_tlog_instance, g_config.log_config) != E_TS_NOERROR)
-    {
-        ERROR_PRINT("tlog init [%s] failed.", g_config.log_config);
-        goto ERROR_RET;
-    }
-    INFO_PRINT("tlog init(%s) succeed, check the log file for more information.", g_config.log_config);
+    tlog_init(&g_tlog_instance, &g_config.log_config);
 
     if(tconnd_timer_init() != E_TS_NOERROR)
     {
@@ -69,7 +64,6 @@ mempool_fini:
     tconnd_mempool_fini();
 tlog_fini:
     tlog_fini(&g_tlog_instance);
-ERROR_RET:
     return E_TS_ERROR;
 
 }
@@ -111,8 +105,6 @@ done:
 
 static void fini()
 {
-    INFO_PRINT("tconnd_reactor_fini.");
-
     tconnd_listen_fini();
     tconnd_epoll_fini();
     tconnd_tbus_fini();

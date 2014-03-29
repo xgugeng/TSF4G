@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	uint32_t i;
 	
 
-	tlog_init(&g_tlog_instance, argv[1]);
+	tlog_init_from_file(&g_tlog_instance, argv[1]);
 
 	for(i = 0;;++i)
 	{

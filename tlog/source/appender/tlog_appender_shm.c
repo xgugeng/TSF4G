@@ -3,7 +3,7 @@
 #include <sys/shm.h>
 
 
-TERROR_CODE tlog_shm_instance_init(tlog_shm_instance_t *self, const tlog_config_appender_shm_t *config)
+TERROR_CODE tlog_appender_shm_init(tlog_appender_shm_t *self, const tlog_config_appender_shm_t *config)
 {
     TERROR_CODE ret = E_TS_NOERROR;
     int input_tbusid;
@@ -25,11 +25,11 @@ done:
     return ret;
 }
 
-void tlog_shm_instance_log(tlog_shm_instance_t *self, const tlog_config_appender_shm_t *config, const tlog_message_t *message)
+void tlog_appender_shm_log(tlog_appender_shm_t *self, const tlog_config_appender_shm_t *config, const tlog_message_t *message)
 {
 }
 
-void tlog_shm_instance_fini(tlog_shm_instance_t *self)
+void tlog_appender_shm_fini(tlog_appender_shm_t *self)
 {
 }
 

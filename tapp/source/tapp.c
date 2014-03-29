@@ -2,7 +2,7 @@
 #include "terrno.h"
 #include "string.h"
 #include "protocol/tlibc_xml_reader.h"
-
+#include "core/tlibc_string.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -92,6 +92,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
     
 	if(reader)
 	{
+    	TLIBC_ERROR_CODE r;
 	    const char *config_file = NULL;
 	    if(argc - optind < 1)
 	    {
@@ -106,18 +107,21 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
        		fprintf(stderr, "File[%s] read aborted.\n", config_file);
             goto ERROR_RET;
         }
-        
-    	if(reader(&xml_reader.super, config) != E_TLIBC_NOERROR)
+
+        r = reader(&xml_reader.super, config);
+    	if(r != E_TLIBC_NOERROR)
     	{
         	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
         	if(lo)
         	{
-            	fprintf(stderr, "XML parsing failed, %s %d,%d - %d,%d.\n", lo->file_name, 
-            	    lo->first_line, lo->first_column, lo->last_line, lo->last_column);
+            	fprintf(stderr, "%s(%d,%d - %d,%d) %s\n"
+            	    , lo->file_name
+            	    , lo->first_line, lo->first_column, lo->last_line, lo->last_column
+            	    , tstrerror(r));
         	}
         	else
         	{
-            	fprintf(stderr, "XML parsing failed, %s.", config_file);
+            	fprintf(stderr, "%s %s", config_file, tstrerror(r));
         	}   	
     		
     		tlibc_xml_reader_pop_file(&xml_reader);

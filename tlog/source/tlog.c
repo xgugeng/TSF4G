@@ -2,9 +2,12 @@
 #include "terrno.h"
 
 #include "protocol/tlibc_xml_reader.h"
+#include "core/tlibc_string.h"
+
 #include "tlog_config_reader.h"
 #include "appender/tlog_appender_rolling_file.h"
 #include "appender/tlog_appender_shm.h"
+
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -13,45 +16,71 @@
 #include <errno.h>
 #include <unistd.h>
 
+static void init(tlog_t *self)
+{
+    uint32_t i;
+    
+    self->instance.appender_vec_num = self->config.appender_vec_num;
+    for(i = 0; i < self->instance.appender_vec_num; ++i)
+    {
+        switch(self->config.appender_vec[i].type)
+        {
+        case e_tlog_appender_rolling_file:
+            tlog_appender_rolling_file_init(&self->instance.appender_vec[i].appender.rolling_file, &self->config.appender_vec[i].appender.rolling_file);
+            break;
+        case e_tlog_appender_shm:
+            tlog_appender_shm_init(&self->instance.appender_vec[i].appender.shm, &self->config.appender_vec[i].appender.shm);
+            break;
+        }   
+    }
+}
 
+void tlog_init(tlog_t *self, const tlog_config_t *config)
+{
+    memcpy(&self->config, config, sizeof(tlog_config_t));
+    
+    init(self);
+}
 
-TERROR_CODE tlog_init(tlog_t *self, const char *config_file)
+TERROR_CODE tlog_init_from_file(tlog_t *self, const char *config_file)
 {
 	TERROR_CODE ret = E_TS_NOERROR;;
 	TLIBC_XML_READER xml_reader;
-	uint32_t i;
-	
+	TLIBC_ERROR_CODE r;
+	    	
 	tlibc_xml_reader_init(&xml_reader);
 	if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
 	{
     	ret = E_TS_ERROR;
 	    goto done;
-	}	
-	if(tlibc_read_tlog_config_t(&xml_reader.super, &self->config) != E_TLIBC_NOERROR)
+	}
+
+	r = tlibc_read_tlog_config_t(&xml_reader.super, &self->config);
+	
+	if(r != E_TLIBC_NOERROR)
 	{
+       	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
+    	if(lo)
+    	{
+        	fprintf(stderr, "%s(%d,%d - %d,%d) %s\n"
+        	    , lo->file_name
+        	    , lo->first_line, lo->first_column, lo->last_line, lo->last_column
+        	    , tstrerror(r));
+    	}
+    	else
+    	{
+        	fprintf(stderr, "%s %s", config_file, tstrerror(r));
+    	}   	
+    		
 		ret = E_TS_ERROR;
-		//warning 增加错误字符串的输出
 		tlibc_xml_reader_pop_file(&xml_reader);
 		goto done;
 	}
     tlibc_xml_reader_pop_file(&xml_reader);
 
-	self->instance.appender_instance_num = self->config.appender_vec_num;
-	for(i = 0; i < self->instance.appender_instance_num; ++i)
-	{
-		switch(self->config.appender_vec[i].type)
-		{
-		case e_tlog_appender_rolling_file:
-			tlog_rolling_file_instance_init(&self->instance.appender_instance[i].body.rolling_file, &self->config.appender_vec[i].appender.rolling_file);
-			break;
-		case e_tlog_appender_shm:
-			tlog_shm_instance_init(&self->instance.appender_instance[i].body.shm, &self->config.appender_vec[i].appender.shm);
-			break;
-		}	
-	}
-
+    init(self);    
 done:
-	return ret;
+    return ret;
 }
 
 void tlog_write(tlog_t *self, const tlog_message_t *message)
@@ -63,12 +92,12 @@ void tlog_write(tlog_t *self, const tlog_message_t *message)
 		switch(self->config.appender_vec[i].type)
 		{
 			case e_tlog_appender_rolling_file:
-				tlog_rolling_file_instance_log(&self->instance.appender_instance[i].body.rolling_file
+				tlog_appender_rolling_file_log(&self->instance.appender_vec[i].appender.rolling_file
     				, &self->config.appender_vec[i].appender.rolling_file
 				    , message);
 				break;
 			case e_tlog_appender_shm:
-			    tlog_shm_instance_log(&self->instance.appender_instance[i].body.shm			    
+			    tlog_appender_shm_log(&self->instance.appender_vec[i].appender.shm
                 , &self->config.appender_vec[i].appender.shm
                 , message);
 			    break;
@@ -85,11 +114,11 @@ void tlog_fini(tlog_t *self)
 		switch(self->config.appender_vec[i].type)
 		{
 			case e_tlog_appender_rolling_file:
-				tlog_rolling_file_instance_fini(&self->instance.appender_instance[i].body.rolling_file);
+				tlog_appender_rolling_file_fini(&self->instance.appender_vec[i].appender.rolling_file);
 				break;
 				
             case e_tlog_appender_shm:
-                tlog_shm_instance_fini(&self->instance.appender_instance[i].body.shm);
+                tlog_appender_shm_fini(&self->instance.appender_vec[i].appender.shm);
                 break;
 		}
 	}
