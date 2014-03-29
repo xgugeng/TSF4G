@@ -6,7 +6,6 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-
 void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* file, uint32_t line, va_list arglist)
 {
@@ -66,18 +65,16 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     message->msg_num = (uint32_t)len;
 }
 
-
-
 void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...)
 {
     struct iovec iov[4];
     tlog_message_t message;
-    va_list arglist;
 
+    va_list arglist;
     va_start(arglist, line);
     tlog_make_message(&message, level, file, line, arglist);
     va_end(arglist);
-    
+
     switch(level)
     {
     case e_tlog_error:
@@ -103,6 +100,5 @@ void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...
     iov[3].iov_len = 1;
     writev(fd, iov, 4);
     fsync(fd);
-    
 }
 

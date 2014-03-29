@@ -1,3 +1,16 @@
+#constant
+SOURCE=source
+INCLUDE=include
+BINARY=bin
+LIBRARY=lib
+ETC=etc
+TDATA=tdata
+
+CC = gcc
+AR = ar
+RM = /bin/rm -f
+INSTALL=cp -rpf
+
 #parameter list
 NAME?=
 EXECUTABLE?=0
@@ -10,8 +23,10 @@ DEPLOCALLD?=/usr/local/TLibC/lib
 DEPLOCALLIBS?=tlibc
 
 PREFIX?=/usr/local/$(NAME)
+TDATA_FILE?=$(wildcard $(INCLUDE)/*.td)
+CFILE?=$(wildcard $(SOURCE)/*.c)
 
-CINC=-I include 
+CINC?=-I $(INCLUDE) 
 CINC+=$(patsubst %, -I $(DEPTARET_DIR)/%/include, $(DEPTARGET))
 CINC+=$(patsubst %, -I %, $(DEPLOCALINCLUDE))
 ifdef MAKE_RELEASE
@@ -27,17 +42,6 @@ DEPLIBS+=$(patsubst %, -l %, $(DEPTARGET))
 LDPATH+=$(patsubst %, -L %, $(DEPLOCALLD))
 DEPLIBS+=$(patsubst %, -l %, $(DEPLOCALLIBS))
 
-SOURCE=source
-INCLUDE=include
-BINARY=bin
-LIBRARY=lib
-ETC=etc
-TDATA=tdata
-
-CC = gcc
-AR = ar
-RM = /bin/rm -f
-INSTALL=cp -rpf
 
 
 
@@ -49,7 +53,6 @@ REALINSTALL=$(INSTALL)
 REALTDATA=$(TDATA) $(CINC)
 
 
-TDATA_FILE=$(wildcard $(INCLUDE)/*.td)
 
 TYPES_HFILE=$(patsubst %.td, %_types.h, $(TDATA_FILE))
 READER_HFILE=$(TDATA_FILE:.td=_reader.h)
@@ -59,7 +62,6 @@ READER_OFILE=$(READER_CFILE:.c=.o)
 WRITER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_writer.c, $(TDATA_FILE))
 WRITER_OFILE=$(WRITER_CFILE:.c=.o)
 
-CFILE=$(wildcard $(SOURCE)/*.c)
 
 OFILE=$(CFILE:.c=.o)
 

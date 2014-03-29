@@ -1,8 +1,8 @@
-#include "tlog_rolling_file_instance.h"
+#include "appender/tlog_appender_rolling_file.h"
 #include <string.h>
 
 
-void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const tlog_rolling_file_t *config)
+void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const tlog_config_appender_rolling_file_t *config)
 {
 	uint32_t i;	
 	char file_name[TSERVER_FILE_NAME_LENGH];
@@ -21,24 +21,16 @@ void tlog_rolling_file_instance_init(tlog_rolling_file_instance_t *self, const t
 
 	self->fout = NULL;
 	self->index = 0;
-	self->config = config;
 }
 
-void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, const tlog_message_t *message)
+void tlog_rolling_file_instance_log(tlog_rolling_file_instance_t *self, const tlog_config_appender_rolling_file_t *config, const tlog_message_t *message)
 {
 	size_t file_size;
 	long ft;
-    const tlog_rolling_file_t *config = NULL;
-
-    config = self->config;
-	if(config == NULL)
-	{
-        goto done;
-	}
 
 	if(self->fout == NULL)
 	{
-		self->fout = fopen(self->config->file_name, "wb+");
+		self->fout = fopen(config->file_name, "wb+");
 		if(self->fout == NULL)
 		{
 			goto done;

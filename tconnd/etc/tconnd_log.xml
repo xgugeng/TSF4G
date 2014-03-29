@@ -1,15 +1,15 @@
 <tlog_config_t>
 	<level>e_tlog_error</level>
 	<vector>
-		<appender>
+		<appender_vec>
 			<type>e_tlog_rolling_file</type>
-			<body>
+			<appender>
 					<rolling_file>
 						<file_name>logs/tconnd.log</file_name>
 						<max_file_size>1000000</max_file_size>
 						<max_backup_index>10</max_backup_index>
 					</rolling_file>
-			</body>
-		</appender>
+			</appender>
+		</appender_vec>
 	</vector>
 </tlog_config_t>

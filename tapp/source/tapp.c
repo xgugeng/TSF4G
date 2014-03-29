@@ -84,7 +84,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
 
 	
     if(argc - optind > 1)
-    {       
+    {
         fprintf(stderr, "Only one file can given as argument.\n");
         usage();
         goto ERROR_RET;

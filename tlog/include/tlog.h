@@ -3,8 +3,8 @@
 
 #include "platform/tlibc_platform.h"
 #include "tlog_config_types.h"
-#include "tlog_rolling_file_instance.h"
-#include "tlog_shm_instance.h"
+#include "appender/tlog_appender_rolling_file.h"
+#include "appender/tlog_appender_shm.h"
 
 
 #include <stdio.h>
@@ -18,16 +18,16 @@ typedef union tlog_appender_body_u
 	tlog_shm_instance_t shm;
 }tlog_appender_body_t;
 
-typedef struct tlog_appender_instance_s
+typedef struct tlog_appender_s
 {
 	tlog_appender_type_t type;
 	tlog_appender_body_t body;
-}tlog_appender_instance_t;
+}tlog_appender_t;
 
 typedef struct tlog_instance_s
 {
 	uint32_t appender_instance_num;
-	tlog_appender_instance_t appender_instance[TLOG_MAX_APPENDER_NUM];
+	tlog_appender_t appender_instance[TLOG_MAX_APPENDER_NUM];
 }tlog_instance_t;
 
 typedef struct tlog_s

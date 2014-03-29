@@ -1,15 +1,15 @@
 <tlog_config_t>
 	<level>e_tlog_debug</level>
 	<vector>
-		<appender>
-			<type>e_tlog_rolling_file</type>
-			<body>
+		<appender_vec>
+			<type>e_tlog_appender_rolling_file</type>
+			<appender>
 					<rolling_file>
 						<file_name>logs/tlog_example.log</file_name>
 						<max_file_size>1024</max_file_size>
 						<max_backup_index>5</max_backup_index>
 					</rolling_file>
-			</body>
-		</appender>
+			</appender>
+		</appender_vec>
 	</vector>
 </tlog_config_t>
