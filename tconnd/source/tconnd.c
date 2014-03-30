@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 {
     int ret = 0;
     
-    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tconnd_config_t);
+    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tconnd_config);
 
     
 	if(init() != E_TS_NOERROR)

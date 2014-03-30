@@ -3,7 +3,7 @@ import "tcommon.td"
 const uint32 TSERVER_DBNAME_LENGTH = 16;
 const uint32 TSERVER_SQL_LENGTH = 1024;
 
-struct tlogd_config_t
+struct tlogd_config
 {
 	int32								input_tbuskey;					#接收log所用的tbuskey, 协议为2字节包头表示包体长度 + 包体
 	string<TSERVER_IP_LENGTH> 			ip;								#数据库ip

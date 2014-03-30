@@ -41,7 +41,7 @@ void tlog_appender_shm_log(tlog_appender_shm_t *self, const tlog_config_appender
     }
 
     tlibc_binary_writer_init(&bwriter, ptr, tbus_writer_size);
-    if(tlibc_write_tlog_message_t(&bwriter.super, message) != E_TLIBC_NOERROR)
+    if(tlibc_write_tlog_message(&bwriter.super, message) != E_TLIBC_NOERROR)
     {
         goto done;
     }

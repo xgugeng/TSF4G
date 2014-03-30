@@ -75,7 +75,7 @@ TERROR_CODE tlog_init_from_file(tlog_t *self, const char *config_file)
 	    goto done;
 	}
 
-	r = tlibc_read_tlog_config_t(&xml_reader.super, &self->config);
+	r = tlibc_read_tlog_config(&xml_reader.super, &self->config);
 	
 	if(r != E_TLIBC_NOERROR)
 	{
