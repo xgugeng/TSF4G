@@ -36,8 +36,6 @@ typedef struct tlog_s
 	tlog_instance_t instance;
 }tlog_t;
 
-//如果配置文件解析错误， 会在stderr里输出错误信息。
-TERROR_CODE tlog_init_from_file(tlog_t *self, const char *config_file);
 
 TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config);
 
