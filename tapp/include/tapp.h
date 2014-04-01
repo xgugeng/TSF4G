@@ -13,7 +13,7 @@
 
 
 //读取结构体的函数指针， 这个函数应该是由TData所生成的。
-typedef TLIBC_ERROR_CODE (*tapp_xml_reader_t)(TLIBC_ABSTRACT_READER *self, void *data);
+typedef tlibc_error_code_t (*tapp_xml_reader_t)(tlibc_abstract_reader_t *self, void *data);
 
 /*
 *  读取命令行参数， 如果读取失败会exit 1

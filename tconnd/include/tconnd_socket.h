@@ -46,14 +46,14 @@ typedef struct _tconnd_socket_t
 
 
     uint64_t        pending_ticks;
-	TLIBC_LIST_HEAD g_pending_socket_list;
+	tlibc_list_head_t g_pending_socket_list;
 
     uint64_t        package_ticks;
-    TLIBC_LIST_HEAD g_package_socket_list;
+    tlibc_list_head_t g_package_socket_list;
     package_buff_t *package_buff;
     
-    TLIBC_LIST_HEAD readable_list;
-    TLIBC_LIST_HEAD writable_list;
+    tlibc_list_head_t readable_list;
+    tlibc_list_head_t writable_list;
     int writable;
     int readable;
 

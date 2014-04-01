@@ -35,7 +35,7 @@ static void help()
 
 void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t reader)
 {
-	TLIBC_XML_READER xml_reader;
+	tlibc_xml_reader_t xml_reader;
     int opt;
     
     tlibc_xml_reader_init(&xml_reader);
@@ -92,7 +92,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
     
 	if(reader)
 	{
-    	TLIBC_ERROR_CODE r;
+    	tlibc_error_code_t r;
 	    const char *config_file = NULL;
 	    if(argc - optind < 1)
 	    {
@@ -111,7 +111,7 @@ void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t re
         r = reader(&xml_reader.super, config);
     	if(r != E_TLIBC_NOERROR)
     	{
-        	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
+        	const tlibc_xml_reader_yyltype_t *lo = tlibc_xml_current_location(&xml_reader);
         	if(lo)
         	{
             	fprintf(stderr, "%s(%d,%d - %d,%d) %s\n"

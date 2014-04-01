@@ -32,7 +32,7 @@ void tlog_appender_shm_log(tlog_appender_shm_t *self, const tlog_config_appender
 {
     tbus_atomic_size_t tbus_writer_size;
     char *ptr;
-    TLIBC_BINARY_WRITER bwriter;
+    tlibc_binary_writer_t bwriter;
 
     tbus_writer_size = tbus_send_begin(self->otb, &ptr, sizeof(tlog_message_t));
     if(tbus_writer_size < sizeof(tlog_message_t))

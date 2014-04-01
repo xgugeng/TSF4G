@@ -11,7 +11,7 @@
 #include "tlog_sql_writer.h"
 #include "tlog_sql_reader.h"
 
-#include "protocol/tlibc_bind_reader.h"
+#include "protocol/tlibc_mybind_reader.h"
 #include "protocol/tlibc_binary_reader.h"
 
 
@@ -35,9 +35,9 @@ MYSQL_STMT              *g_stmt = NULL;
 tlog_message_t           g_message;
 int                      g_input_tbus_id;
 tbus_t                  *g_input_tbus;
-TLIBC_BINARY_READER      g_binary_reader;
+tlibc_binary_reader_t      g_binary_reader;
 MYSQL_BIND               g_bind[MAX_BIND_NUM]; 
-tlibc_bind_reader_t      g_bind_reader;
+tlibc_mybind_reader_t      g_mybind_reader;
 
 
 
@@ -102,7 +102,7 @@ static TERROR_CODE init()
         goto close_stmt_m;
     }
 
-    tlibc_bind_reader_init(&g_bind_reader, g_bind, MAX_BIND_NUM);
+    tlibc_mybind_reader_init(&g_mybind_reader, g_bind, MAX_BIND_NUM);
     tlibc_binary_reader_init(&g_binary_reader, NULL, 0);
 
     return E_TS_NOERROR;
@@ -133,8 +133,8 @@ static TERROR_CODE process()
     {    
         if(tlibc_read_tlog_message(&g_binary_reader.super, &g_message) == E_TS_NOERROR)
         {
-            TLIBC_ERROR_CODE    r;
-            r = tlibc_read_tlog_message(&g_bind_reader.super, &g_message);
+            tlibc_error_code_t    r;
+            r = tlibc_read_tlog_message(&g_mybind_reader.super, &g_message);
             if(r != E_TLIBC_NOERROR)
             {
                 ERROR_PRINT("tlibc_write_tlog_message_t(), errno %d\n", r);
