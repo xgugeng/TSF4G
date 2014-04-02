@@ -1,7 +1,7 @@
 <tlog_config>
 	<level>e_tlog_debug</level>
-	<vector>
-		<appender_vec>
+	<appender_vec>
+		<element>
 			<type>e_tlog_appender_rolling_file</type>
 			<appender>
 					<rolling_file>
@@ -10,14 +10,14 @@
 						<max_backup_index>5</max_backup_index>
 					</rolling_file>
 			</appender>
-		</appender_vec>
-		<appender_vec>
+		</element>
+		<element>
 			<type>e_tlog_appender_shm</type>
 			<appender>
 					<shm>
 						<output_tbuskey>20001</output_tbuskey>
 					</shm>
 			</appender>
-		</appender_vec>
-	</vector>
+		</element>
+	</appender_vec>
 </tlog_config>
