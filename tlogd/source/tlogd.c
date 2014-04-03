@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <time.h>
 
+#define MAX_BIND_NUM 65536
 #define EXECUTE_NUM_LIMIT 4096
 #define MYINIT_INTERVAL_S 5
 
@@ -32,7 +33,7 @@ tlogd_config_t           g_config;
 
 MYSQL                   *g_conn = NULL;
 MYSQL_STMT              *g_stmt = NULL;
-MYSQL_BIND               g_bind[EXECUTE_NUM_LIMIT][1]; 
+MYSQL_BIND               g_bind[MAX_BIND_NUM]; 
 tlog_message_t           g_message[EXECUTE_NUM_LIMIT];
 size_t				     g_message_num;
 int                      g_input_tbus_id;
@@ -188,7 +189,7 @@ static TERROR_CODE process()
         if(tlibc_read_tlog_message(&g_binary_reader.super, &g_message[g_message_num]) == E_TS_NOERROR)
         {
     		tlibc_error_code_t    r;
-   			tlibc_mybind_reader_init(&g_mybind_reader, g_bind[g_message_num], 1);
+   			tlibc_mybind_reader_init(&g_mybind_reader, g_bind, MAX_BIND_NUM);
 			r = tlibc_read_tlog_message(&g_mybind_reader.super, &g_message[g_message_num]);
 			if(r != E_TLIBC_NOERROR)
 			{
@@ -196,7 +197,7 @@ static TERROR_CODE process()
 				ret = E_TS_ERROR;
 				goto done;
 			}
-            if (mysql_stmt_bind_param(g_stmt, g_bind[g_message_num]))
+            if (mysql_stmt_bind_param(g_stmt, g_bind))
             {
                 ERROR_PRINT("mysql_stmt_bind_param(), error %s", mysql_error(g_conn)); 
 				myfini();
