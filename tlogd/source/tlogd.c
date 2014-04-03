@@ -34,7 +34,7 @@ tlogd_config_t           g_config;
 MYSQL                   *g_conn = NULL;
 MYSQL_STMT              *g_stmt = NULL;
 MYSQL_BIND               g_bind[MAX_BIND_NUM]; 
-tlog_message_t           g_message[EXECUTE_NUM_LIMIT];
+tlog_message_t           g_message;
 size_t				     g_message_num;
 int                      g_input_tbus_id;
 tbus_t                  *g_input_tbus;
@@ -60,6 +60,7 @@ static TERROR_CODE init()
 	}
 
     tlibc_binary_reader_init(&g_binary_reader, NULL, 0);
+   	tlibc_mybind_reader_init(&g_mybind_reader, g_bind, MAX_BIND_NUM);
 
 	g_myinited = false;
 	g_last_myinit = 0;
@@ -186,11 +187,11 @@ static TERROR_CODE process()
     
     for(g_binary_reader.offset = 0; g_binary_reader.offset < g_binary_reader.size; )
     {    
-        if(tlibc_read_tlog_message(&g_binary_reader.super, &g_message[g_message_num]) == E_TS_NOERROR)
+        if(tlibc_read_tlog_message(&g_binary_reader.super, &g_message) == E_TS_NOERROR)
         {
     		tlibc_error_code_t    r;
-   			tlibc_mybind_reader_init(&g_mybind_reader, g_bind, MAX_BIND_NUM);
-			r = tlibc_read_tlog_message(&g_mybind_reader.super, &g_message[g_message_num]);
+			g_mybind_reader.idx = 0;
+			r = tlibc_read_tlog_message(&g_mybind_reader.super, &g_message);
 			if(r != E_TLIBC_NOERROR)
 			{
 				ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
