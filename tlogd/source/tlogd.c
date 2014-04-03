@@ -25,19 +25,20 @@
 #include <stdbool.h>
 
 
-
+#define EXECUTE_NUM_LIMIT 4096
 #define MAX_BIND_NUM 65536
 
-tlogd_config_t          g_config;
+tlogd_config_t           g_config;
 
 MYSQL                   *g_conn = NULL;
 MYSQL_STMT              *g_stmt = NULL;
 tlog_message_t           g_message;
 int                      g_input_tbus_id;
 tbus_t                  *g_input_tbus;
-tlibc_binary_reader_t      g_binary_reader;
+tlibc_binary_reader_t    g_binary_reader;
 MYSQL_BIND               g_bind[MAX_BIND_NUM]; 
-tlibc_mybind_reader_t      g_mybind_reader;
+tlibc_mybind_reader_t    g_mybind_reader;
+size_t					 g_execute_num;
 
 
 
@@ -104,6 +105,7 @@ static TERROR_CODE init()
 
     tlibc_mybind_reader_init(&g_mybind_reader, g_bind, MAX_BIND_NUM);
     tlibc_binary_reader_init(&g_binary_reader, NULL, 0);
+	g_execute_num = 0;
 
     return E_TS_NOERROR;
 close_stmt_m:
@@ -126,6 +128,15 @@ static TERROR_CODE process()
     if(g_binary_reader.size == 0)
     {
         ret = E_TS_WOULD_BLOCK;
+		if(g_execute_num > 0)
+		{
+			if(mysql_commit(g_conn))
+			{
+				ret = E_TS_ERROR;
+				goto done;
+			}
+			g_execute_num = 0;
+		}
         goto done;
     }
     
@@ -155,6 +166,7 @@ static TERROR_CODE process()
                 ret = E_TS_ERROR;
                 goto done;
             }
+			++g_execute_num;
         }
     }
 
@@ -164,13 +176,18 @@ static TERROR_CODE process()
         goto done;
     }
     
-    if(mysql_commit(g_conn))
-    {
-        ret = E_TS_ERROR;
-        goto done;
-    }
-    
+	if(g_execute_num >= EXECUTE_NUM_LIMIT)
+	{
+		if(mysql_commit(g_conn))
+		{
+			ret = E_TS_ERROR;
+			goto done;
+		}
+		g_execute_num = 0;
+	}
+
     tbus_read_end(g_input_tbus, g_binary_reader.size);
+
 
 done:
     return ret;
