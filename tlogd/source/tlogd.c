@@ -24,7 +24,7 @@
 #include <errno.h>
 #include <stdbool.h>
 
-
+#define ERROR_SLEEP 10000
 #define EXECUTE_NUM_LIMIT 4096
 #define MAX_BIND_NUM 65536
 
@@ -63,7 +63,7 @@ static TERROR_CODE init()
     if(g_conn == NULL)
     {
         ERROR_PRINT("mysql_init(), error %s\n", mysql_error(g_conn)); 
-        goto shmdt_m;
+        goto close_shm;
     }
 
     if(g_config.password[0])
@@ -80,27 +80,27 @@ static TERROR_CODE init()
         , g_config.dbname, g_config.port, NULL,0))
     {
         ERROR_PRINT("mysql_real_connect(), error %s\n", mysql_error(g_conn)); 
-        goto close_mysql_m;
+        goto close_mysql;
     }
 
     g_stmt = mysql_stmt_init(g_conn);
     if(g_stmt == NULL)
     {
         ERROR_PRINT("mysql_stmt_init(), error %s\n", mysql_error(g_conn)); 
-        goto close_mysql_m;
+        goto close_mysql;
     }
 
     if(mysql_stmt_prepare(g_stmt, g_config.sql, strlen(g_config.sql)))
     {
         ERROR_PRINT("mysql_stmt_prepare(), error %s\n", mysql_error(g_conn)); 
-        goto close_stmt_m;
+        goto close_stmt;
     }
 
     if(mysql_autocommit(g_conn, false))
     {
         ERROR_PRINT("mysql_autocommit(g_conn, false), error %s\n", mysql_error(g_conn)); 
 
-        goto close_stmt_m;
+        goto close_stmt;
     }
 
     tlibc_mybind_reader_init(&g_mybind_reader, g_bind, MAX_BIND_NUM);
@@ -108,11 +108,11 @@ static TERROR_CODE init()
 	g_execute_num = 0;
 
     return E_TS_NOERROR;
-close_stmt_m:
+close_stmt:
     mysql_stmt_close(g_stmt);
-close_mysql_m:
+close_mysql:
     mysql_close(g_conn);
-shmdt_m:
+close_shm:
     shmdt(g_input_tbus);
 ERROR_RET:
     return E_TS_ERROR;
@@ -132,6 +132,7 @@ static TERROR_CODE process()
 		{
 			if(mysql_commit(g_conn))
 			{
+                ERROR_PRINT("mysql_commit failed.\n");
 				ret = E_TS_ERROR;
 				goto done;
 			}
@@ -168,10 +169,15 @@ static TERROR_CODE process()
             }
 			++g_execute_num;
         }
+		else
+		{
+			ERROR_PRINT("bad packet.\n");
+		}
     }
 
     if(g_binary_reader.size != g_binary_reader.offset)
     {
+		ERROR_PRINT("bad packet.\n");
         ret = E_TS_ERROR;
         goto done;
     }
@@ -180,6 +186,7 @@ static TERROR_CODE process()
 	{
 		if(mysql_commit(g_conn))
 		{
+			ERROR_PRINT("mysql_commit failed.\n");
 			ret = E_TS_ERROR;
 			goto done;
 		}
@@ -197,6 +204,7 @@ static void fini()
 {
     mysql_stmt_close(g_stmt);
     mysql_close(g_conn);
+	shmdt(g_input_tbus);
 
     return;
 }
@@ -206,19 +214,23 @@ int main(int argc, char **argv)
     int ret = 0;
     
     tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config);
-    if(init() != E_TS_NOERROR)
-    {
-        ret = 1;
-        goto done;
-    }
-    
-    if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) != E_TS_NOERROR)
-    {
-        ret = 1;
-        goto done;
-    }
+	for(;;)
+	{
+		if(init() != E_TS_NOERROR)
+		{
+			ret = 1;
+			goto done;
+		}
+		if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
+		{
+			fini();
+			break;
+		}
+		fini();
+		usleep(ERROR_SLEEP);
+        ERROR_PRINT("tlogd restart.");
+	}
 
-    fini();
 done:
     return ret;
 }

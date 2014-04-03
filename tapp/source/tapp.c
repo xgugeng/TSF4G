@@ -169,6 +169,7 @@ static void on_signal(int sig)
 TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_limit,
                         tapp_func_t sigusr1, tapp_func_t sigusr2)
 {
+	TERROR_CODE r;
     TERROR_CODE ret = E_TS_NOERROR;
     uint32_t idle_count = 0;
     struct sigaction  sa;
@@ -207,9 +208,10 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             g_sigusr1 = false;            
             if(sigusr1)
             {
-                ret = sigusr1();
-                if(ret != E_TS_NOERROR)
+                r = sigusr1();
+                if(r != E_TS_NOERROR)
                 {
+					ret = r;
                     goto done;
                 }
             }
@@ -221,9 +223,10 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             g_sigusr2 = false;            
             if(sigusr2)
             {
-                ret = sigusr2();
-                if(ret != E_TS_NOERROR)
+                r = sigusr2();
+                if(r != E_TS_NOERROR)
                 {
+					ret = r;
                     goto done;
                 }
             }
@@ -231,8 +234,8 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
         }
 
         
-        ret = process();
-        switch(ret)
+        r = process();
+        switch(r)
         {
         case E_TS_NOERROR:
             idle_count = 0;
