@@ -255,6 +255,7 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             }
             break;
         default:
+			ret = r;
             goto done;
         }
     }   

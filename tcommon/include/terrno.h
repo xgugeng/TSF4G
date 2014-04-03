@@ -14,6 +14,7 @@ typedef enum _TERROR_CODE
     E_TS_TBUS_NOT_ENOUGH_SPACE = 7,
     E_TS_TOO_MANY_SOCKET = 8,
     E_TS_BAD_PACKAGE = 9,
+	E_TS_MYSQL_ERROR = 10,
 }TERROR_CODE;
 
 #endif

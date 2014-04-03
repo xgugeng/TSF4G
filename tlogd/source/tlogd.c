@@ -133,7 +133,7 @@ static TERROR_CODE process()
 			if(mysql_commit(g_conn))
 			{
                 ERROR_PRINT("mysql_commit failed.\n");
-				ret = E_TS_ERROR;
+				ret = E_TS_MYSQL_ERROR;
 				goto done;
 			}
 			g_execute_num = 0;
@@ -157,14 +157,14 @@ static TERROR_CODE process()
             if (mysql_stmt_bind_param(g_stmt, g_bind))
             {
                 ERROR_PRINT("mysql_stmt_bind_param(), error %s\n", mysql_error(g_conn)); 
-                ret = E_TS_ERROR;
+                ret = E_TS_MYSQL_ERROR;
                 goto done;
             }
             
             if(mysql_stmt_execute(g_stmt))
             {
                 ERROR_PRINT("mysql_stmt_execute(), error %s", mysql_stmt_error(g_stmt));
-                ret = E_TS_ERROR;
+                ret = E_TS_MYSQL_ERROR;
                 goto done;
             }
 			++g_execute_num;
@@ -172,6 +172,8 @@ static TERROR_CODE process()
 		else
 		{
 			ERROR_PRINT("bad packet.\n");
+            ret = E_TS_ERROR;
+            goto done;
 		}
     }
 
@@ -187,14 +189,13 @@ static TERROR_CODE process()
 		if(mysql_commit(g_conn))
 		{
 			ERROR_PRINT("mysql_commit failed.\n");
-			ret = E_TS_ERROR;
+			ret = E_TS_MYSQL_ERROR;
 			goto done;
 		}
 		g_execute_num = 0;
 	}
 
     tbus_read_end(g_input_tbus, g_binary_reader.size);
-
 
 done:
     return ret;
@@ -214,21 +215,31 @@ int main(int argc, char **argv)
     int ret = 0;
     
     tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config);
+
 	for(;;)
 	{
+		TERROR_CODE r;
 		if(init() != E_TS_NOERROR)
 		{
 			ret = 1;
 			goto done;
 		}
-		if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
+		r = tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL);
+		switch(r)
 		{
+		case E_TS_NOERROR:
 			fini();
+			goto done;
+		case E_TS_MYSQL_ERROR:
+			fini();
+			usleep(ERROR_SLEEP);
+	        ERROR_PRINT("tlogd mysql reconnecting.");
 			break;
+		default:
+			ret = 1;
+			fini();
+			goto done;
 		}
-		fini();
-		usleep(ERROR_SLEEP);
-        ERROR_PRINT("tlogd restart.");
 	}
 
 done:
