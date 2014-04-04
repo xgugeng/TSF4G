@@ -1,6 +1,8 @@
 #include "tapp.h"
 #include "tconnd_proto.h"
 #include "core/tlibc_error_code.h"
+#include "tconnd_robot_config_types.h"
+#include "tconnd_robot_config_reader.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -27,10 +29,11 @@
 #define ROBOT_PROTO_LEN 124
 
 #define BLOCK_SIZE 65536
-#define ROBOT_NUM 10
+#define MAX_ROBOT_NUM 1024 
 
 static int sndbuf = 10000000;
 static int rcvbuf = 10000000;
+static tconnd_robot_config_t g_config;
 
 #define PACKET_HEAD_LENGTH sizeof(bscp_head_t)
 #define PACKET_BODY_LENGTH sizeof(robot_proto_t)
@@ -54,12 +57,23 @@ typedef struct robot_s
 
 	char recvbuf[ROBOT_RECVBUF];
 	size_t recvbuf_len;
-	uint64_t max_delay;
+	uint32_t rtt_min, rtt_max, rtt_count;
+	uint64_t rtt_total;
 	pthread_t thread_id;
 	bool working;
+	uint64_t total_send;
+	uint64_t sending_time;
+	uint64_t sending_size;
+	uint32_t uplink_bandwidth;
+	
+	uint64_t total_recv;
+
+    uint32_t lost_connection;
 }robot_t;
 
-static robot_t g_robot[ROBOT_NUM];
+static robot_t g_robot[MAX_ROBOT_NUM];
+
+uint64_t g_prog_staring_ms;
 
 static uint64_t get_current_ms()
 {
@@ -74,8 +88,19 @@ static void robot_init(robot_t *self, int id)
 	self->id = id;
 	self->socketfd = -1;
 	self->recvbuf_len = 0;
-	self->max_delay = 0;
 	self->working = false;
+	self->rtt_min = 0xffffffff;
+	self->rtt_max = 0;
+	self->rtt_total = 0;
+	self->rtt_count = 0;
+	self->total_send = 0;
+	self->sending_time = 0;
+	self->sending_size = 0;
+	self->uplink_bandwidth = 0;
+    self->total_recv = 0;
+	self->lost_connection = 0;
+
+	g_prog_staring_ms = get_current_ms();
 }
 
 static void robot_fini(robot_t *self)
@@ -135,7 +160,8 @@ static void robot_close_connection(robot_t *self)
 static bool robot_send(robot_t *self, const robot_proto_t *msg)
 {
 	size_t send_size, total_size;
-
+    uint64_t current_time;
+    
 	self->packet_buff.packet_head = sizeof(robot_proto_t);
 	tlibc_host16_to_little(*(bscp_head_t*)self->packet);
 	memcpy(self->packet_buff.packet + PACKET_HEAD_LENGTH, msg, sizeof(robot_proto_t));
@@ -152,9 +178,22 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 		{
 			if((errno != EINTR) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
 			{
+    			++self->lost_connection;
 				return false;
 			}
 		}
+	}
+    self->total_send += total_size;
+	    
+	current_time = get_current_ms();
+
+	if(current_time - self->sending_time > 1000)
+	{
+	    uint32_t diff_size = (uint32_t)(self->total_send - self->sending_size);
+	    uint32_t diff_ms = (uint32_t)(current_time - self->sending_time);
+		self->uplink_bandwidth = diff_size / (diff_ms / 1000);
+		self->sending_size = self->total_send;
+		self->sending_time = current_time;
 	}
 	return true;
 }
@@ -167,6 +206,7 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 		if(r > 0)
 		{
 			self->recvbuf_len += (size_t)r;
+            self->total_recv += (uint64_t)r;
 			if(self->recvbuf_len >= PACKET_BODY_LENGTH)
 			{
 				memcpy(msg, self->recvbuf, PACKET_BODY_LENGTH);
@@ -179,38 +219,48 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 		{
 			if((errno != EINTR) && (errno != EWOULDBLOCK) && (errno != EAGAIN))
 			{
+                ++self->lost_connection;
 				return false;
 			}
 		}
 	}
-	return true;
 }
 
 static void robot_test_login(robot_t *self)
 {
 	uint64_t send_time;
 	uint64_t current_time;
-	uint64_t delay_time;
+	uint64_t rtt;
 
-	robot_open_connection(self);
 
+	robot_open_connection(self);	
+
+    self->total_recv = 0;
+    self->uplink_bandwidth = 0;    
 	while(self->working)
 	{
 		robot_proto_t req;
 		robot_proto_t rsp;
+		int rand_num = rand();
+		
 		req.message_id = e_robot_login_req;
 		snprintf(req.message_body.login_req.name, ROBOT_STR_LEN, "robot_%d", self->id);
-		snprintf(req.message_body.login_req.pass, ROBOT_STR_LEN, "%d", self->id);
+		snprintf(req.message_body.login_req.pass, ROBOT_STR_LEN, "%d", rand_num);
 
 		if(!robot_send(self, &req))
 		{
 			goto error_ret;
 		}
+
+
+
+		
 		send_time = get_current_ms();
 		if(!robot_expect(self, &rsp))
 		{
 			goto error_ret;
 		}
+
 		current_time = get_current_ms();
 		if(rsp.message_id != e_robot_login_rsp)
 		{
@@ -220,16 +270,25 @@ static void robot_test_login(robot_t *self)
 		{
 			ERROR_PRINT("name mismatch.");
 		}
-		if(rsp.message_body.login_rsp.sid != self->id)
+		if(rsp.message_body.login_rsp.sid != rand_num)
 		{
 			ERROR_PRINT("sid mismatch.");
 		}
-		delay_time = current_time - send_time;
-		if(delay_time > self->max_delay)
+		
+		rtt = current_time - send_time;
+
+
+		self->rtt_total += rtt;
+		++self->rtt_count;
+		if(rtt > self->rtt_max)
 		{
-			self->max_delay = delay_time;
+			self->rtt_max = (uint32_t)rtt;
 		}
-		sleep(1);
+		if(rtt < self->rtt_min)
+		{
+			self->rtt_min = (uint32_t)rtt;
+		}
+//		usleep(100);
 	}
 error_ret:
 	robot_close_connection(self);
@@ -247,17 +306,33 @@ static void *robot_work(void *arg)
 static void init()
 {
 	int i;
-	for(i = 0; i < ROBOT_NUM; ++i)
+	for(i = 0; i < g_config.robot_num; ++i)
 	{
 		robot_init(&g_robot[i], i);
 	}
+	srand((unsigned int)time(NULL));
 }
+
+#define PRINT_INTERVAL_MS 5000
+static uint64_t last_print_time = 0;
 
 static TERROR_CODE process()
 {
+	uint32_t rtt_max, rtt_min;
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	size_t i;
-	for(i = 0; i < ROBOT_NUM;++i)
+	uint64_t current_time = get_current_ms();
+	uint64_t uplink_bandwidth;
+	uint32_t working_robots;
+
+
+	rtt_max = 0;
+	rtt_min = 0xffffffff;
+	working_robots = 0;
+	uplink_bandwidth = 0;
+
+	for(i = 0; i < g_config.robot_num;++i)
+	{
 		if(!g_robot[i].working)
 		{
 			if(pthread_create(&g_robot[i].thread_id, NULL, robot_work, &g_robot[i]) == 0)
@@ -265,36 +340,92 @@ static TERROR_CODE process()
 				g_robot[i].working = true;
 			}
 		}
+		else
+		{
+    		uplink_bandwidth += g_robot[i].uplink_bandwidth;
+		    ++working_robots;
+		}
+		if(g_robot[i].rtt_max > rtt_max)
+		{
+			rtt_max = g_robot[i].rtt_max;
+		}
+		if(g_robot[i].rtt_min < rtt_min)
+		{
+			rtt_min = g_robot[i].rtt_min;
+		}
+	}
+
+	if(current_time - last_print_time >= PRINT_INTERVAL_MS)
+	{
+		uint64_t uplink_bandwidth_total = 0;
+		last_print_time = current_time;
+		if(working_robots > 0)
+		{
+    		uplink_bandwidth_total = uplink_bandwidth / 1024;
+		}
+		INFO_PRINT("rtt(min, max) : %ums, %ums, uplink_bandwidth(total, avg) : %llukb/s %.2lfkb/s", rtt_min, rtt_max
+			, uplink_bandwidth_total, (double)uplink_bandwidth_total / (double)g_config.robot_num);
+	}
 	return ret;
 }
 
 static void fini()
 {
 	int i;
-	uint64_t max_delay = 0;
 	void *res;
-
-	for(i = 0; i < ROBOT_NUM; ++i)
+	uint64_t rtt_total, rtt_count;
+	uint32_t rtt_min, rtt_max;
+	uint64_t total_send, total_recv;
+    uint32_t lose_connection;
+    
+	for(i = 0; i < g_config.robot_num; ++i)
 	{
 		robot_fini(&g_robot[i]);
-
-		if(g_robot[i].max_delay > max_delay)
-		{
-			max_delay = g_robot[i].max_delay;
-		}
 	}
 
-	for(i = 0; i < ROBOT_NUM; ++i)
+	for(i = 0; i < g_config.robot_num; ++i)
 	{
 		pthread_join(g_robot[i].thread_id, &res);
 	}
-	INFO_PRINT("max_delay = %llums", max_delay);
-	
+
+	rtt_total = 0;
+	rtt_count = 0;
+	rtt_min = 0xffffffff;
+	rtt_max = 0;
+	total_send = 0;
+	total_recv = 0;
+	lose_connection = 0;
+	for(i = 0; i < g_config.robot_num; ++i)
+	{
+		rtt_total += g_robot[i].rtt_total;
+		rtt_count += g_robot[i].rtt_count;		
+		if(g_robot[i].rtt_min < rtt_min)
+		{
+		    rtt_min = g_robot[i].rtt_min;
+		}
+		if(g_robot[i].rtt_max > rtt_max)
+		{
+		    rtt_max = g_robot[i].rtt_max;
+		}
+		total_send += g_robot[i].total_send;
+        total_recv += g_robot[i].total_recv;
+        lose_connection += g_robot[i].lost_connection;
+	}    
+	WARN_PRINT("Summary:");
+	INFO_PRINT("    testing_time : %llus", (get_current_ms() - g_prog_staring_ms) / 1000);
+	INFO_PRINT("    robot_num : %u", g_config.robot_num);
+    INFO_PRINT("    lose_connection : %u", lose_connection);
+    INFO_PRINT("    totl_send : %.2lfmb", (double)total_send / (double)(1024 * 1024));
+    INFO_PRINT("    total_recv : %.2lfmb", (double)total_recv / (double)(1024 * 1024));
+    INFO_PRINT("    rtt(min, max, avg) : %ums %ums %llums", rtt_min, rtt_max, rtt_total / rtt_count);
 }
+
 
 int main(int argc, char *argv[])
 {
 	int ret;
+	tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tconnd_robot_config);
+
 	init();
 
 	if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
