@@ -1,6 +1,0 @@
-NAME=socket_server
-EXECUTABLE=1
-DEPTARET_DIR=../../../
-DEPTARGET=tcommon tbus tlog
-
-include ../../../build.mk

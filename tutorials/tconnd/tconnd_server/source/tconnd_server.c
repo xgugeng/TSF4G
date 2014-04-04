@@ -2,6 +2,7 @@
 #include "tbus.h"
 #include "sip.h"
 #include "bscp.h"
+#include "tconnd_proto.h"
 
 #include "tlog_log.h"
 #ifdef MAKE_RELEASE
@@ -102,10 +103,6 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
     }
 }
 
-#define BLOCK_SIZE 1024
-
-static char buff[BLOCK_SIZE];
-
 static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 {
     sip_rsp_t rsp;
@@ -121,7 +118,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
         rsp.size = 0;
         ts_send(&rsp, NULL, 0);
         INFO_PRINT("[%u, %"PRIu64"] accept.", req->cid.id, req->cid.sn);
-        break;
+		return 0;
     case e_sip_req_cmd_recv:
         if(req->size == 0)
         {
@@ -130,56 +127,47 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
         }
         else
         {
-            if(rand() % 100 < 0)
-            {
-                rsp.cmd = e_sip_rsp_cmd_close;
-                rsp.cid_list_num = 1;
-                rsp.cid_list[0] = req->cid;
-                rsp.size = 0;
-                ts_send(&rsp, NULL, 0);
-                INFO_PRINT("[%"PRIu64"] server close.", req->cid.sn);
-            }
-            else
-            {
-                const char *iter, *limit, *next;
-                rsp.cmd = e_sip_rsp_cmd_send;
-                rsp.cid_list_num = 1;
-                rsp.cid_list[0] = req->cid;
+            const char *iter, *limit, *next;
+            rsp.cmd = e_sip_rsp_cmd_send;
+            rsp.cid_list_num = 1;
+            rsp.cid_list[0] = req->cid;
                 
-                limit = body_ptr + req->size;
-                for(iter = body_ptr; iter < limit; iter = next)
-                {
-//                    int i;
-                    
-                    bscp_head_t pkg_size = *(const bscp_head_t*)iter;
-//                    const char* pkg_content = iter + sizeof(bscp_head_t);
+            limit = body_ptr + req->size;
+            for(iter = body_ptr; iter < limit; iter = next)
+			{
+				robot_proto_t msg_rsp;
+				bscp_head_t packet_size = *(const bscp_head_t*)iter;
+				const robot_proto_t *msg_req = (const robot_proto_t *)(iter + BSCP_HEAD_T_SIZE);
+				if(iter + BSCP_HEAD_T_SIZE > limit)
+				{
+					ERROR_PRINT("packet error.");
+					return req->size;
+				}
+				bscp_head_t_decode(packet_size);
+				if(packet_size != sizeof(robot_proto_t))
+				{
+					ERROR_PRINT("packet error.");
+					return req->size;
+				}
+				if(iter + BSCP_HEAD_T_SIZE + sizeof(robot_proto_t) > limit)
+				{
+					ERROR_PRINT("packet error.");
+					return req->size;
+				}
+				msg_rsp.message_id = e_robot_login_rsp;
+				memcpy(&msg_rsp.message_body.login_rsp.name, &msg_req->message_body.login_req.name, ROBOT_STR_LEN);
+				msg_rsp.message_body.login_rsp.sid = (uint32_t)atoi(msg_req->message_body.login_req.pass);
 
-                    bscp_head_t_decode(pkg_size);
-                    
-                    next = iter + BSCP_HEAD_T_SIZE + pkg_size;                    
-//                    DEBUG_PRINT("[%"PRIu64"] recv pkg_size: %u", req->cid.sn, pkg_size);
-                    
-//分10小块发也不会影响网络的收发效率
-/*
-                    for(i = 0; i < 10; ++i)
-                    {
-                        rsp.size = BLOCK_SIZE / 10;
+				next = iter + BSCP_HEAD_T_SIZE + sizeof(robot_proto_t);
+				rsp.size = sizeof(robot_proto_t);
 
-                        ts_send(&rsp, buff, rsp.size);
-                    }
-*/
-                    rsp.size = BLOCK_SIZE;
-    
-                    ts_send(&rsp, buff, rsp.size);
-
-                }
-            }
-            return req->size;
-        }
-    default:
-        break;
-    }
-    return 0;
+				ts_send(&rsp, (char*)&msg_rsp, rsp.size);
+			}
+			return req->size;
+		}
+	default:
+		return 0;
+	}
 }
 
 static TERROR_CODE process()
@@ -221,18 +209,11 @@ int main()
 {
 	int ishm_id, oshm_id;
 	
-    INFO_PRINT("Hello world!");
-
-    
 	ishm_id = shmget(iSHM_KEY, 0, 0666);
     itb = shmat(ishm_id , NULL, 0);
 
-	
 	oshm_id = shmget(oSHM_KEY, 0, 0666);
     otb = shmat(oshm_id, NULL, 0);
-
-    srand((unsigned int)time(0));
-
 
     return tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL);
 }
