@@ -182,7 +182,7 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 	send_size = 0;
 	while(send_size < total_size)
 	{
-    	int r = send(self->socketfd, self->packet_buff.packet + send_size, total_size - send_size, 0);
+    	ssize_t r = send(self->socketfd, self->packet_buff.packet + send_size, total_size - send_size, 0);
 		if(r >= 0)
 		{
 			send_size += (size_t)r;
@@ -216,7 +216,7 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 {
 	for(;;)
 	{
-		int r = recv(self->socketfd, self->recvbuf + self->recvbuf_len, ROBOT_RECVBUF - self->recvbuf_len, 0);
+		ssize_t r = recv(self->socketfd, self->recvbuf + self->recvbuf_len, ROBOT_RECVBUF - self->recvbuf_len, 0);
 		if(r > 0)
 		{
 			self->recvbuf_len += (size_t)r;
