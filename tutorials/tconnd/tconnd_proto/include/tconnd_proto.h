@@ -1,7 +1,7 @@
 #ifndef _H_ROBOT_PROTO_H
 #define _H_ROBOT_PROTO_H
 
-#define ROBOT_STR_LEN 128
+#define ROBOT_STR_LEN 126
 typedef enum robot_proto_message_id_e
 {
 	e_robot_login_req = 0,

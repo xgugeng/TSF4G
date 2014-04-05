@@ -26,6 +26,7 @@
 #endif
 #include "tlog_print.h"
 
+#define IDLE_TIME_US 1000
 #define ROBOT_PROTO_LEN 124
 
 #define BLOCK_SIZE 65536
@@ -110,6 +111,7 @@ static void robot_fini(robot_t *self)
 
 static void robot_open_connection(robot_t *self)
 {
+    int nb;
 	int r;
 	struct sockaddr_in address;
 	memset(&address, 0, sizeof(address));
@@ -135,6 +137,13 @@ static void robot_open_connection(robot_t *self)
         ERROR_PRINT("robot [%d] setsockopt errno[%d], %s.", self->id, errno, strerror(errno));
 		exit(1);
 	}
+	
+    nb = 1;
+	if(ioctl(self->socketfd, FIONBIO, &nb) == -1)
+	{
+        ERROR_PRINT("robot [%d] ioctl errno[%d], %s.", self->id, errno, strerror(errno));
+		exit(1);
+	}
 
 	for(;;)
 	{
@@ -143,12 +152,16 @@ static void robot_open_connection(robot_t *self)
 		{
 			break;
 		}
+		if(errno == EINPROGRESS)
+		{
+		    break;
+		}
 		if((errno != EINTR) && (errno != EAGAIN) &&(errno != EWOULDBLOCK))
 		{
 			ERROR_PRINT("robot [%d] connect errno [%d], %s", self->id, errno, strerror(errno));
 			exit(1);
 		}
-		usleep(10000);
+		usleep(IDLE_TIME_US);
 	}
 }
 
@@ -181,6 +194,7 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
     			++self->lost_connection;
 				return false;
 			}
+			usleep(IDLE_TIME_US);
 		}
 	}
     self->total_send += total_size;
@@ -222,6 +236,7 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
                 ++self->lost_connection;
 				return false;
 			}
+            usleep(IDLE_TIME_US);
 		}
 	}
 }
@@ -229,7 +244,7 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 static void robot_test_login(robot_t *self)
 {
 	uint64_t send_time;
-	uint64_t current_time;
+	uint64_t recv_time;
 	uint64_t rtt;
 
 
@@ -247,35 +262,35 @@ static void robot_test_login(robot_t *self)
 		snprintf(req.message_body.login_req.name, ROBOT_STR_LEN, "robot_%d", self->id);
 		snprintf(req.message_body.login_req.pass, ROBOT_STR_LEN, "%d", rand_num);
 
+		send_time = get_current_ms();
 		if(!robot_send(self, &req))
 		{
 			goto error_ret;
 		}
 
-
-
-		
-		send_time = get_current_ms();
 		if(!robot_expect(self, &rsp))
 		{
 			goto error_ret;
 		}
-
-		current_time = get_current_ms();
+		recv_time = get_current_ms();
+		
 		if(rsp.message_id != e_robot_login_rsp)
 		{
 			ERROR_PRINT("message_id mismatch.");
+			exit(1);
 		}
 		if(strcmp(rsp.message_body.login_rsp.name, req.message_body.login_req.name) != 0)
 		{
 			ERROR_PRINT("name mismatch.");
+			exit(1);
 		}
 		if(rsp.message_body.login_rsp.sid != rand_num)
 		{
 			ERROR_PRINT("sid mismatch.");
+			exit(1);
 		}
 		
-		rtt = current_time - send_time;
+		rtt = recv_time - send_time;
 
 
 		self->rtt_total += rtt;
@@ -288,7 +303,7 @@ static void robot_test_login(robot_t *self)
 		{
 			self->rtt_min = (uint32_t)rtt;
 		}
-//		usleep(100);
+//		usleep(IDLE_TIME_US);
 	}
 error_ret:
 	robot_close_connection(self);
@@ -363,11 +378,24 @@ static TERROR_CODE process()
 		{
     		uplink_bandwidth_total = uplink_bandwidth / 1024;
 		}
-		INFO_PRINT("rtt(min, max) : %ums, %ums, uplink_bandwidth(total, avg) : %llukb/s %.2lfkb/s", rtt_min, rtt_max
-			, uplink_bandwidth_total, (double)uplink_bandwidth_total / (double)g_config.robot_num);
+		if(uplink_bandwidth_total > 0)
+		{
+		    INFO_PRINT("rtt(min, max) : %ums, %ums, uplink_bandwidth(total, total / %u) : %llukb/s %.2lfkb/s", rtt_min, rtt_max
+			    , g_config.robot_num , uplink_bandwidth_total, (double)uplink_bandwidth_total / (double)g_config.robot_num);
+		}
 	}
 	return ret;
 }
+
+/*
+2014-04-05 09:49:25 [info] source/tconnd_client.c:433 :     testing_time : 17s
+2014-04-05 09:49:25 [info] source/tconnd_client.c:434 :     packet_len : 256byte
+2014-04-05 09:49:25 [info] source/tconnd_client.c:435 :     robot_num : 100
+2014-04-05 09:49:25 [info] source/tconnd_client.c:436 :     lose_connection : 0
+2014-04-05 09:49:25 [info] source/tconnd_client.c:437 :     totl_send : 109.98mb
+2014-04-05 09:49:25 [info] source/tconnd_client.c:438 :     total_recv : 109.12mb
+2014-04-05 09:49:25 [info] source/tconnd_client.c:439 :     rtt(min, max, avg) : 1ms 9ms 3ms
+*/
 
 static void fini()
 {
@@ -413,6 +441,7 @@ static void fini()
 	}    
 	WARN_PRINT("Summary:");
 	INFO_PRINT("    testing_time : %llus", (get_current_ms() - g_prog_staring_ms) / 1000);
+	INFO_PRINT("    packet_len : %ubyte", sizeof(robot_proto_t));
 	INFO_PRINT("    robot_num : %u", g_config.robot_num);
     INFO_PRINT("    lose_connection : %u", lose_connection);
     INFO_PRINT("    totl_send : %.2lfmb", (double)total_send / (double)(1024 * 1024));

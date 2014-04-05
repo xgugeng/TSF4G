@@ -20,7 +20,8 @@
 	<sndbuf>10000000</sndbuf>
 	<rcvbuf>10000000</rcvbuf>
 	<nodelay>0</nodelay>
-	<cork>1</cork>
+<!-- cork可以显著减少rtt -->
+	<cork>0</cork>
 	<keepalive>1</keepalive>
 	<keepidle>120</keepidle>
 	<keepintvl>30</keepintvl>

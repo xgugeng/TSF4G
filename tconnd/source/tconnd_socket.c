@@ -153,6 +153,8 @@ again:
     cur_tick = g_cur_ticks;
 
     send_size = writev(self->socketfd, self->iov, self->iov_num);
+
+    
     if(send_size < 0)
     {    
         if((errno == EINTR) && ((g_cur_ticks != cur_tick)))
