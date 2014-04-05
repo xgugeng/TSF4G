@@ -97,22 +97,22 @@ release:
 	$(REALCC) -o $@ -c $<
 
 $(SQL_FILE):$(SQL_TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -gen sql $^
+	$(REALTDATA) -o $(INCLUDE) -g sql $^
 
 $(TYPES_HFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -gen types_h $^
+	$(REALTDATA) -o $(INCLUDE) -g types_h $^
 
 $(READER_HFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -gen reader_h $^
+	$(REALTDATA) -o $(INCLUDE) -g reader_h $^
 
 $(WRITER_HFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -gen writer_h $^
+	$(REALTDATA) -o $(INCLUDE) -g writer_h $^
 
 $(READER_CFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(SOURCE) -gen reader_c $^
+	$(REALTDATA) -o $(SOURCE) -g reader_c $^
 	
 $(WRITER_CFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(SOURCE) -gen writer_c $^
+	$(REALTDATA) -o $(SOURCE) -g writer_c $^
 
 install:
 	@mkdir -p $(PREFIX)
