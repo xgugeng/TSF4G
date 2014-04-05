@@ -116,8 +116,8 @@ static void robot_open_connection(robot_t *self)
 	struct sockaddr_in address;
 	memset(&address, 0, sizeof(address));
 	address.sin_family = AF_INET;
-	address.sin_port  = htons(7001);
-	address.sin_addr.s_addr = inet_addr("127.0.0.1");
+	address.sin_port  = htons(g_config.port);
+	address.sin_addr.s_addr = inet_addr(g_config.ip);
 
     self->socketfd = socket(AF_INET, SOCK_STREAM, 0);
     if(self->socketfd == -1)
@@ -457,6 +457,11 @@ static void fini()
     INFO_PRINT("    lose_connection : %u", lose_connection);
     INFO_PRINT("    totl_send : %.2lfmb", (double)total_send / (double)(1024 * 1024));
     INFO_PRINT("    total_recv : %.2lfmb", (double)total_recv / (double)(1024 * 1024));
+	if(rtt_count == 0)
+	{
+		rtt_total = 0;
+		rtt_count = 1;
+	}
     INFO_PRINT("    rtt(min, max, avg) : %ums %ums %llums", rtt_min, rtt_max, rtt_total / rtt_count);
 }
 
