@@ -170,10 +170,24 @@ static void robot_close_connection(robot_t *self)
 	close(self->socketfd);
 }
 
+static void robot_refresh(robot_t *self)
+{
+    uint64_t current_time;
+
+	current_time = get_current_ms();
+	if(current_time - self->sending_time > 1000)
+	{
+	    uint32_t diff_size = (uint32_t)(self->total_send - self->sending_size);
+	    uint32_t diff_ms = (uint32_t)(current_time - self->sending_time);
+		self->uplink_bandwidth = diff_size / (diff_ms / 1000);
+		self->sending_size = self->total_send;
+		self->sending_time = current_time;
+	}
+}
+
 static bool robot_send(robot_t *self, const robot_proto_t *msg)
 {
 	size_t send_size, total_size;
-    uint64_t current_time;
     
 	self->packet_buff.packet_head = sizeof(robot_proto_t);
 	tlibc_host16_to_little(*(bscp_head_t*)self->packet);
@@ -198,17 +212,7 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 		}
 	}
     self->total_send += total_size;
-	    
-	current_time = get_current_ms();
-
-	if(current_time - self->sending_time > 1000)
-	{
-	    uint32_t diff_size = (uint32_t)(self->total_send - self->sending_size);
-	    uint32_t diff_ms = (uint32_t)(current_time - self->sending_time);
-		self->uplink_bandwidth = diff_size / (diff_ms / 1000);
-		self->sending_size = self->total_send;
-		self->sending_time = current_time;
-	}
+	robot_refresh(self);
 	return true;
 }
 
@@ -257,6 +261,13 @@ static void robot_test_login(robot_t *self)
 		robot_proto_t req;
 		robot_proto_t rsp;
 		int rand_num = rand();
+		
+		robot_refresh(self);
+		if(self->uplink_bandwidth >= g_config.speed)
+		{
+		    usleep(IDLE_TIME_US);
+		    continue;
+		}
 		
 		req.message_id = e_robot_login_req;
 		snprintf(req.message_body.login_req.name, ROBOT_STR_LEN, "robot_%d", self->id);

@@ -2,4 +2,5 @@
     <robot_num>100</robot_num>
     <ip>127.0.0.1</ip>
     <port>7001</port>
+	<speed>4</speed>
 </tconnd_robot_config>
