@@ -131,10 +131,10 @@ static TERROR_CODE process()
     
     for(g_binary_reader.offset = 0; g_binary_reader.offset < g_binary_reader.size; )
     {    
-        if(tlibc_read_tlog_message_t(&g_binary_reader.super, &g_message) == E_TS_NOERROR)
+        if(tlibc_read_tlog_message(&g_binary_reader.super, &g_message) == E_TS_NOERROR)
         {
             TLIBC_ERROR_CODE    r;
-            r = tlibc_read_tlog_message_t(&g_bind_reader.super, &g_message);
+            r = tlibc_read_tlog_message(&g_bind_reader.super, &g_message);
             if(r != E_TLIBC_NOERROR)
             {
                 ERROR_PRINT("tlibc_write_tlog_message_t(), errno %d\n", r);
@@ -188,7 +188,7 @@ int main(int argc, char **argv)
 {
     int ret = 0;
     
-    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config_t);
+    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config);
     if(init() != E_TS_NOERROR)
     {
         ret = 1;

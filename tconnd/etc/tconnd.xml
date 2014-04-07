@@ -1,4 +1,4 @@
-<tconnd_config_t>
+<tconnd_config>
 	<log_config>
 	<!include file = "etc/tconnd_log.xml"/>
 	</log_config>
@@ -25,4 +25,4 @@
 	<keepidle>120</keepidle>
 	<keepintvl>30</keepintvl>
 	<keepcnt>8</keepcnt>
-</tconnd_config_t>
+</tconnd_config>

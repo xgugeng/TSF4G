@@ -1,4 +1,4 @@
-<tlog_config_t>
+<tlog_config>
 	<level>e_tlog_debug</level>
 	<vector>
 		<appender_vec>
@@ -20,4 +20,4 @@
 			</appender>
 		</appender_vec>
 	</vector>
-</tlog_config_t>
+</tlog_config>

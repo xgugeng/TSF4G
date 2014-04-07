@@ -5,9 +5,9 @@ import "tlog_config.td"
 #这个进程处理bscp(The Binary Stream Cutting Protocol)协议，并由sip(The Socket Interface Protocol)协议把结果发送给另一个进程处理
 
 
-struct tconnd_config_t
+struct tconnd_config
 {
-	tlog_config_t                       log_config;
+	tlog_config                         log_config;
 	string<TSERVER_IP_LENGTH> 			ip;								#监听ip
 	uint16 								port;							#监听端口
 	uint32								interval;						#时钟间隔, 单位毫秒

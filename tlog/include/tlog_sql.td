@@ -2,7 +2,7 @@
 const uint16 TLOG_MESSAGE_LENGTH = 0xffff;
 
 
-struct tlog_message_t
+struct tlog_message
 {
     string<TLOG_MESSAGE_LENGTH> msg;
 };
