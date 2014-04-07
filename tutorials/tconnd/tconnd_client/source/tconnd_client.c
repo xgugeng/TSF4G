@@ -240,7 +240,7 @@ static void robot_test_login(robot_t *self)
 		robot_proto_t rsp;
 		int rand_num = rand();
 		uint64_t diff_ms = get_current_ms() - start_time;
-		if(diff_ms > 0)
+		if((diff_ms > 0) && (g_config.speed))
 		{
 			if(((self->total_send - start_size) / diff_ms) * 1000 > g_config.speed)
 			{
