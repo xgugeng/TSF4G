@@ -317,7 +317,11 @@ static void init()
 	for(i = 0; i < g_config.robot_num; ++i)
 	{
 		robot_init(&g_robot[i], i);
-		pthread_create(&g_robot[i].thread_id, NULL, robot_work, &g_robot[i]);
+		if(pthread_create(&g_robot[i].thread_id, NULL, robot_work, &g_robot[i]) != 0)
+		{
+			ERROR_PRINT("robot[%d] pthread_create errno %d, %s", i, errno, strerror(errno));
+			exit(1);
+		}
 	}
 	srand((unsigned int)time(NULL));
 }
