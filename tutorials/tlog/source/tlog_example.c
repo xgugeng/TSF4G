@@ -7,12 +7,15 @@
 #include <unistd.h>
 
 
-int main()
+int main(int argc, char *argv[])
 {
 	uint32_t i;
 	
 
-	tlog_init(&g_tlog_instance, "tlog_config.xml");
+	if(tlog_init_from_file(&g_tlog_instance, argv[1]) != E_TS_NOERROR)
+	{
+	    return 1;
+	}
 
 	for(i = 0;;++i)
 	{

@@ -14,7 +14,7 @@
 #include "tconnd_mempool.h"
 #include "tconnd_tbus.h"
 #include "tconnd_epoll.h"
-#include "tconnd_config.h"
+#include "tconnd.h"
 #include "tconnd_listen.h"
 #include "tlog_log.h"
 #include "tlog_print.h"
@@ -351,13 +351,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
     }
     
     r = recv(self->socketfd, body_ptr, (size_t)body_size, 0);
-    if(g_config.quickack)
-    {
-        if(setsockopt(self->socketfd, IPPROTO_TCP, TCP_QUICKACK, (int[]){1}, sizeof(int)) != 0)
-        {
-            WARN_LOG("setsockopt errno [%d], %s.", errno, strerror(errno));
-        }
-    }
 
     if((r < 0) && ((errno == EAGAIN) || (errno == EINTR)))
     {

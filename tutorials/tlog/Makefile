@@ -1,6 +1,6 @@
 NAME=tlog_example
 EXECUTABLE=1
 DEPTARET_DIR=../../
-DEPTARGET=tlog tcommon
+DEPTARGET=tlog tbus tcommon
 
-include ../../build_common.mk
+include ../../build.mk

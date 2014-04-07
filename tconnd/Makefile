@@ -1,6 +1,6 @@
 NAME=tconnd
 EXECUTABLE=1
-DEPTARGET=tcommon tbus tlog
+DEPTARGET=tcommon tbus tlog tapp
 DEPTARET_DIR?=..
 
-include ../build_common.mk
+include ../build.mk

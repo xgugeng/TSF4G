@@ -5,11 +5,12 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 #include <unistd.h>
+#include <string.h>
 
-
-void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level,
+void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* file, uint32_t line, va_list arglist)
 {
+    char* msg = message->msg;
     struct timeval timestamp;
     struct tm   tm;
     const char* level_name = "";
@@ -37,7 +38,7 @@ void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level,
     localtime_r(&timestamp.tv_sec, &tm);
 
     len = 0;
-    r = snprintf(msg, *msg_len - len,
+    r = snprintf(msg, TLOG_MESSAGE_LENGTH - len,
         "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u : ",
         tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
         tm.tm_hour, tm.tm_min, tm.tm_sec
@@ -52,34 +53,27 @@ void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level,
 
     fmt = va_arg(arglist, char*);
 
-    if(*msg_len >= len)
+    if(TLOG_MESSAGE_LENGTH >= len)
     {
-        r = vsnprintf(msg, *msg_len - len, fmt, arglist);
+        r = vsnprintf(msg, TLOG_MESSAGE_LENGTH - len, fmt, arglist);
         if(r > 0)
         {
             len += (size_t)r;
             msg += r;
         }
     }
-    
-	*msg_len = len;
 }
-
-
 
 void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...)
 {
     struct iovec iov[4];
-    char message[TLOG_MESSAGE_LENGTH];
-    size_t message_len;
+    tlog_message_t message;
+
     va_list arglist;
-
-    message_len = TLOG_MESSAGE_LENGTH;
-
     va_start(arglist, line);
-    tlog_make_message(message, &message_len, level, file, line, arglist);
+    tlog_make_message(&message, level, file, line, arglist);
     va_end(arglist);
-    
+
     switch(level)
     {
     case e_tlog_error:
@@ -97,14 +91,13 @@ void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...
     }
 
     iov[0].iov_len = TLOG_COLOR_LEN;
-    iov[1].iov_base = message;
-    iov[1].iov_len = message_len;
+    iov[1].iov_base = message.msg;
+    iov[1].iov_len = strlen(message.msg);
     iov[2].iov_base = TLOG_RST_COLOR;
     iov[2].iov_len = TLOG_RST_COLOR_LEN;
     iov[3].iov_base = "\n";
     iov[3].iov_len = 1;
     writev(fd, iov, 4);
     fsync(fd);
-    
 }
 

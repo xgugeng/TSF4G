@@ -1,12 +1,13 @@
 import "tcommon.td"
 import "bscp.td"
+import "tlog_config.td"
 
 #这个进程处理bscp(The Binary Stream Cutting Protocol)协议，并由sip(The Socket Interface Protocol)协议把结果发送给另一个进程处理
 
 
 struct tconnd_config_t
 {
-	string<TSERVER_FILE_NAME_LENGH>		log_config; 					#log配置文件的路径
+	tlog_config_t                       log_config;
 	string<TSERVER_IP_LENGTH> 			ip;								#监听ip
 	uint16 								port;							#监听端口
 	uint32								interval;						#时钟间隔, 单位毫秒
@@ -25,7 +26,6 @@ struct tconnd_config_t
 	uint32								rcvbuf;							#SO_RCVBUF
 	uint32								nodelay;						#TCP_NODELAY
 	uint32								cork;							#TCP_CORK
-	uint32								quickack;						#TCP_QUICKACK
 	uint32								keepalive;						#SO_KEEPALIVE
 if(keepalive == 1)
 	uint32								keepidle;						#TCP_KEEPIDLE

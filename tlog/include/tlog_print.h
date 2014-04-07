@@ -8,9 +8,6 @@
 #include <stdint.h>
 
 
-#define TLOG_MESSAGE_LENGTH 65536
-
-
 #define TLOG_ERROR_COLOR "\033[;31m"
 #define TLOG_WARN_COLOR "\033[;33m"
 #define TLOG_INFO_COLOR "\033[;37m"
@@ -45,11 +42,12 @@
 #endif
 
 
-void tlog_make_message(char *msg, size_t *msg_len, tlog_level_t level,
+void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* file, uint32_t line, va_list arglist);
 
 
 void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...);
+
 
 #endif//_H_TLOG_PRINT_H
 

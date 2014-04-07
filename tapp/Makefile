@@ -1,5 +1,5 @@
-NAME=tbus
+NAME=tapp
 EXECUTABLE=0
-DEPTARGET=tcommon tbus tlog
+DEPTARGET=tcommon
 DEPTARET_DIR?=..
 include ../build.mk

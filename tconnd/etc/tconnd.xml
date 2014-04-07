@@ -1,5 +1,7 @@
 <tconnd_config_t>
-	<log_config>etc/tconnd_log.xml</log_config>	
+	<log_config>
+	<!include file = "etc/tconnd_log.xml"/>
+	</log_config>
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
 	<interval>2000</interval>
@@ -19,7 +21,6 @@
 	<rcvbuf>10000000</rcvbuf>
 	<nodelay>0</nodelay>
 	<cork>1</cork>
-	<quickack>0</quickack>
 	<keepalive>1</keepalive>
 	<keepidle>120</keepidle>
 	<keepintvl>30</keepintvl>

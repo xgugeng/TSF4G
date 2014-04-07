@@ -1,7 +1,6 @@
 #include "tconnd_timer.h"
-#include "tconnd_reactor.h"
 #include "tlog_log.h"
-#include "tconnd_config.h"
+#include "tconnd.h"
 #include "tconnd_epoll.h"
 #include "tconnd_socket.h"
 

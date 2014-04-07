@@ -1,0 +1,21 @@
+#ifndef _H_TLOG_APPENDER_ROLLING_FILE_H
+#define _H_TLOG_APPENDER_ROLLING_FILE_H
+
+#include "tlog_config_reader.h"
+#include <stdio.h>
+
+typedef struct tlog_appender_rolling_file_s
+{
+	FILE *fout;
+	uint32_t index;
+}tlog_appener_rolling_file_t;
+
+
+void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config);
+
+void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config, const tlog_message_t *message);
+
+void tlog_appender_rolling_file_fini(tlog_appener_rolling_file_t *self);
+
+#endif//_H_TLOG_APPENDER_ROLLING_FILE_INSTANCE_H
+
