@@ -1,5 +1,5 @@
 <tconnd_robot_config>
     <robot_num>100</robot_num>
-    <ip>127.0.0.1</ip>
+    <ip>192.168.0.71</ip>
     <port>7001</port>
 </tconnd_robot_config>
