@@ -5,6 +5,6 @@ struct tconnd_robot_config
 	uint16								robot_num;
 	string<TSERVER_IP_LENGTH> 			ip;
 	uint16 								port;
-	uint16								speed;//kb per second
+	uint32								speed;//byte/s
 };
 

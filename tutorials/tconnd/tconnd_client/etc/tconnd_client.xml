@@ -1,6 +1,6 @@
 <tconnd_robot_config>
-    <robot_num>100</robot_num>
+    <robot_num>200</robot_num>
     <ip>192.168.0.71</ip>
     <port>7001</port>
-	<speed>4</speed>
+    <speed>4096</speed>
 </tconnd_robot_config>

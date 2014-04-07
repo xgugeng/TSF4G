@@ -17,6 +17,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <string.h>
+#include <math.h>
 #include "bscp.h"
 
 
@@ -49,6 +50,8 @@ typedef union packet_buff_u
 	bscp_head_t packet_head;
 }packet_buff_t;
 
+volatile int g_working;
+
 typedef struct robot_s
 {
     int id;
@@ -61,11 +64,9 @@ typedef struct robot_s
 	uint32_t rtt_min, rtt_max, rtt_count;
 	uint64_t rtt_total;
 	pthread_t thread_id;
-	bool working;
 	uint64_t total_send;
-	uint64_t sending_time;
-	uint64_t sending_size;
-	uint32_t uplink_bandwidth;
+	uint64_t start_time;
+	uint64_t start_size;
 	
 	uint64_t total_recv;
 
@@ -74,7 +75,7 @@ typedef struct robot_s
 
 static robot_t g_robot[MAX_ROBOT_NUM];
 
-uint64_t g_prog_staring_ms;
+uint64_t g_prog_starting_ms;
 
 static uint64_t get_current_ms()
 {
@@ -89,24 +90,15 @@ static void robot_init(robot_t *self, int id)
 	self->id = id;
 	self->socketfd = -1;
 	self->recvbuf_len = 0;
-	self->working = false;
 	self->rtt_min = 0xffffffff;
 	self->rtt_max = 0;
 	self->rtt_total = 0;
 	self->rtt_count = 0;
 	self->total_send = 0;
-	self->sending_time = 0;
-	self->sending_size = 0;
-	self->uplink_bandwidth = 0;
+	self->start_time = get_current_ms();
+	self->start_size = 0;
     self->total_recv = 0;
 	self->lost_connection = 0;
-
-	g_prog_staring_ms = get_current_ms();
-}
-
-static void robot_fini(robot_t *self)
-{
-	self->working = false;
 }
 
 static void robot_open_connection(robot_t *self)
@@ -170,21 +162,6 @@ static void robot_close_connection(robot_t *self)
 	close(self->socketfd);
 }
 
-static void robot_refresh(robot_t *self)
-{
-    uint64_t current_time;
-
-	current_time = get_current_ms();
-	if(current_time - self->sending_time > 1000)
-	{
-	    uint32_t diff_size = (uint32_t)(self->total_send - self->sending_size);
-	    uint32_t diff_ms = (uint32_t)(current_time - self->sending_time);
-		self->uplink_bandwidth = diff_size / (diff_ms / 1000);
-		self->sending_size = self->total_send;
-		self->sending_time = current_time;
-	}
-}
-
 static bool robot_send(robot_t *self, const robot_proto_t *msg)
 {
 	size_t send_size, total_size;
@@ -212,7 +189,6 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 		}
 	}
     self->total_send += total_size;
-	robot_refresh(self);
 	return true;
 }
 
@@ -247,27 +223,31 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 
 static void robot_test_login(robot_t *self)
 {
+	uint64_t start_time;
+	uint64_t start_size;
 	uint64_t send_time;
 	uint64_t recv_time;
 	uint64_t rtt;
 
 
 	robot_open_connection(self);	
+	start_time = get_current_ms();
+	start_size = self->total_send;
 
-    self->total_recv = 0;
-    self->uplink_bandwidth = 0;    
-	while(self->working)
+	while(g_working)
 	{
 		robot_proto_t req;
 		robot_proto_t rsp;
 		int rand_num = rand();
-		
-		robot_refresh(self);
-		if(self->uplink_bandwidth >= g_config.speed)
+		uint64_t diff_ms = get_current_ms() - start_time;
+		if(diff_ms > 0)
 		{
-		    usleep(IDLE_TIME_US);
-		    continue;
+			if(((self->total_send - start_size) / diff_ms) * 1000 > g_config.speed)
+			{
+				goto idle;
+			}
 		}
+		
 		
 		req.message_id = e_robot_login_req;
 		snprintf(req.message_body.login_req.name, ROBOT_STR_LEN, "robot_%d", self->id);
@@ -314,7 +294,8 @@ static void robot_test_login(robot_t *self)
 		{
 			self->rtt_min = (uint32_t)rtt;
 		}
-//		usleep(IDLE_TIME_US);
+idle:
+		usleep(IDLE_TIME_US);
 	}
 error_ret:
 	robot_close_connection(self);
@@ -325,21 +306,23 @@ static void *robot_work(void *arg)
 {
 	robot_t *self = (robot_t*)arg;
 	robot_test_login(self);
-	self->working = false;
 	return NULL;
 }
 
 static void init()
 {
 	int i;
+	g_prog_starting_ms = get_current_ms();
+	g_working = TRUE;
 	for(i = 0; i < g_config.robot_num; ++i)
 	{
 		robot_init(&g_robot[i], i);
+		pthread_create(&g_robot[i].thread_id, NULL, robot_work, &g_robot[i]);
 	}
 	srand((unsigned int)time(NULL));
 }
 
-#define PRINT_INTERVAL_MS 5000
+#define PRINT_INTERVAL_MS 1000
 static uint64_t last_print_time = 0;
 
 static TERROR_CODE process()
@@ -348,29 +331,28 @@ static TERROR_CODE process()
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
 	size_t i;
 	uint64_t current_time = get_current_ms();
-	uint64_t uplink_bandwidth;
-	uint32_t working_robots;
+	double total_speed;
 
 
+	total_speed = 0;
 	rtt_max = 0;
 	rtt_min = 0xffffffff;
-	working_robots = 0;
-	uplink_bandwidth = 0;
 
 	for(i = 0; i < g_config.robot_num;++i)
 	{
-		if(!g_robot[i].working)
+		double diff_byte = (double)g_robot[i].total_send - (double)g_robot[i].start_size;
+		uint64_t diff_ms = current_time - g_robot[i].start_time;
+		double speed;
+		if(diff_ms < 1)
 		{
-			if(pthread_create(&g_robot[i].thread_id, NULL, robot_work, &g_robot[i]) == 0)
-			{
-				g_robot[i].working = true;
-			}
+			continue;
 		}
-		else
-		{
-    		uplink_bandwidth += g_robot[i].uplink_bandwidth;
-		    ++working_robots;
-		}
+		speed = ((diff_byte / 1024) / (double)diff_ms) * 1000;
+
+		total_speed += speed;
+		g_robot[i].start_time = current_time;
+		g_robot[i].start_size = g_robot[i].total_send;
+
 		if(g_robot[i].rtt_max > rtt_max)
 		{
 			rtt_max = g_robot[i].rtt_max;
@@ -383,17 +365,10 @@ static TERROR_CODE process()
 
 	if(current_time - last_print_time >= PRINT_INTERVAL_MS)
 	{
-		uint64_t uplink_bandwidth_total = 0;
 		last_print_time = current_time;
-		if(working_robots > 0)
-		{
-    		uplink_bandwidth_total = uplink_bandwidth / 1024;
-		}
-		if(uplink_bandwidth_total > 0)
-		{
-		    INFO_PRINT("rtt(min, max) : %ums, %ums, uplink_bandwidth(total, total / %u) : %llukb/s %.2lfkb/s", rtt_min, rtt_max
-			    , g_config.robot_num , uplink_bandwidth_total, (double)uplink_bandwidth_total / (double)g_config.robot_num);
-		}
+		
+	    INFO_PRINT("rtt(min, max) : %ums, %ums, speed(total, total / %u) : %.2lfkb/s %.2lfkb/s", rtt_min, rtt_max
+		    , g_config.robot_num , total_speed, total_speed / g_config.robot_num);
 	}
 	return ret;
 }
@@ -416,11 +391,10 @@ static void fini()
 	uint32_t rtt_min, rtt_max;
 	uint64_t total_send, total_recv;
     uint32_t lose_connection;
+	uint64_t testing_time;
+
+	g_working = FALSE;
     
-	for(i = 0; i < g_config.robot_num; ++i)
-	{
-		robot_fini(&g_robot[i]);
-	}
 
 	for(i = 0; i < g_config.robot_num; ++i)
 	{
@@ -450,12 +424,15 @@ static void fini()
         total_recv += g_robot[i].total_recv;
         lose_connection += g_robot[i].lost_connection;
 	}    
+	testing_time = get_current_ms() - g_prog_starting_ms;
 	WARN_PRINT("Summary:");
-	INFO_PRINT("    testing_time : %llus", (get_current_ms() - g_prog_staring_ms) / 1000);
-	INFO_PRINT("    packet_len : %ubyte", sizeof(robot_proto_t));
 	INFO_PRINT("    robot_num : %u", g_config.robot_num);
     INFO_PRINT("    lose_connection : %u", lose_connection);
+	INFO_PRINT("    packet_len : %ubyte", sizeof(robot_proto_t));
+	INFO_PRINT("    testing_time : %llus", testing_time / 1000);
     INFO_PRINT("    totl_send : %.2lfmb", (double)total_send / (double)(1024 * 1024));
+	INFO_PRINT("    total speed : %llukb/s", (total_send / 1024) / (testing_time / 1000));
+	INFO_PRINT("    speed : %llukb/s", (total_send / 1024) / (testing_time / 1000) / g_config.robot_num );
     INFO_PRINT("    total_recv : %.2lfmb", (double)total_recv / (double)(1024 * 1024));
 	if(rtt_count == 0)
 	{
