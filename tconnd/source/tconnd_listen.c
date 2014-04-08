@@ -191,8 +191,8 @@ TERROR_CODE tconnd_listen()
 	int nb;
 
 //1, 检查tbus是否能发送新的连接包
-	tbus_writer_size = tbus_send_begin(g_output_tbus, (char**)&pkg, SIP_REQ_SIZE);
-	if(tbus_writer_size < SIP_REQ_SIZE)
+	tbus_writer_size = tbus_send_begin(g_output_tbus, (char**)&pkg, sizeof(sip_req_t));
+	if(tbus_writer_size < sizeof(sip_req_t))
 	{
 //	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");
         ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
@@ -255,10 +255,9 @@ TERROR_CODE tconnd_listen()
     pkg->cid.sn = conn_socket->mempool_entry.sn;
 	pkg->cid.id = conn_socket->id;
 	pkg->size = 0;
-	sip_req_t_code(pkg);
 	
 	conn_socket->status = e_tconnd_socket_status_syn_sent;
-	tbus_send_end(g_output_tbus, SIP_REQ_SIZE);
+	tbus_send_end(g_output_tbus, sizeof(sip_req_t));
     DEBUG_LOG("[%u, %"PRIu64"] connect.", pkg->cid.id, pkg->cid.sn);
 
 done:

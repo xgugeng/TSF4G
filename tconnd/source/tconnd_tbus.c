@@ -1,7 +1,6 @@
 #include "tconnd_tbus.h"
 
 #include "sip.h"
-#include "bscp.h"
 
 #include "tconnd_socket.h"
 #include "tconnd_mempool.h"
@@ -88,14 +87,14 @@ TERROR_CODE process_input_tbus()
     {
         uint32_t i;
         sip_rsp_t *head = NULL;
-        ssize_t head_size = 0;
+        size_t head_size = 0;
         char* body_addr = NULL;
         size_t body_size = 0;
 
 
         head = (sip_rsp_t*)cur;
-        head_size = sip_rst_t_decode(cur, message_limit);
-        if(head_size < 0)
+        head_size = SIZEOF_SIP_RSP_T(head);
+        if((message_limit - cur) < head_size)
         {
             ERROR_LOG("can not decode sip_rst_t.");
             goto flush_socket;
@@ -116,7 +115,7 @@ TERROR_CODE process_input_tbus()
             body_addr = NULL;
             body_size = 0;
         }        
-        cur += (size_t)head_size + body_size;
+        cur += head_size + body_size;
 
         for(i = 0; i < head->cid_list_num; ++i)
         {

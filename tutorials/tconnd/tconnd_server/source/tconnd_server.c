@@ -1,7 +1,6 @@
 #include "tapp.h"
 #include "tbus.h"
 #include "sip.h"
-#include "bscp.h"
 #include "tconnd_proto.h"
 
 #include "tlog_log.h"
@@ -10,6 +9,7 @@
 #define INFO_PRINT_OFF
 #endif
 #include "tlog_print.h"
+#include "bscp_types.h"
 
 
 
@@ -60,7 +60,7 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
     tbus_atomic_size_t total_size= 0;
     size_t head_size;
 
-    head_size = SIP_RSP_T_CODE_SIZE(pkg);
+    head_size = SIZEOF_SIP_RSP_T(pkg);
     total_size = (tbus_atomic_size_t)(head_size + data_size);
       
 
@@ -85,7 +85,6 @@ static void ts_send(const sip_rsp_t *pkg, const char* data, size_t data_size)
 
 
     memcpy(write_cur, pkg, head_size);         
-    sip_rsp_t_code((sip_rsp_t*)write_cur);
     write_cur += head_size;
     if(data)
     {
@@ -137,19 +136,19 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 			{
 				robot_proto_t msg_rsp;
 				bscp_head_t packet_size = *(const bscp_head_t*)iter;
-				const robot_proto_t *msg_req = (const robot_proto_t *)(iter + BSCP_HEAD_T_SIZE);
-				if(iter + BSCP_HEAD_T_SIZE > limit)
+				const robot_proto_t *msg_req = (const robot_proto_t *)(iter + sizeof(bscp_head_t));
+				if(iter + sizeof(bscp_head_t) > limit)
 				{
 					ERROR_PRINT("packet error.");
 					return req->size;
 				}
-				bscp_head_t_decode(packet_size);
+
 				if(packet_size != sizeof(robot_proto_t))
 				{
 					ERROR_PRINT("packet error.");
 					return req->size;
 				}
-				if(iter + BSCP_HEAD_T_SIZE + sizeof(robot_proto_t) > limit)
+				if(iter + sizeof(bscp_head_t) + sizeof(robot_proto_t) > limit)
 				{
 					ERROR_PRINT("packet error.");
 					return req->size;
@@ -158,7 +157,7 @@ static sip_size_t process_pkg(const sip_req_t *req,  const char* body_ptr)
 				memcpy(&msg_rsp.message_body.login_rsp.name, &msg_req->message_body.login_req.name, ROBOT_STR_LEN);
 				msg_rsp.message_body.login_rsp.sid = (uint32_t)atoi(msg_req->message_body.login_req.pass);
 
-				next = iter + BSCP_HEAD_T_SIZE + sizeof(robot_proto_t);
+				next = iter + sizeof(bscp_head_t) + sizeof(robot_proto_t);
 				rsp.size = sizeof(robot_proto_t);
 
 				ts_send(&rsp, (char*)&msg_rsp, rsp.size);
@@ -186,18 +185,17 @@ static TERROR_CODE process()
     while(len > 0)
     {
         sip_size_t body_size;
-        if(len < SIP_REQ_SIZE)
+        if(len < sizeof(sip_req_t))
         {
             ERROR_PRINT("tlibc_read_tdgi_req_t error");
             exit(1);
         }
         pkg = (sip_req_t*)message;
-        sip_req_t_decode(pkg);
     
         
-        body_size = process_pkg(pkg, message + SIP_REQ_SIZE);
-        len -= SIP_REQ_SIZE + body_size;
-        message += SIP_REQ_SIZE + body_size;
+        body_size = process_pkg(pkg, message + sizeof(sip_req_t));
+        len -= sizeof(sip_req_t) + body_size;
+        message += sizeof(sip_req_t) + body_size;
     }
     tbus_read_end(itb, message_len);
     ts_flush();

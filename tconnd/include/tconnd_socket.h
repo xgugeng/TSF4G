@@ -7,10 +7,9 @@
 #include "sip.h"
 #include <sys/uio.h>
 #include <limits.h>
-#include "bscp.h"
 #include "core/tlibc_list.h"
-
 #include "core/tlibc_mempool.h"
+#include "bscp_types.h"
 
 
 
@@ -20,7 +19,7 @@ typedef struct _package_buff_t
     tlibc_mempool_entry_t mempool_entry;
     
     size_t size;
-    char head[BSCP_HEAD_T_SIZE];    
+    char head[sizeof(bscp_head_t)];    
     char body[1];
 }package_buff_t;
 #pragma pack(pop)

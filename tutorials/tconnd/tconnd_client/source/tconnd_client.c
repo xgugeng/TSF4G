@@ -18,7 +18,8 @@
 #include <sys/time.h>
 #include <string.h>
 #include <math.h>
-#include "bscp.h"
+#include "bscp_types.h"
+
 
 
 #include "tlog_log.h"
@@ -167,7 +168,6 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 	size_t send_size, total_size;
     
 	self->packet_buff.packet_head = sizeof(robot_proto_t);
-	tlibc_host16_to_little(*(bscp_head_t*)self->packet);
 	memcpy(self->packet_buff.packet + PACKET_HEAD_LENGTH, msg, sizeof(robot_proto_t));
 	total_size = PACKET_HEAD_LENGTH + sizeof(robot_proto_t);
 	send_size = 0;
@@ -258,6 +258,8 @@ static void robot_test_login(robot_t *self)
 		{
 			goto error_ret;
 		}
+
+		memset(&rsp, 0, sizeof(robot_proto_t));
 
 		if(!robot_expect(self, &rsp))
 		{
