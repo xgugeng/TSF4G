@@ -46,12 +46,12 @@ typedef enum sip_rsp_cmd_s
 	e_sip_rsp_cmd_close = 5,
 }sip_rsp_cmd_t;
 
-#define SIP_BROADCAST_NUM 65536
+#define SIP_BROADCAST_NUM 65535
 typedef struct sip_rsp_s
 {
 	sip_rsp_cmd_t		cmd;                                //指令
     sip_size_t          size;                               //包体长度
-	uint32_t            cid_list_num;                       //连接id个数, > 0
+	uint16_t            cid_list_num;                       //连接id个数, > 0
 	sip_cid_t           cid_list[SIP_BROADCAST_NUM];        //连接id数组
 }sip_rsp_t;
 #define SIZEOF_SIP_RSP_T(h) (size_t)((const char*)&(h)->cid_list[(h)->cid_list_num] - (const char*)(h))
