@@ -16,9 +16,10 @@
 #include <errno.h>
 #include <unistd.h>
 
-static TERROR_CODE init(tlog_t *self)
+TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config)
 {
     uint32_t i = 0;
+    memcpy(&self->config, config, sizeof(tlog_config_t));
     
     self->instance.appender_vec_num = self->config.appender_vec_num;
     for(i = 0; i < self->instance.appender_vec_num; ++i)
@@ -53,54 +54,6 @@ roll_back:
         }   
     }
     return E_TS_ERROR;
-}
-
-TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config)
-{
-    memcpy(&self->config, config, sizeof(tlog_config_t));
-    
-    return init(self);
-}
-
-TERROR_CODE tlog_init_from_file(tlog_t *self, const char *config_file)
-{
-	TERROR_CODE ret = E_TS_NOERROR;;
-	TLIBC_XML_READER xml_reader;
-	TLIBC_ERROR_CODE r;
-	    	
-	tlibc_xml_reader_init(&xml_reader);
-	if(tlibc_xml_reader_push_file(&xml_reader, config_file) != E_TLIBC_NOERROR)
-	{
-    	ret = E_TS_ERROR;
-	    goto done;
-	}
-
-	r = tlibc_read_tlog_config(&xml_reader.super, &self->config);
-	
-	if(r != E_TLIBC_NOERROR)
-	{
-       	const TLIBC_XML_READER_YYLTYPE *lo = tlibc_xml_current_location(&xml_reader);
-    	if(lo)
-    	{
-        	fprintf(stderr, "%s(%d,%d - %d,%d) %s\n"
-        	    , lo->file_name
-        	    , lo->first_line, lo->first_column, lo->last_line, lo->last_column
-        	    , tstrerror(r));
-    	}
-    	else
-    	{
-        	fprintf(stderr, "%s %s", config_file, tstrerror(r));
-    	}   	
-    		
-		ret = E_TS_ERROR;
-		tlibc_xml_reader_pop_file(&xml_reader);
-		goto done;
-	}
-    tlibc_xml_reader_pop_file(&xml_reader);
-
-    return init(self); 
-done:
-    return ret;
 }
 
 void tlog_write(tlog_t *self, const tlog_message_t *message)

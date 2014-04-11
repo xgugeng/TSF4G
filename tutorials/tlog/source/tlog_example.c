@@ -1,18 +1,22 @@
 #include "tlog_log.h"
 #include "tlog_print.h"
+#include "tapp.h"
 
 
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
+static tlog_config_t g_config;
 
 int main(int argc, char *argv[])
 {
 	uint32_t i;
+
+    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlog_config);
 	
 
-	if(tlog_init_from_file(&g_tlog_instance, argv[1]) != E_TS_NOERROR)
+	if(tlog_init(&g_tlog_instance, &g_config) != E_TS_NOERROR)
 	{
 	    return 1;
 	}

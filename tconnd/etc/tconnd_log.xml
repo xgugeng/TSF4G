@@ -1,6 +1,6 @@
 <level>e_tlog_error</level>
-<vector>
 <appender_vec>
+<element>
 	<type>e_tlog_appender_rolling_file</type>
 	<appender>
 			<rolling_file>
@@ -9,5 +9,5 @@
 				<max_backup_index>10</max_backup_index>
 			</rolling_file>
 	</appender>
+</element>
 </appender_vec>
-</vector>

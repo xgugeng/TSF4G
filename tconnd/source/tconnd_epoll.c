@@ -13,9 +13,9 @@
 #include <string.h>
 
 int                         g_epollfd;
-static TLIBC_LIST_HEAD      readable_list;
-TLIBC_LIST_HEAD             g_package_socket_list;
-TLIBC_LIST_HEAD             g_pending_socket_list;
+static tlibc_list_head_t      readable_list;
+tlibc_list_head_t             g_package_socket_list;
+tlibc_list_head_t             g_pending_socket_list;
 
 
 TERROR_CODE tconnd_epoll_init()
@@ -51,7 +51,7 @@ TERROR_CODE tconnd_epool_proc()
 {
 	int i;
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
-	TLIBC_LIST_HEAD *iter, *next;
+	tlibc_list_head_t *iter, *next;
 
 	if(tlibc_list_empty(&readable_list))
 	{

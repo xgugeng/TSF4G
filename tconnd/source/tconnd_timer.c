@@ -57,7 +57,7 @@ done:
 
 void tconnd_timer_process()
 {
-    TLIBC_LIST_HEAD *iter, *next;
+    tlibc_list_head_t *iter, *next;
     tconnd_socket_t *s = NULL;
     
     for(iter = g_pending_socket_list.next; iter != &g_pending_socket_list; iter = next)

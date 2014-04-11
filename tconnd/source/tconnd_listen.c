@@ -274,7 +274,7 @@ close_socket:
 
 void tconnd_listen_fini()
 {
-    TLIBC_LIST_HEAD *iter;
+    tlibc_list_head_t *iter;
     tcond_socket_destruct(&g_listen);
 
     for(iter = g_socket_pool.mempool_entry.used_list.next; iter != &g_socket_pool.mempool_entry.used_list; iter = iter->next)

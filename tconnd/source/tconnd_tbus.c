@@ -68,8 +68,8 @@ TERROR_CODE process_input_tbus()
 	TERROR_CODE ret = E_TS_NOERROR;
 	char*message, *cur, *message_limit;
 	tbus_atomic_size_t message_len = 0;
-    TLIBC_LIST_HEAD writable_list;
-    TLIBC_LIST_HEAD *iter;
+    tlibc_list_head_t writable_list;
+    tlibc_list_head_t *iter;
     
     tlibc_list_init(&writable_list);
 
