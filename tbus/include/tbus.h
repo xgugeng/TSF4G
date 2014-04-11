@@ -40,7 +40,7 @@ TERROR_CODE tbus_init(tbus_t *tb, tbus_atomic_size_t size);
 //判断tbus中是否具有长度为len的空间
 //如果有则返回一个大于等于len的数字表示最大可写空间
 //如果没有则返回0
-tbus_atomic_size_t tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf, tbus_atomic_size_t len);
+tbus_atomic_size_t tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf, size_t len);
 
 
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);

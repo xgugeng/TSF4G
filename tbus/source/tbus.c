@@ -22,7 +22,7 @@ done:
 	return ret;
 }
 
-tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf, tbus_atomic_size_t len)
+tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf, size_t len)
 {
 	tbus_atomic_size_t write_size;
 	tbus_atomic_size_t head_offset = tb->head_offset;
@@ -41,7 +41,7 @@ tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf, tbus_atomic_size_t le
             }
             return 0;            
         }
-        else if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_s) + len)
+        else if(write_size < sizeof(tbus_header_s) + len)
         {
         	tbus_header_s *header = (tbus_header_s*)(tb->buff + tail_offset);
         	header->cmd = e_tbus_cmd_ignore;
@@ -62,7 +62,7 @@ tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf, tbus_atomic_size_t le
 	{
 		write_size = head_offset - tail_offset - 1;
 		
-        if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_s) + len)
+        if(write_size < sizeof(tbus_header_s) + len)
         {
             return 0;
         }

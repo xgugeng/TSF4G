@@ -27,7 +27,23 @@
 
 #define iSHM_KEY 10002
 #define oSHM_KEY 10001
-#define WMEM_MAX 1 * 1000000    //×î´ó»º´æ³¤¶È
+#define WMEM_MAX 1 * 1000000
+#define PACKET_MAX 65536
+
+typedef sip_size_t (*encode_t)(const void *self, char *start, char *limit);
+
+//¿¿¿¿¿¿¿¿¿¿tconnd_send¿ ¿¿¿¿¿¿¿¿
+static sip_size_t robot_proto_encode(const robot_proto_t *self, char *start, char *limit)
+{
+	if(limit - start < sizeof(robot_proto_t))
+	{
+		return 0;
+	}
+
+	memcpy(start, self, sizeof(robot_proto_t));
+
+	return sizeof(robot_proto_t);
+}
 
 typedef struct tconnapi_s
 {
@@ -36,10 +52,12 @@ typedef struct tconnapi_s
 	int oid;
 	tbus_t *otb;
 
-	char *write_start;           //¿ªÊ¼Ð´ÈëµÄÖ¸Õë
-	char *write_limit;           //½áÊøÐ´ÈëµÄÖ¸Õë
-	char *write_cur;            //µ±Ç°Ð´ÈëµÄÖ¸Õë
+	char *write_start;
+	char *write_limit;
+	char *write_cur;
 	size_t wmem_max;
+	tbus_atomic_size_t packet_max;
+	encode_t encode;
 }tconnapi_t;
 
 tconnapi_t g_tconn;
@@ -55,17 +73,16 @@ static void tconnapi_flush(tconnapi_t *self)
     }
 }
 
-static void send_rsp(tconnapi_t *self, const sip_rsp_t *rsp, const char* data, size_t data_size)
+static void send_rsp(tconnapi_t *self, sip_rsp_t *rsp, const char* data)
 {
-    tbus_atomic_size_t total_size= 0;
+    size_t total_size= 0;
     size_t head_size;
 
     head_size = SIZEOF_SIP_RSP_T(rsp);
-    total_size = (tbus_atomic_size_t)(head_size + data_size);
+    total_size = head_size + self->packet_max;
       
 
-	//todo total_size ¿¿¿¿¿¿
-    if(self->write_limit - self->write_cur < total_size)
+    if((size_t)(self->write_limit - self->write_cur) < total_size)
     {
         tbus_atomic_size_t write_size;
         tconnapi_flush(self);
@@ -84,13 +101,17 @@ static void send_rsp(tconnapi_t *self, const sip_rsp_t *rsp, const char* data, s
     }
 
 
-    memcpy(self->write_cur, rsp, head_size);         
-    self->write_cur += head_size;
-    if(data)
-    {
-        memcpy(self->write_cur, data, data_size);
-        self->write_cur += data_size;
-    }
+	if(data)
+	{
+		rsp->size = self->encode(data, self->write_cur + head_size, self->write_limit);	
+		//rsp->size == 0 means close the connection.
+	}
+	else
+	{
+		rsp->size = 0;
+	}
+	memcpy(self->write_cur, rsp, head_size); 
+	self->write_cur += head_size + rsp->size;
 
     
     if(self->write_cur - self->write_start >= self->wmem_max)
@@ -99,15 +120,14 @@ static void send_rsp(tconnapi_t *self, const sip_rsp_t *rsp, const char* data, s
     }
 }
 
-static void tconnd_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num, const char* buff, sip_size_t buff_size)
+static void tconnd_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num, const void* data)
 {
     sip_rsp_t rsp;
 
 	rsp.cmd = e_sip_rsp_cmd_send;
     rsp.cid_list_num = cid_vec_num;
 	memcpy(rsp.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-	rsp.size = buff_size; 
-	send_rsp(self, &rsp, buff, rsp.size);
+	send_rsp(self, &rsp, data);
 }
 
 static void tconnd_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num)
@@ -117,8 +137,7 @@ static void tconnd_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t ci
     rsp.cmd = e_sip_rsp_cmd_close;
     rsp.cid_list_num = cid_vec_num;
 	memcpy(rsp.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-    rsp.size = 0;
-    send_rsp(self, &rsp, NULL, 0);
+    send_rsp(self, &rsp, NULL);
 }
 
 static void tconnd_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num)
@@ -128,8 +147,7 @@ static void tconnd_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t c
     rsp.cmd = e_sip_rsp_cmd_accept;
     rsp.cid_list_num = cid_vec_num;
 	memcpy(rsp.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-    rsp.size = 0;
-    send_rsp(self, &rsp, NULL, 0);
+    send_rsp(self, &rsp, NULL);
 }
 
 static void on_connect(tconnapi_t *self, const sip_cid_t *cid)
@@ -159,12 +177,10 @@ static void on_recv(tconnapi_t *self, const sip_cid_t *cid, const char *packet, 
 	memcpy(&msg_rsp.message_body.login_rsp.name, &msg_req->message_body.login_req.name, ROBOT_STR_LEN);
 	msg_rsp.message_body.login_rsp.sid = (uint32_t)atoi(msg_req->message_body.login_req.pass);
 
-	tconnd_send(self, cid, 1, (const char*)&msg_rsp, sizeof(robot_proto_t));
+	tconnd_send(self, cid, 1, &msg_rsp);
 done:
 	return;
 }
-
-
 
 static TERROR_CODE tconnapi_process(tconnapi_t *self)
 {
@@ -244,7 +260,7 @@ would_block:
 	return E_TS_WOULD_BLOCK;
 }
 
-static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, size_t wmem_max)
+static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, tbus_atomic_size_t packet_max, size_t wmem_max, encode_t encode)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
@@ -274,6 +290,8 @@ static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, size_
 		goto done;
 	}
 
+	self->encode = encode;
+	self->packet_max = packet_max;
 	self->wmem_max = wmem_max;
 	self->write_start = NULL;
 	self->write_cur = NULL;
@@ -292,7 +310,7 @@ static TERROR_CODE process()
 
 int main()
 {
-	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, WMEM_MAX) != E_TS_NOERROR)
+	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, WMEM_MAX, PACKET_MAX, (encode_t)robot_proto_encode) != E_TS_NOERROR)
 	{
 		ERROR_PRINT("tconnapi_init failed.");
 		return 1;
