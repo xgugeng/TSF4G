@@ -35,7 +35,7 @@ void tlog_appender_shm_log(tlog_appender_shm_t *self, const tlog_config_appender
     char *ptr;
     tlibc_binary_writer_t bwriter;
 
-    tbus_writer_size = tbus_send_begin(self->otb, &ptr, sizeof(tlog_message_t));
+    tbus_writer_size = tbus_send_begin(self->otb, &ptr);
     if(tbus_writer_size < sizeof(tlog_message_t))
     {
 		fprintf(stderr, "tbus [%d] throw the log: %s\n", config->output_tbuskey, message->msg);

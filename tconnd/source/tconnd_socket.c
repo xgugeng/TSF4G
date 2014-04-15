@@ -328,7 +328,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         }
     }
     
-    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr, header_size + package_size + 1);
+    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr);
 
     if(tbus_size < header_size + package_size + 1)
     {

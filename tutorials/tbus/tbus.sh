@@ -2,5 +2,6 @@
 
 TBUSMGR=../../tbusmgr/bin/tbusmgr
 
-${TBUSMGR} -s 29 -w 123456
+ipcrm -M 123456
+${TBUSMGR} -s 29 -n 1 -w 123456
 

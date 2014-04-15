@@ -33,7 +33,7 @@ int main()
 		data_size = (tbus_atomic_size_t)(strlen(data) + 1);
 		message_size = data_size;
 		
-		message_size = tbus_send_begin(tb, &message, data_size);
+		message_size = tbus_send_begin(tb, &message);
 		if(data_size <=  message_size)
 		{
 			memcpy(message, data, (size_t)data_size);

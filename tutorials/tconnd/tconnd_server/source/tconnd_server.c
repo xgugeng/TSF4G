@@ -28,7 +28,7 @@
 #define iSHM_KEY 10002
 #define oSHM_KEY 10001
 #define WMEM_MAX 1 * 1000000
-#define PACKET_MAX 65536
+#define PACKET_MAX 10000
 
 typedef sip_size_t (*encode_t)(const void *self, char *start, char *limit);
 
@@ -87,7 +87,7 @@ static void send_rsp(tconnapi_t *self, sip_rsp_t *rsp, const char* data)
         tbus_atomic_size_t write_size;
         tconnapi_flush(self);
 
-        write_size = tbus_send_begin(self->otb, &self->write_start, total_size);
+        write_size = tbus_send_begin(self->otb, &self->write_start);
 
         self->write_cur = self->write_start;        
         self->write_limit = self->write_cur + write_size;
@@ -310,7 +310,7 @@ static TERROR_CODE process()
 
 int main()
 {
-	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, WMEM_MAX, PACKET_MAX, (encode_t)robot_proto_encode) != E_TS_NOERROR)
+	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, PACKET_MAX, WMEM_MAX, (encode_t)robot_proto_encode) != E_TS_NOERROR)
 	{
 		ERROR_PRINT("tconnapi_init failed.");
 		return 1;
