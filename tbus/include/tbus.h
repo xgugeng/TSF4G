@@ -6,6 +6,8 @@
 #include "terrno.h"
 
 #include <stdint.h>
+#include <sys/uio.h>
+
 
 #define TBUS_VERSION "0.0.1"
 
@@ -37,26 +39,11 @@ typedef struct tbus_s
 TERROR_CODE tbus_init(tbus_t *tb, size_t size, size_t number);
 
 tbus_atomic_size_t tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf);
-
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);
 
 
-tbus_atomic_size_t tbus_read_begin(tbus_t *tb, TLIBC_OUT char** buf);
-
-void tbus_read_end(tbus_t *tb, tbus_atomic_size_t len);
-
-typedef tbus_atomic_size_t (*tbus_encode_t)(const void *self, char *start, char *limit);
-
-
-
-typedef struct tiovec_s
-{
-	const void  *iov_base;    /* Starting address */
-	size_t iov_len;     /* Number of bytes to transfer */
-}tiovec_t;
-
-size_t tbus_peek(tbus_t *tb, tiovec_t *iov, size_t iov_num);
-void tbus_peek_over(tbus_t *tb);
+tbus_atomic_size_t tbus_read_begin(tbus_t *tb, struct iovec *iov, size_t *iov_num);
+void tbus_read_end(tbus_t *tb, tbus_atomic_size_t head);
 
 
 #endif//_H_TBUS

@@ -32,7 +32,6 @@
 
 typedef sip_size_t (*encode_t)(const void *self, char *start, char *limit);
 
-//¿¿¿¿¿¿¿¿¿¿tconnd_send¿ ¿¿¿¿¿¿¿¿
 static sip_size_t robot_proto_encode(const robot_proto_t *self, char *start, char *limit)
 {
 	if(limit - start < sizeof(robot_proto_t))
@@ -62,62 +61,36 @@ typedef struct tconnapi_s
 
 tconnapi_t g_tconn;
 
-static void tconnapi_flush(tconnapi_t *self)
-{
-    if(self->write_cur > self->write_start)
-    {
-        tbus_send_end(self->otb, (tbus_atomic_size_t)(self->write_cur - self->write_start));
-        self->write_start = NULL;        
-        self->write_cur = NULL;
-        self->write_limit = NULL;
-    }
-}
-
 static void send_rsp(tconnapi_t *self, sip_rsp_t *rsp, const char* data)
 {
     size_t total_size= 0;
     size_t head_size;
+    tbus_atomic_size_t write_size;
+    char *buf;
 
     head_size = SIZEOF_SIP_RSP_T(rsp);
     total_size = head_size + self->packet_max;
-      
-
-    if((size_t)(self->write_limit - self->write_cur) < total_size)
+    
+    write_size = tbus_send_begin(self->otb, &buf);
+    if(write_size < total_size)
     {
-        tbus_atomic_size_t write_size;
-        tconnapi_flush(self);
-
-        write_size = tbus_send_begin(self->otb, &self->write_start);
-
-        self->write_cur = self->write_start;        
-        self->write_limit = self->write_cur + write_size;
-
-        
-        if(self->write_limit - self->write_cur < total_size)
-        {
-            ERROR_PRINT("tbus no space, drop rsp->cmd [%d] rsp->size [%u].", rsp->cmd, rsp->size);
-            return;
-        }
+        goto done;
     }
-
-
+    
 	if(data)
 	{
-		rsp->size = self->encode(data, self->write_cur + head_size, self->write_limit);	
+		rsp->size = self->encode(data, buf + head_size, buf + write_size);
 		//rsp->size == 0 means close the connection.
 	}
 	else
 	{
 		rsp->size = 0;
 	}
-	memcpy(self->write_cur, rsp, head_size); 
-	self->write_cur += head_size + rsp->size;
-
-    
-    if(self->write_cur - self->write_start >= self->wmem_max)
-    {
-        tconnapi_flush(self);
-    }
+	memcpy(buf, rsp, head_size); 
+	tbus_send_end(self->otb, (tbus_atomic_size_t)(head_size + rsp->size));
+	
+done:
+    return;
 }
 
 static void tconnd_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num, const void* data)
@@ -184,26 +157,43 @@ done:
 
 static TERROR_CODE tconnapi_process(tconnapi_t *self)
 {
+    TERROR_CODE ret = E_TS_NOERROR;
     sip_req_t *req;
 	tbus_atomic_size_t message_len = 0;
+    struct iovec iov[1];
+    size_t iov_num;
 	char *message = NULL;
+	tbus_atomic_size_t tbus_head;
 
-    message_len = tbus_read_begin(self->itb, &message);
-    if(message_len == 0)
+    iov_num = 1;
+
+    tbus_head = tbus_read_begin(self->itb, iov, &iov_num);
+    if(iov_num == 0)
     {
-		goto would_block;
+        if(tbus_head != self->itb->head_offset)
+        {        
+            goto read_end;
+        }
+        else
+        {
+            ret = E_TS_WOULD_BLOCK;
+            goto done;
+        }
     }
+
+    message = iov[0].iov_base;
+    message_len = (tbus_atomic_size_t)iov[0].iov_len;
 
 	if(message_len < sizeof(sip_req_t))
 	{
         ERROR_PRINT("message_len < sizeof(sip_req_t)");
-		goto bad_sip_req;
+		goto read_end;
 	}
 	req = (sip_req_t*)message;
 	if(sizeof(sip_req_t) + req->size != message_len)
 	{
        	ERROR_PRINT("sizeof(sip_req_t) != message_len");
-		goto bad_sip_req;
+		goto read_end;
 	}
 
     switch(req->cmd)
@@ -230,7 +220,7 @@ static TERROR_CODE tconnapi_process(tconnapi_t *self)
 			   	if(packet > limit)
 				{
 					ERROR_PRINT("bad packet head");
-					goto bad_packet;
+					goto read_end;
 				}
 				packet_size = *(const bscp_head_t*)iter;
 
@@ -238,7 +228,7 @@ static TERROR_CODE tconnapi_process(tconnapi_t *self)
 				if(next > limit)
 				{
 					ERROR_PRINT("packet too long");
-					goto bad_packet;
+					goto read_end;
 				}
 				on_recv(self, &req->cid, packet, packet_size);
 			}
@@ -246,18 +236,13 @@ static TERROR_CODE tconnapi_process(tconnapi_t *self)
 		break;
 	default:
         ERROR_PRINT("unknow msg");
-		goto bad_sip_req;
+		goto read_end;
 	}
 
-bad_packet:	
-    tbus_read_end(self->itb, message_len);
-    
-    return E_TS_NOERROR;
-bad_sip_req:
-    tbus_read_end(self->itb, message_len);
-	return E_TS_NOERROR;
-would_block:
-	return E_TS_WOULD_BLOCK;
+read_end:
+    tbus_read_end(self->itb, tbus_head);
+done:
+	return ret;
 }
 
 static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, tbus_atomic_size_t packet_max, size_t wmem_max, encode_t encode)
@@ -304,7 +289,6 @@ done:
 static TERROR_CODE process()
 {
 	TERROR_CODE ret = tconnapi_process(&g_tconn);
-    tconnapi_flush(&g_tconn);
 	return ret; 
 }
 

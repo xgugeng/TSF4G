@@ -62,39 +62,51 @@ done:
     return ret;
 }
 
+#define TCONND_IOV_NUM 65535
 TERROR_CODE process_input_tbus()
 {
 	TERROR_CODE ret = E_TS_NOERROR;
-	char*message, *cur, *message_limit;
-	tbus_atomic_size_t message_len = 0;
+
+    struct iovec iov[TCONND_IOV_NUM];
+    size_t iov_num;    
+
     tlibc_list_head_t writable_list;
     tlibc_list_head_t *iter;
+
+    tbus_atomic_size_t tbus_head;
+    size_t iov_index;
     
     tlibc_list_init(&writable_list);
 
 
-    
-    message_len = tbus_read_begin(g_input_tbus, &message);
-    if(message_len == 0)
+    iov_num = TCONND_IOV_NUM;
+    tbus_head = tbus_read_begin(g_input_tbus, iov, &iov_num);
+    if(iov_num == 0)
     {
-        ret = E_TS_WOULD_BLOCK;
-        goto done;
+        if(tbus_head != g_input_tbus->head_offset)
+        {
+            goto read_end;
+        }
+        else
+        {
+            ret = E_TS_WOULD_BLOCK;
+            goto done;
+        }
     }
 
-    message_limit = message + message_len;
 
-    for(cur = message; cur < message_limit;)
+    for(iov_index = 0; iov_index < iov_num; ++iov_index)
     {
         uint32_t i;
-        sip_rsp_t *head = NULL;
+        const sip_rsp_t *head = NULL;
         size_t head_size = 0;
         char* body_addr = NULL;
         size_t body_size = 0;
 
 
-        head = (sip_rsp_t*)cur;
+        head = (const sip_rsp_t*)iov[iov_index].iov_base;
         head_size = SIZEOF_SIP_RSP_T(head);
-        if((message_limit - cur) < head_size)
+        if(iov[iov_index].iov_len < head_size)
         {
             ERROR_LOG("can not decode sip_rst_t.");
             goto flush_socket;
@@ -103,8 +115,8 @@ TERROR_CODE process_input_tbus()
         if(head->cmd == e_sip_rsp_cmd_send)
         {
             body_size = head->size;
-            body_addr = message + head_size;
-            if(body_addr + body_size > message_limit)
+            body_addr = (char*)iov[iov_index].iov_base + head_size;
+            if(head_size + body_size > iov[iov_index].iov_len)
             {
                 ERROR_LOG("sip_rst_t.size out of range.");
                 goto flush_socket;
@@ -115,8 +127,6 @@ TERROR_CODE process_input_tbus()
             body_addr = NULL;
             body_size = 0;
         }        
-        cur += head_size + body_size;
-
         for(i = 0; i < head->cid_list_num; ++i)
         {
             tconnd_socket_t *socket = NULL;
@@ -172,11 +182,9 @@ flush_socket:
             tconnd_socket_delete(socket);
         }        
     }
-
-    tbus_read_end(g_input_tbus, message_len);    
-
-
-    DEBUG_LOG("process tbus data [%d].", message_len);
+    
+read_end:
+    tbus_read_end(g_input_tbus, tbus_head);
 done:
     return ret;
 }

@@ -25,8 +25,8 @@
 #include <stdbool.h>
 #include <time.h>
 
+#define TLOGD_IOV_NUM 65536
 #define MAX_BIND_NUM 65536
-#define EXECUTE_NUM_LIMIT 4096
 #define MYINIT_INTERVAL_S 5
 
 tlogd_config_t           g_config;
@@ -35,7 +35,6 @@ MYSQL                   *g_conn = NULL;
 MYSQL_STMT              *g_stmt = NULL;
 MYSQL_BIND               g_bind[MAX_BIND_NUM]; 
 tlog_message_t           g_message;
-size_t				     g_message_num;
 int                      g_input_tbus_id;
 tbus_t                  *g_input_tbus;
 tlibc_binary_reader_t    g_binary_reader;
@@ -129,8 +128,7 @@ static TERROR_CODE myinit()
 
         goto close_stmt;
     }
-
-	g_message_num = 0;
+	INFO_PRINT("myinit succeed.");
 
     return E_TS_NOERROR;
 close_stmt:
@@ -149,10 +147,15 @@ static void myfini()
     return;
 }
 
+
 static TERROR_CODE process()
 {
     TERROR_CODE ret = E_TS_NOERROR;
-    char *ptr;
+	tbus_atomic_size_t tbus_head;
+	struct iovec iov[TLOGD_IOV_NUM];
+	size_t iov_num;
+	size_t i;
+
 	if(!g_myinited)
 	{
 		if(myinit() == E_TS_NOERROR)
@@ -166,83 +169,72 @@ static TERROR_CODE process()
 		}
 	}
 
-    g_binary_reader.size = tbus_read_begin(g_input_tbus, &ptr);
-    g_binary_reader.addr = ptr;
-    if(g_binary_reader.size == 0)
-    {
-        ret = E_TS_WOULD_BLOCK;
-		if(g_message_num > 0)
-		{
-			if(mysql_commit(g_conn))
-			{
-                ERROR_PRINT("mysql_commit failed.");
-				myfini();
-				g_myinited = false;
-				goto done;
-			}
-			g_message_num = 0;
-		}
-        goto done;
-    }
-    
-    for(g_binary_reader.offset = 0; g_binary_reader.offset < g_binary_reader.size; )
-    {    
-        if(tlibc_read_tlog_message(&g_binary_reader.super, &g_message) == E_TS_NOERROR)
-        {
-    		tlibc_error_code_t    r;
-			g_mybind_reader.idx = 0;
-			r = tlibc_read_tlog_message(&g_mybind_reader.super, &g_message);
-			if(r != E_TLIBC_NOERROR)
-			{
-				ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
-				ret = E_TS_ERROR;
-				goto done;
-			}
-            if (mysql_stmt_bind_param(g_stmt, g_bind))
-            {
-                ERROR_PRINT("mysql_stmt_bind_param(), error %s", mysql_error(g_conn)); 
-				myfini();
-				g_myinited = false;
-                goto done;
-            }
-            
-            if(mysql_stmt_execute(g_stmt))
-            {
-                ERROR_PRINT("mysql_stmt_execute(), error %s", mysql_stmt_error(g_stmt));
-				myfini();
-				g_myinited = false;
-                goto done;
-            }
-			++g_message_num;
-        }
-		else
-		{
-			ERROR_PRINT("bad packet.");
-            ret = E_TS_ERROR;
-            goto done;
-		}
-    }
-
-    if(g_binary_reader.size != g_binary_reader.offset)
-    {
-		ERROR_PRINT("bad packet.");
-        ret = E_TS_ERROR;
-        goto done;
-    }
-    
-	if(g_message_num >= EXECUTE_NUM_LIMIT)
+	iov_num = TLOGD_IOV_NUM;
+	tbus_head = tbus_read_begin(g_input_tbus, iov, &iov_num);	
+	if(iov_num == 0)
 	{
-		if(mysql_commit(g_conn))
+	    if(tbus_head != g_input_tbus->head_offset)
+	    {
+	        goto read_end;
+	    }
+	    else
+	    {
+	        ret = E_TS_WOULD_BLOCK;
+	        goto done;
+	    }
+	}
+
+	for(i = 0;i < iov_num;++i)
+	{
+    	tlibc_error_code_t    r;
+
+		g_binary_reader.offset = 0;
+		g_binary_reader.size = (uint32_t)iov[i].iov_len;
+		g_binary_reader.addr = iov[i].iov_base;
+		r = tlibc_read_tlog_message(&g_binary_reader.super, &g_message);
+    
+        if(r != E_TLIBC_NOERROR)
 		{
-			ERROR_PRINT("mysql_commit failed.");
+			ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
+			goto commit;
+		}
+
+		g_mybind_reader.idx = 0;
+		r = tlibc_read_tlog_message(&g_mybind_reader.super, &g_message);
+		if(r != E_TLIBC_NOERROR)
+		{
+			ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
+			goto commit;
+		}
+
+		if(mysql_stmt_bind_param(g_stmt, g_bind))
+		{
+			ERROR_PRINT("mysql_stmt_bind_param(), error %s", mysql_error(g_conn)); 
 			myfini();
 			g_myinited = false;
 			goto done;
 		}
-		g_message_num = 0;
+            
+        if(mysql_stmt_execute(g_stmt))
+        {
+            ERROR_PRINT("mysql_stmt_execute(), error %s", mysql_stmt_error(g_stmt));
+			myfini();
+			g_myinited = false;
+            goto read_end;
+        }
+    }
+
+commit:
+	if(mysql_commit(g_conn))
+	{
+		ERROR_PRINT("mysql_commit failed.");
+		myfini();
+		g_myinited = false;
+		goto read_end;
 	}
 
-    tbus_read_end(g_input_tbus, g_binary_reader.size);
+read_end:
+    tbus_read_end(g_input_tbus, tbus_head);
 done:
 	return ret;
 }

@@ -187,6 +187,11 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 			}
 			usleep(IDLE_TIME_US);
 		}
+
+		if(!g_working)
+		{
+		    return false;
+		}
 	}
     self->total_send += total_size;
 	return true;
@@ -217,6 +222,11 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 				return false;
 			}
             usleep(IDLE_TIME_US);
+		}
+
+		if(!g_working)
+		{
+		    return false;
 		}
 	}
 }
@@ -429,8 +439,12 @@ static void fini()
 		total_send += g_robot[i].total_send;
         total_recv += g_robot[i].total_recv;
         lose_connection += g_robot[i].lost_connection;
-	}    
+	}
 	testing_time = get_current_ms() - g_prog_starting_ms;
+	if(testing_time < 1000)
+	{
+	    testing_time = 1000;
+	}
 	WARN_PRINT("Summary:");
 	INFO_PRINT("    robot_num : %u", g_config.robot_num);
     INFO_PRINT("    lose_connection : %u", lose_connection);

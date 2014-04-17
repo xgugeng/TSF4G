@@ -130,11 +130,6 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
     ssize_t send_size;
     uint64_t cur_tick;
 
-    if(self->iov_num > 1)
-    {
-        INFO_LOG("socket [%d, %"PRIu64"] iov_num [%d].", self->id, self->mempool_entry.sn, self->iov_num);
-    }
-
 
     if(self->status != e_tconnd_socket_status_established)
     {
@@ -155,7 +150,7 @@ again:
 
     
     if(send_size < 0)
-    {    
+    {
         if((errno == EINTR) && ((g_cur_ticks != cur_tick)))
         {
             goto again;
@@ -179,19 +174,6 @@ again:
         ret = E_TS_CLOSE;
         goto done;
     }
-
-#if TS_DEBUG
-    {
-        int i;
-        
-        DEBUG_LOG("socket[%d, %llu] self->iov_num = %d", self->id, self->mempool_entry.sn, self->iov_num);
-        for(i = 0;i < self->iov_num; ++i)
-        {
-            DEBUG_LOG("socket[%d, %llu] self->iov[i].iov_base = %zu", self->id, self->mempool_entry.sn, (char*)self->iov[i].iov_base - g_input_tbus->buff);
-            DEBUG_LOG("socket[%d, %llu] self->iov[i].iov_len = %zu", self->id, self->mempool_entry.sn, self->iov[i].iov_len);
-        }
-    }
-#endif//
 
     self->iov_num = 0;
     self->iov_total_size = 0;

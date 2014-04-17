@@ -17,7 +17,7 @@ TERROR_CODE tbus_init(tbus_t *tb, size_t size, size_t number)
 		goto done;
 	}
 	tb->packet_size = (tbus_atomic_size_t)(size + sizeof(tbus_header_t));
-	tb->size = (tbus_atomic_size_t)(tb->packet_size * number) + 1;
+	tb->size = (tbus_atomic_size_t)(tb->packet_size * number);
 	return E_TS_NOERROR;
 done:
 	return ret;
@@ -32,7 +32,7 @@ tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf)
 
 	if(head_offset <= tail_offset)
 	{
-        write_size = tb->size - tail_offset - 1;
+        write_size = tb->size - tail_offset;
         if(write_size < (tbus_atomic_size_t)sizeof(tbus_header_t))
         {
             if(head_offset != 0)
@@ -94,102 +94,104 @@ void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
 	tb->tail_offset = tail_offset;	
 }
 
-
-tbus_atomic_size_t tbus_read_begin(tbus_t *tb, char** buf)
+static char* peek(char *start, char *limit, struct iovec *iov, size_t *iov_num)
 {
-	tbus_atomic_size_t read_size;
-	tbus_atomic_size_t tail_offset = tb->tail_offset;
-	tbus_atomic_size_t head_offset = tb->head_offset;
-
-	if(head_offset <= tail_offset)
+	char *ret = NULL;
+	char *ch = NULL;
+	size_t num = 0;
+	for(ch = start; ch < limit;)
 	{
-		read_size = tail_offset - head_offset;
-        if(read_size < (tbus_atomic_size_t)sizeof(tbus_header_t))
-    	{
-    	    return 0;
-    	}
-    	else
-    	{
-            tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);            
-    		*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
-    		
-    		if((size_t)read_size - sizeof(tbus_header_t) < (size_t)header->size)
-    		{
-    		    return read_size - (tbus_atomic_size_t)sizeof(tbus_header_t);
-    		}
-    		else
-    		{
-                return header->size;
-            }
-    	}
-    	
+    	const tbus_header_t *header = (const tbus_header_t*)ch;
+		if(limit - ch < sizeof(tbus_header_t))
+		{
+			ret = limit;
+			goto done;
+		}
+		if(header->cmd == e_tbus_cmd_ignore)
+		{
+			ret = limit;
+			goto done;
+		}
+
+		if(header->cmd != e_tbus_cmd_package)
+		{
+			ret = NULL;
+			goto done;
+		}
+		if(limit - ch < sizeof(tbus_header_t) + header->size)
+		{
+			ret = NULL;
+			goto done;
+		}
+
+		if(num >= *iov_num)
+		{
+			ret = ch;
+			goto done;
+		}
+		iov[num].iov_base = ch + sizeof(tbus_header_t);
+		iov[num].iov_len = header->size;
+		++num;
+		ch += sizeof(tbus_header_t) + header->size;
+	}
+	ret = ch;
+done:
+	*iov_num = num;
+	return ret;
+}
+
+tbus_atomic_size_t tbus_read_begin(tbus_t *tb, struct iovec *iov, size_t *iov_num)
+{
+	tbus_atomic_size_t ret = 0;
+	char* curr = NULL;
+	tbus_atomic_size_t tail = tb->tail_offset;
+	tbus_atomic_size_t head = tb->head_offset;
+	if(head <= tail)
+	{
+		curr = peek(tb->buff + head, tb->buff + tail, iov, iov_num);
+		if(curr == NULL)
+		{
+			ret = tail;
+			*iov_num = 0;
+			goto done;
+		}
 	}
 	else
 	{
-		read_size = tb->size - head_offset - 1;
-		if(read_size < sizeof(tbus_header_t))
-    	{
-            tb->head_offset = 0;
-            return tbus_read_begin(tb, buf);
-    	}
-    	else
-    	{
-    	    tbus_header_t *header = (tbus_header_t*)(tb->buff + head_offset);
-            if(header->cmd == e_tbus_cmd_package)
-            {
-        		*buf = tb->buff + sizeof(tbus_header_t) + head_offset;
-        		
-        		if((size_t)read_size - sizeof(tbus_header_t) < (size_t)header->size)
-        		{
-        		    return read_size - (tbus_atomic_size_t)sizeof(tbus_header_t);
-        		}
-        		else
-        		{
-                    return header->size;
-                }
-            }    
-            else
-            {
-                tb->head_offset = 0;
-        	    return tbus_read_begin(tb, buf);
-            }
-    	}
+		size_t seg0_num = 0;
+		size_t seg1_num = 0;
+		char* limit = tb->buff + tb->size;
+
+		seg0_num = *iov_num;
+		curr = peek(tb->buff + head, limit, iov, &seg0_num);
+		if(curr == NULL)
+		{
+			ret = tail;
+			*iov_num = 0;
+			goto done;
+		}
+
+		if(curr == limit)
+		{
+			seg1_num = *iov_num - seg0_num;
+			curr = peek(tb->buff, tb->buff + tail, iov + seg0_num, &seg1_num);
+			if(curr == NULL)
+			{
+				ret = tail;
+				*iov_num = 0;
+				goto done;
+			}
+		}
+		*iov_num = seg0_num + seg1_num;
 	}
+	
+	ret = (tbus_atomic_size_t)(curr - tb->buff);
+done:
+	return ret;
 }
 
-
-void tbus_read_end(tbus_t *tb, tbus_atomic_size_t len)
+void tbus_read_end(tbus_t *tb, tbus_atomic_size_t head)
 {
-	tbus_atomic_size_t head_offset = tb->head_offset + (tbus_atomic_size_t)sizeof(tbus_header_t) + len;
-	if(head_offset >= tb->size)
-	{
-		head_offset = 0;
-	}
-	tb->head_offset = head_offset;
+	tb->head_offset = head;
 }
 
-/*
-static size_t peek(const char *start, const char *limit, tiovec_t *iov, size_t iov_num)
-{
-	return 0;
-}
-
-size_t tbus_peek(tbus_t *tb, tiovec_t *iov, size_t iov_num)
-{
-	size_t num = 0;
-
-	tbus_atomic_size_t tail = tb->tail_offset;
-	tbus_atomic_size_t head = tb->head_offset;
-	if(head_offset < tail_offset)
-	{
-		num += peek(tb->buff + head, tb->buff + tail, iov, iov_num);
-	}
-	return num;
-}
-
-void tbus_peek_over(tbus_t *tb)
-{
-	return;
-}
-
-*/
