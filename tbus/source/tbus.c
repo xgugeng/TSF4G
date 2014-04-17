@@ -5,22 +5,12 @@
 #include <string.h>
 
 
-TERROR_CODE tbus_init(tbus_t *tb, size_t size, size_t number)
+void tbus_init(tbus_t *tb, size_t size, size_t number)
 {
-	TERROR_CODE ret = E_TS_NOERROR;
-
 	tb->head_offset = 0;
 	tb->tail_offset = 0;
-	if(size <= TLIBC_OFFSET_OF(tbus_t, buff))
-	{
-		ret = E_TS_NO_MEMORY;
-		goto done;
-	}
 	tb->packet_size = (tbus_atomic_size_t)(size + sizeof(tbus_header_t));
 	tb->size = (tbus_atomic_size_t)(tb->packet_size * number);
-	return E_TS_NOERROR;
-done:
-	return ret;
 }
 
 tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf)

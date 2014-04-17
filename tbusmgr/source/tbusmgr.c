@@ -56,8 +56,6 @@ int main(int argc, char**argv)
 	void *shm_ptr = NULL;
 	tbus_t *tbus_ptr = NULL;
 	char *endptr;
-	TERROR_CODE ret;
-
 
 	while((opt = getopt_long (argc, argv, short_options, long_options, NULL)) != -1)
 	{
@@ -120,7 +118,7 @@ int main(int argc, char**argv)
 					ERROR_PRINT("strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].", arg, shm_size, *endptr);
 					exit(1);
 				}
-				shm_size = (size + sizeof(tbus_header_t)) * number + TLIBC_OFFSET_OF(tbus_t, buff) + 1;
+				shm_size = TLIBC_OFFSET_OF(tbus_t, buff) + (size + sizeof(tbus_header_t)) * number;
 
 				errno = 0;
 				shm_id = shmget(shm_key, shm_size, 0664 | IPC_CREAT|IPC_EXCL);
@@ -136,12 +134,7 @@ int main(int argc, char**argv)
 					goto error_free_memory;
 				}
 				tbus_ptr = (tbus_t*)shm_ptr;
-				ret = tbus_init(tbus_ptr, size, number);
-				if(ret != E_TS_NOERROR)
-				{
-					ERROR_PRINT("tbus_init(%p) returned an error[%d].", tbus_ptr, ret);
-					goto error_free_memory;
-				}
+				tbus_init(tbus_ptr, size, number);				
 				INFO_PRINT("tbus_init succeed, shm_key = [%d] shm_size = [%zu].", shm_key, shm_size);
 				return 0;
 			error_free_memory:

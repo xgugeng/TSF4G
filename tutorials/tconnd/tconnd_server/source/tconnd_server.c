@@ -27,8 +27,6 @@
 
 #define iSHM_KEY 10002
 #define oSHM_KEY 10001
-#define WMEM_MAX 1 * 1000000
-#define PACKET_MAX 10000
 
 typedef sip_size_t (*encode_t)(const void *self, char *start, char *limit);
 
@@ -51,11 +49,6 @@ typedef struct tconnapi_s
 	int oid;
 	tbus_t *otb;
 
-	char *write_start;
-	char *write_limit;
-	char *write_cur;
-	size_t wmem_max;
-	tbus_atomic_size_t packet_max;
 	encode_t encode;
 }tconnapi_t;
 
@@ -69,7 +62,7 @@ static void send_rsp(tconnapi_t *self, sip_rsp_t *rsp, const char* data)
     char *buf;
 
     head_size = SIZEOF_SIP_RSP_T(rsp);
-    total_size = head_size + self->packet_max;
+    total_size = head_size + sizeof(robot_proto_t);
     
     write_size = tbus_send_begin(self->otb, &buf);
     if(write_size < total_size)
@@ -245,7 +238,7 @@ done:
 	return ret;
 }
 
-static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, tbus_atomic_size_t packet_max, size_t wmem_max, encode_t encode)
+static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
@@ -276,30 +269,21 @@ static TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, tbus_
 	}
 
 	self->encode = encode;
-	self->packet_max = packet_max;
-	self->wmem_max = wmem_max;
-	self->write_start = NULL;
-	self->write_cur = NULL;
-	self->write_limit = NULL;
 
 done:
 	return ret;
 }
 
-static TERROR_CODE process()
-{
-	TERROR_CODE ret = tconnapi_process(&g_tconn);
-	return ret; 
-}
-
 int main()
 {
-	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, PACKET_MAX, WMEM_MAX, (encode_t)robot_proto_encode) != E_TS_NOERROR)
+	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, (encode_t)robot_proto_encode) != E_TS_NOERROR)
 	{
 		ERROR_PRINT("tconnapi_init failed.");
 		return 1;
 	}
 
-    return tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL);
+    return tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+                     , tconnapi_process, &g_tconn
+                     , NULL, NULL);
 }
 

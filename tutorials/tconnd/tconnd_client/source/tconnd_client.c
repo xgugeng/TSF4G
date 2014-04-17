@@ -341,7 +341,7 @@ static void init()
 #define PRINT_INTERVAL_MS 1000
 static uint64_t last_print_time = 0;
 
-static TERROR_CODE process()
+static TERROR_CODE process(void *arg)
 {
 	uint32_t rtt_max, rtt_min;
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
@@ -470,7 +470,9 @@ int main(int argc, char *argv[])
 
 	init();
 
-	if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
+	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+	            , process, NULL
+	            , NULL, NULL) == E_TS_NOERROR)
 	{
 		ret = 0;
 	}

@@ -148,7 +148,7 @@ static void myfini()
 }
 
 
-static TERROR_CODE process()
+static TERROR_CODE process(void *arg)
 {
     TERROR_CODE ret = E_TS_NOERROR;
 	tbus_atomic_size_t tbus_head;
@@ -251,7 +251,9 @@ int main(int argc, char **argv)
 		goto done;
 	}
 
-	if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) != E_TS_NOERROR)
+	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+	             , process, NULL
+	             , NULL, NULL) != E_TS_NOERROR)
 	{
 		ret = 1;
 	}
