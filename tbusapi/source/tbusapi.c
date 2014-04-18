@@ -3,7 +3,10 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/uio.h>
+#include <errno.h>
 #include <string.h>
+
+#include "tlog_print.h"
 
 static void on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
 {
@@ -24,7 +27,7 @@ static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, siz
 	return (tbus_atomic_size_t)src_len;
 }
 
-TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num, key_t output_tbuskey)
+TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num, key_t output_tbuskey)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
@@ -36,9 +39,23 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num,
 	else
 	{
 		self->itb_id = shmget(input_tbuskey, 0, 0666);
-		self->itb = shmat(self->itb_id, NULL, 0);
-		if((self->itb == NULL) || (iov_num == 0))
+		if(self->itb_id == -1)
 		{
+    		ret = E_TS_ERROR;
+		    ERROR_PRINT("shmget reutrn errno %d, %s", errno, strerror(errno));
+		    goto done;
+		}
+		self->itb = shmat(self->itb_id, NULL, 0);
+		if((ssize_t)self->itb == -1)
+		{
+            ret = E_TS_ERROR;
+            ERROR_PRINT("shmat reutrn errno %d, %s", errno, strerror(errno));
+            goto done;
+		}
+		
+		if(iov_num <= 0)
+		{
+    		ERROR_PRINT("iov_num must be greater than 0.");
 			ret = E_TS_ERROR;
 			goto done;
 		}
@@ -53,17 +70,25 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num,
 	else
 	{
 		self->otb_id = shmget(output_tbuskey, 0, 0666);
-		self->otb = shmat(self->otb_id, NULL, 0);
-		if(self->otb == NULL)
+		if(self->otb_id == -1)
 		{
-			ret = E_TS_ERROR;
-			goto done;
+    		ret = E_TS_ERROR;
+		    ERROR_PRINT("shmget reutrn errno %d, %s", errno, strerror(errno));
+		    goto done;
+		}
+		
+		self->otb = shmat(self->otb_id, NULL, 0);
+		if((ssize_t)self->otb == -1)
+		{		
+            ret = E_TS_ERROR;
+            ERROR_PRINT("shmat reutrn errno %d, %s", errno, strerror(errno));
+            goto done;
 		}
 	}
 
+	self->encode = encode;
 	self->on_recviov = on_recviov;
 	self->on_recv = NULL;
-	self->encode = encode;
 
 done:
 	return ret;

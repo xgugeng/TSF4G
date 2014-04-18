@@ -1,7 +1,7 @@
 #ifndef _H_TCONNAPI_H
 #define _H_TCONNAPI_H
 
-#include "tbus.h"
+#include "tbusapi.h"
 #include "sip.h"
 
 typedef struct tconnapi_s tconnapi_t;
@@ -13,10 +13,7 @@ typedef void (*tconnapi_on_recv_func)(tconnapi_t *self, const sip_cid_t *cid, co
 
 struct tconnapi_s
 {
-	int iid;
-	tbus_t *itb;
-	int oid;
-	tbus_t *otb;
+    tbusapi_t tbusapi;
 
 	encode_t encode;
 	tconnapi_on_connect_func on_connect;

@@ -21,7 +21,7 @@ struct tbusapi_s
 	tbus_t *otb;
 
 	struct iovec iov[TBUSAPI_IOV_NUM];
-	uint32_t iov_num;
+	uint16_t iov_num;
 
 	tbusapi_on_recviov_func on_recviov;
 	tbusapi_on_recv_func on_recv;
@@ -29,7 +29,7 @@ struct tbusapi_s
 	tbusapi_encode_func encode;
 };
 
-TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num, key_t output_tbuskey);
+TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num, key_t output_tbuskey);
 
 void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len);
 

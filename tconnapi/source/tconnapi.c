@@ -6,114 +6,102 @@
 #include <sys/shm.h>
 #include <string.h>
 
-static void send_rsp(tconnapi_t *self, sip_rsp_t *rsp, const char* data)
+typedef struct tconnapi_rsp_s
 {
-    size_t head_size;
-    tbus_atomic_size_t write_size;
-    char *buf;
+    sip_rsp_t head;
+    const char* body;
+   	encode_t encode;
+}tconnapi_rsp_t;
 
-    head_size = SIZEOF_SIP_RSP_T(rsp);
-    write_size = tbus_send_begin(self->otb, &buf);
-	if(write_size < head_size)
-	{
-		goto done;
-	}
+static tbus_atomic_size_t tconnapi_encode(char *dst, size_t dst_len, const char *src, size_t src_len)
+{
+    const tconnapi_rsp_t *rsp = (const tconnapi_rsp_t *)src;
+    tbus_atomic_size_t head_size = (tbus_atomic_size_t)SIZEOF_SIP_RSP_T(&rsp->head);
+    sip_rsp_t *head = NULL;
+   
+    if(dst_len < head_size)
+    {
+        goto error;
+    }
 
-	if(data)
-	{
-		rsp->size = self->encode(data, buf + head_size, buf + write_size);
-		if(rsp->size == 0)
-		{
-			goto done;
-		}
-	}
-	else
-	{
-		rsp->size = 0;
-	}
-	if(write_size < head_size + rsp->size)
-	{
-		goto done;
-	}
+    memcpy(dst, &rsp->head, head_size);
+    head = (sip_rsp_t*)dst;
+    
+    if(rsp->body)
+    {
+        head->size = rsp->encode(rsp->body, dst + head_size, dst + dst_len);
+        if(head->size == 0)
+        {
+            goto error;
+        }
+    }
+    else
+    {
+        head->size = 0;
+    }
 
-	memcpy(buf, rsp, head_size); 
-	tbus_send_end(self->otb, (tbus_atomic_size_t)(head_size + rsp->size));
-	
-done:
-    return;
+    return head_size + head->size;
+error:
+    //close connection
+    return 0;
 }
 
 void tconnapi_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num, const void* data)
 {
-    sip_rsp_t rsp;
+    tconnapi_rsp_t rsp;
+    rsp.body = data;
+    rsp.encode = self->encode;
 
-	rsp.cmd = e_sip_rsp_cmd_send;
-    rsp.cid_list_num = cid_vec_num;
-	memcpy(rsp.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-	send_rsp(self, &rsp, data);
+    
+	rsp.head.cmd = e_sip_rsp_cmd_send;
+    rsp.head.cid_list_num = cid_vec_num;
+	memcpy(rsp.head.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
+	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
 }
 
 void tconnapi_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num)
 {
-    sip_rsp_t rsp;
+    tconnapi_rsp_t rsp;
+    rsp.body = NULL;
+    rsp.encode = self->encode;
 
-    rsp.cmd = e_sip_rsp_cmd_close;
-    rsp.cid_list_num = cid_vec_num;
-	memcpy(rsp.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-    send_rsp(self, &rsp, NULL);
+    rsp.head.cmd = e_sip_rsp_cmd_close;
+    rsp.head.cid_list_num = cid_vec_num;
+	memcpy(rsp.head.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
+	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
 }
 
 void tconnapi_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num)
 {
-    sip_rsp_t rsp;
+    tconnapi_rsp_t rsp;
 
-    rsp.cmd = e_sip_rsp_cmd_accept;
-    rsp.cid_list_num = cid_vec_num;
-	memcpy(rsp.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-    send_rsp(self, &rsp, NULL);
+    rsp.body = NULL;
+    rsp.encode = self->encode;
+
+    rsp.head.cmd = e_sip_rsp_cmd_accept;
+    rsp.head.cid_list_num = cid_vec_num;
+	memcpy(rsp.head.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
+	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
 }
 
-TERROR_CODE tconnapi_process(tconnapi_t *self)
+static void tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
-    sip_req_t *req;
-	tbus_atomic_size_t message_len = 0;
-    struct iovec iov[1];
-    size_t iov_num;
-	char *message = NULL;
-	tbus_atomic_size_t tbus_head;
-
-    iov_num = 1;
-
-    tbus_head = tbus_read_begin(self->itb, iov, &iov_num);
-    if(iov_num == 0)
-    {
-        if(tbus_head != self->itb->head_offset)
-        {        
-            goto read_end;
-        }
-        else
-        {
-            ret = E_TS_WOULD_BLOCK;
-            goto done;
-        }
-    }
-
-    message = iov[0].iov_base;
-    message_len = (tbus_atomic_size_t)iov[0].iov_len;
-
-	if(message_len < sizeof(sip_req_t))
+    tconnapi_t *self = TLIBC_CONTAINER_OF(super, tconnapi_t, tbusapi);
+    const sip_req_t *req = (const sip_req_t *)buf;
+    
+	if(buf_len < sizeof(sip_req_t))
 	{
-        ERROR_PRINT("message_len < sizeof(sip_req_t)");
-		goto read_end;
-	}
-	req = (sip_req_t*)message;
-	if(sizeof(sip_req_t) + req->size != message_len)
-	{
-       	ERROR_PRINT("sizeof(sip_req_t) != message_len");
-		goto read_end;
+        ERROR_PRINT("buf_len < sizeof(sip_req_t)");
+        goto done;
 	}
 
+	if(sizeof(sip_req_t) + req->size > buf_len)
+	{
+        ERROR_PRINT("sizeof(sip_req_t) + req->size > buf_len");
+	    goto done;
+	}
+
+	
     switch(req->cmd)
     {
     case e_sip_req_cmd_connect:
@@ -133,7 +121,7 @@ TERROR_CODE tconnapi_process(tconnapi_t *self)
 		else
 		{
 			const char *iter, *limit, *next;
-			iter = message + sizeof(sip_req_t);
+			iter = buf + sizeof(sip_req_t);
 			limit = iter + req->size;
 			for(; iter < limit; iter = next)
 			{
@@ -144,7 +132,7 @@ TERROR_CODE tconnapi_process(tconnapi_t *self)
 			   	if(packet > limit)
 				{
 					ERROR_PRINT("bad packet head");
-					goto read_end;
+					goto done;
 				}
 				packet_size = *(const bscp_head_t*)iter;
 
@@ -152,7 +140,7 @@ TERROR_CODE tconnapi_process(tconnapi_t *self)
 				if(next > limit)
 				{
 					ERROR_PRINT("packet too long");
-					goto read_end;
+					goto done;
 				}
 				if(self->on_recv)
 				{
@@ -163,44 +151,30 @@ TERROR_CODE tconnapi_process(tconnapi_t *self)
 		break;
 	default:
         ERROR_PRINT("unknow msg");
-		goto read_end;
+        goto done;
 	}
-
-read_end:
-    tbus_read_end(self->itb, tbus_head);
+	
 done:
-	return ret;
+    return;
+}
+
+TERROR_CODE tconnapi_process(tconnapi_t *self)
+{
+    return tbusapi_process(&self->tbusapi);
 }
 
 TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode)
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
-	self->iid = shmget(ikey, 0, 0666);
-	if(self->iid == -1)
+	ret = tbusapi_init(&self->tbusapi, ikey, 1, okey);
+	if(ret != E_TS_NOERROR)
 	{
-		ret = E_TS_ERRNO;
-		goto done;
+	    goto done;
 	}
-    self->itb = shmat(self->iid , NULL, 0);
-	if((ssize_t)self->itb == -1)
-	{
-		ret = E_TS_ERRNO;
-		goto done;
-	}
-
-	self->oid = shmget(okey, 0, 0666);
-	if(self->oid == -1)
-	{
-		ret = E_TS_ERRNO;
-		goto done;
-	}
-    self->otb = shmat(self->oid, NULL, 0);
-	if((ssize_t)self->otb == -1)
-	{
-		ret = E_TS_ERRNO;
-		goto done;
-	}
+	
+	self->tbusapi.on_recv = tconnapi_on_recv;
+	self->tbusapi.encode = tconnapi_encode;
 
 	self->encode = encode;
 	self->on_connect = NULL;
