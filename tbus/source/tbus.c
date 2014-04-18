@@ -80,6 +80,10 @@ void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len)
 	header->size = len;
 
 	tail_offset += (tbus_atomic_size_t)sizeof(tbus_header_t) + len;
+	if((tail_offset >= tb->size) && (tb->head_offset != 0))
+	{
+		tail_offset = 0;
+	}
 
 	tb->tail_offset = tail_offset;	
 }

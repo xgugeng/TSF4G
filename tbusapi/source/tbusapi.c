@@ -3,6 +3,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/uio.h>
+#include <string.h>
 
 static void on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
 {
@@ -11,6 +12,16 @@ static void on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
 	{
 		self->on_recv(self, iov[i].iov_base, iov[i].iov_len);
 	}
+}
+
+static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, size_t src_len)
+{
+	if(src_len > dst_len)
+	{
+		return 0;
+	}
+	memcpy(dst, src, src_len);
+	return (tbus_atomic_size_t)src_len;
 }
 
 TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num, key_t output_tbuskey)
@@ -52,6 +63,7 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num,
 
 	self->on_recviov = on_recviov;
 	self->on_recv = NULL;
+	self->encode = encode;
 
 done:
 	return ret;
@@ -84,5 +96,19 @@ read_end:
 	tbus_read_end(self->itb, tbus_head);	
 done:
 	return ret;
+}
+
+void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
+{
+	char *buf = NULL;
+	tbus_atomic_size_t buf_size;
+	tbus_atomic_size_t code_size;
+
+	buf_size = tbus_send_begin(self->otb, &buf);
+	code_size = self->encode(buf, buf_size, packet, packet_len);
+	if(code_size > 0)
+	{
+		tbus_send_end(self->otb, code_size);
+	}
 }
 
