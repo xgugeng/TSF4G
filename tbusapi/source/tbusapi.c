@@ -17,16 +17,33 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint32_t iov_num,
 {
 	TERROR_CODE ret = E_TS_NOERROR;
 
-	self->itb_id = shmget(input_tbuskey, 0, 0666);
-	self->itb = shmat(self->itb_id, NULL, 0);
-
-	self->otb_id = shmget(output_tbuskey, 0, 0666);
-	self->otb = shmat(self->otb_id, NULL, 0);
-
-	self->iov_num = iov_num;
-	if(iov_num > 0)
+	if(input_tbuskey == 0)
 	{
-		if(self->itb == NULL)
+		self->itb_id = 0;
+		self->itb = NULL;
+	}
+	else
+	{
+		self->itb_id = shmget(input_tbuskey, 0, 0666);
+		self->itb = shmat(self->itb_id, NULL, 0);
+		if((self->itb == NULL) || (iov_num == 0))
+		{
+			ret = E_TS_ERROR;
+			goto done;
+		}
+		self->iov_num = iov_num;
+	}
+
+	if(output_tbuskey == 0)
+	{
+		self->otb_id = 0;
+		self->otb = NULL;
+	}
+	else
+	{
+		self->otb_id = shmget(output_tbuskey, 0, 0666);
+		self->otb = shmat(self->otb_id, NULL, 0);
+		if(self->otb == NULL)
 		{
 			ret = E_TS_ERROR;
 			goto done;
