@@ -13,7 +13,9 @@ static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 tbusapi_t g_tbusapi;
 
 int main(int argc, char *argv[])
-{ 
+{
+    TERROR_CODE ret;
+
 	if(tbusapi_init(&g_tbusapi, SHM_KEY, 1, 0) != E_TS_NOERROR)
 	{
 		fprintf(stderr, "tbusapi_init failed.\n");
@@ -21,8 +23,19 @@ int main(int argc, char *argv[])
 	}
 
 	g_tbusapi.on_recv = on_recv;
-    return tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+    ret = tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
                      , tbusapi_process, &g_tbusapi
                      , NULL, NULL);
+
+    tbusapi_fini(&g_tbusapi);
+    
+    if(ret == E_TS_NOERROR)
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
 }
 

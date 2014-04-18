@@ -6,8 +6,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include "tlog_print.h"
-
 static void on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
 {
 	uint32_t i;
@@ -41,22 +39,19 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num,
 		self->itb_id = shmget(input_tbuskey, 0, 0666);
 		if(self->itb_id == -1)
 		{
-    		ret = E_TS_ERROR;
-		    ERROR_PRINT("shmget reutrn errno %d, %s", errno, strerror(errno));
+    		ret = E_TS_ERRNO;
 		    goto done;
 		}
 		self->itb = shmat(self->itb_id, NULL, 0);
 		if((ssize_t)self->itb == -1)
 		{
-            ret = E_TS_ERROR;
-            ERROR_PRINT("shmat reutrn errno %d, %s", errno, strerror(errno));
+            ret = E_TS_ERRNO;
             goto done;
 		}
 		
 		if(iov_num <= 0)
 		{
-    		ERROR_PRINT("iov_num must be greater than 0.");
-			ret = E_TS_ERROR;
+			ret = E_TS_ERRNO;
 			goto done;
 		}
 		self->iov_num = iov_num;
@@ -72,25 +67,28 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num,
 		self->otb_id = shmget(output_tbuskey, 0, 0666);
 		if(self->otb_id == -1)
 		{
-    		ret = E_TS_ERROR;
-		    ERROR_PRINT("shmget reutrn errno %d, %s", errno, strerror(errno));
-		    goto done;
+    		ret = E_TS_ERRNO;
+		    goto shmdt_itb;
 		}
 		
 		self->otb = shmat(self->otb_id, NULL, 0);
 		if((ssize_t)self->otb == -1)
-		{		
-            ret = E_TS_ERROR;
-            ERROR_PRINT("shmat reutrn errno %d, %s", errno, strerror(errno));
-            goto done;
+		{
+            ret = E_TS_ERRNO;
+            goto shmdt_itb;
 		}
 	}
 
 	self->encode = encode;
 	self->on_recviov = on_recviov;
 	self->on_recv = NULL;
-
 done:
+	return ret;
+shmdt_itb:
+    if(self->itb)
+    {
+        shmdt(self->itb);
+    }
 	return ret;
 }
 
@@ -135,5 +133,17 @@ void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
 	{
 		tbus_send_end(self->otb, code_size);
 	}
+}
+
+void tbusapi_fini(tbusapi_t *self)
+{
+    if(self->itb)
+    {
+        shmdt(self->itb);
+    }
+    if(self->otb)
+    {
+        shmdt(self->otb);
+    }
 }
 

@@ -1,5 +1,4 @@
 #include "tconnapi.h"
-#include "tlog_print.h"
 #include "tbus.h"
 #include "bscp_types.h"
 
@@ -91,13 +90,11 @@ static void tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
     
 	if(buf_len < sizeof(sip_req_t))
 	{
-        ERROR_PRINT("buf_len < sizeof(sip_req_t)");
         goto done;
 	}
 
 	if(sizeof(sip_req_t) + req->size > buf_len)
 	{
-        ERROR_PRINT("sizeof(sip_req_t) + req->size > buf_len");
 	    goto done;
 	}
 
@@ -131,7 +128,6 @@ static void tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 
 			   	if(packet > limit)
 				{
-					ERROR_PRINT("bad packet head");
 					goto done;
 				}
 				packet_size = *(const bscp_head_t*)iter;
@@ -139,7 +135,6 @@ static void tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 				next = packet + packet_size;
 				if(next > limit)
 				{
-					ERROR_PRINT("packet too long");
 					goto done;
 				}
 				if(self->on_recv)
@@ -150,7 +145,6 @@ static void tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 		}
 		break;
 	default:
-        ERROR_PRINT("unknow msg");
         goto done;
 	}
 	

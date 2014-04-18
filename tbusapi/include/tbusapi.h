@@ -31,6 +31,8 @@ struct tbusapi_s
 
 TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num, key_t output_tbuskey);
 
+void tbusapi_fini(tbusapi_t *self);
+
 void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len);
 
 TERROR_CODE tbusapi_process(tbusapi_t *self);
