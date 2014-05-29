@@ -1,6 +1,10 @@
 #ifndef _H_TBUS
 #define _H_TBUS
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "platform/tlibc_platform.h"
 
 #include "terrno.h"
@@ -45,6 +49,9 @@ void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);
 tbus_atomic_size_t tbus_read_begin(tbus_t *tb, struct iovec *iov, size_t *iov_num);
 void tbus_read_end(tbus_t *tb, tbus_atomic_size_t head);
 
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TBUS
 

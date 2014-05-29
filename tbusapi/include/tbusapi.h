@@ -1,6 +1,10 @@
 #ifndef _H_TBUSAPI_H
 #define _H_TBUSAPI_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "terrno.h"
 #include "tbus.h"
 
@@ -36,6 +40,10 @@ void tbusapi_fini(tbusapi_t *self);
 void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len);
 
 TERROR_CODE tbusapi_process(tbusapi_t *self);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TBUSAPI_H
 

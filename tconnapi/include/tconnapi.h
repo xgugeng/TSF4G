@@ -1,6 +1,10 @@
 #ifndef _H_TCONNAPI_H
 #define _H_TCONNAPI_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "tbusapi.h"
 #include "sip.h"
 
@@ -33,6 +37,10 @@ void tconnapi_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_
 void tconnapi_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num);
 
 TERROR_CODE tconnapi_process(tconnapi_t *self);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TCONNAPI_H
 

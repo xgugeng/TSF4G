@@ -1,6 +1,10 @@
 #ifndef _H_TLOG_APPENDER_ROLLING_FILE_H
 #define _H_TLOG_APPENDER_ROLLING_FILE_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "tlog_config_reader.h"
 #include <stdio.h>
 
@@ -16,6 +20,10 @@ void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tl
 void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config, const tlog_message_t *message);
 
 void tlog_appender_rolling_file_fini(tlog_appener_rolling_file_t *self);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TLOG_APPENDER_ROLLING_FILE_INSTANCE_H
 

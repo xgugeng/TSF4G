@@ -1,6 +1,10 @@
 #ifndef _H_TLOG
 #define _H_TLOG
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "platform/tlibc_platform.h"
 #include "tlog_config_types.h"
 #include "appender/tlog_appender_rolling_file.h"
@@ -43,6 +47,10 @@ TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config);
 void tlog_write(tlog_t *self, const tlog_message_t *message);
 
 void tlog_fini(tlog_t *self);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TLOG
 

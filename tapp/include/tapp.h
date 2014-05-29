@@ -1,6 +1,10 @@
 #ifndef _H_TAPP
 #define _H_TAPP
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "protocol/tlibc_xml_reader.h"
 #include "terrno.h"
 #include <unistd.h>
@@ -46,6 +50,9 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
 
 
 
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TAPP
 

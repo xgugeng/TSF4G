@@ -22,3 +22,4 @@ dep:
 install:
 	mkdir -p $(PREFIX)
 	cp -rf lib $(PREFIX)
+	cp -rf include $(PREFIX)

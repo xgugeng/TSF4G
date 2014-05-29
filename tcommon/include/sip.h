@@ -1,5 +1,10 @@
 #ifndef _H_SIP_H
 #define _H_SIP_H
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 /*
 * The Socket Interface Protocol
 * sip使用tbus进行传输， 对socket接口进行了包装。
@@ -56,5 +61,8 @@ typedef struct sip_rsp_s
 }sip_rsp_t;
 #define SIZEOF_SIP_RSP_T(h) (size_t)((const char*)&(h)->cid_list[(h)->cid_list_num] - (const char*)(h))
 
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_SIP_H

@@ -1,6 +1,10 @@
 #ifndef _H_TLOG_APPENDER_SHM_H
 #define _H_TLOG_APPENDER_SHM_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "tbus.h"
 #include "terrno.h"
 #include "tlog_config_types.h"
@@ -16,6 +20,10 @@ void tlog_appender_shm_log(tlog_appender_shm_t *self, const tlog_config_appender
 
 void tlog_appender_shm_fini(tlog_appender_shm_t *self);
 
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TLOG_APPENDER_SHM_H
 

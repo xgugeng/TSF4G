@@ -1,6 +1,10 @@
 #ifndef _H_TLOG_LOG_H
 #define _H_TLOG_LOG_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "tlog.h"
 
 #include <stdarg.h>
@@ -35,6 +39,9 @@ extern tlog_t g_tlog_instance;
 
 void tlog_log(tlog_t *self, tlog_level_t level, const char* file, uint32_t line, ...);
 
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TLOG_LOG_H
 

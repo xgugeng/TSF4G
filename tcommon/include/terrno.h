@@ -1,6 +1,10 @@
 #ifndef _H_TERRNO_H
 #define _H_TERRNO_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 typedef enum _TERROR_CODE
 {
 	E_TS_NOERROR = 0,
@@ -16,6 +20,10 @@ typedef enum _TERROR_CODE
     E_TS_BAD_PACKAGE = 9,
 	E_TS_MYSQL_ERROR = 10,
 }TERROR_CODE;
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif
 

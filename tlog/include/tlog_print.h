@@ -1,6 +1,10 @@
 #ifndef _H_TLOG_PRINT_H
 #define _H_TLOG_PRINT_H
 
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
 #include "tlog_config_types.h"
 
 #include <stdarg.h>
@@ -48,6 +52,9 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
 
 void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...);
 
+#ifdef  __cplusplus
+}
+#endif
 
 #endif//_H_TLOG_PRINT_H
 
