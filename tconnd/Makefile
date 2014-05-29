@@ -2,8 +2,9 @@ BINARY=bin/tconnd
 TARGET= $(BINARY)
 HOME=../
 CINC=-I/usr/local/tlibc/include/ -Iinclude -Itdr -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tapp/include/
-LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbus/lib/ -L$(HOME)/tapp/lib/ -L/usr/local/tlibc/lib/
-DEPLIBS=-ltlog -ltbus -ltapp -ltlibc
+LDPATH=-L/usr/local/tlibc/lib/
+DEPLIBS=-ltlibc
+DEPOFILE=$(HOME)/tlog/lib/libtlog.a $(HOME)/tbus/lib/libtbus.a $(HOME)/tapp/lib/libtapp.a
 TDRINC=-I$(HOME)/tcommon/tdr/ -I$(HOME)/tlog/tdr/
 
 CFILE=$(wildcard source/*.c)

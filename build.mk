@@ -41,7 +41,7 @@ all:dep $(GENFILE) $(TARGET)
 $(LIBRARY): $(OFILE)
 	$(REALAR) r $(LIBRARY) $^
 
-$(BINARY): $(OFILE)
+$(BINARY): $(OFILE) $(DEPOFILE)
 	$(REALLD) -o $@ $^ $(DEPLIBS)
 
 %.o: %.c
