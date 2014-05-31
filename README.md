@@ -1,5 +1,7 @@
-TServer
-=======
+The Service Framework For Game
+==============================
+**TSF4G**
+
 - TCommon 公共的定义， 以及对bscp和sip协议的处理函数。
 - TLog 日志工具, 支持写log到文件和共享内存。
 - TLogD 日志进程， 支持把共享内存中的Log存入mysql数据库。
@@ -11,8 +13,8 @@ TServer
 项目依赖
 ========
 
-- 1.[TLibC](http://github.com/TDorm/TLibC)
-- 2.[TData](http://github.com/TDorm/TData)
+- 1.[TLibC](http://github.com/randyliu/TLibC)
+- 2.[TDR](http://github.com/randyliu/TDR)
 
 安装
 ====
