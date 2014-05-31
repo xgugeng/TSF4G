@@ -4,7 +4,7 @@ INCLUDE=include
 BINARY=bin
 LIBRARY=lib
 ETC=etc
-TDATA=tdata
+TDR=tdr
 
 CC = gcc
 AR = ar
@@ -18,13 +18,13 @@ EXECUTABLE?=0
 DEPTARET_DIR?=..
 DEPTARGET?=
 
-DEPLOCALINCLUDE?=/usr/local/TLibC/include
-DEPLOCALLD?=/usr/local/TLibC/lib
+DEPLOCALINCLUDE?=/usr/local/tlibc/include
+DEPLOCALLD?=/usr/local/tlibc/lib
 DEPLOCALLIBS?=tlibc
 
 PREFIX?=/usr/local/$(NAME)
-TDATA_FILE?=$(wildcard $(INCLUDE)/*.td)
-SQL_TDATA_FILE?=
+TDR_FILE?=$(wildcard $(INCLUDE)/*.td)
+SQL_TDR_FILE?=
 CFILE?=$(wildcard $(SOURCE)/*.c)
 
 CINC?=-I $(INCLUDE) 
@@ -51,18 +51,18 @@ REALCC=$(CC) $(CFLAGS)
 REALLD=$(CC) $(LDPATH)
 REALAR=$(AR)
 REALINSTALL=$(INSTALL)
-REALTDATA=$(TDATA) $(CINC)
+REALTDR=$(TDR) $(CINC)
 
 
 
-SQL_FILE=$(patsubst %.td, %_tables.sql, $(SQL_TDATA_FILE))
+SQL_FILE=$(patsubst %.td, %_tables.sql, $(SQL_TDR_FILE))
 
-TYPES_HFILE=$(patsubst %.td, %_types.h, $(TDATA_FILE))
-READER_HFILE=$(TDATA_FILE:.td=_reader.h)
-WRITER_HFILE=$(TDATA_FILE:.td=_writer.h)
-READER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_reader.c, $(TDATA_FILE))
+TYPES_HFILE=$(patsubst %.td, %_types.h, $(TDR_FILE))
+READER_HFILE=$(TDR_FILE:.td=_reader.h)
+WRITER_HFILE=$(TDR_FILE:.td=_writer.h)
+READER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_reader.c, $(TDR_FILE))
 READER_OFILE=$(READER_CFILE:.c=.o)
-WRITER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_writer.c, $(TDATA_FILE))
+WRITER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_writer.c, $(TDR_FILE))
 WRITER_OFILE=$(WRITER_CFILE:.c=.o)
 
 
@@ -96,23 +96,25 @@ release:
 %.o: %.c
 	$(REALCC) -o $@ -c $<
 
-$(SQL_FILE):$(SQL_TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -g sql $^
+$(SQL_FILE):$(SQL_TDR_FILE)
+	$(REALTDR) -o $(INCLUDE) -g sql $^
 
-$(TYPES_HFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -g types_h $^
+$(TYPES_HFILE):$(TDR_FILE)
+	$(REALTDR) -o $(INCLUDE) -g types_h $^
 
-$(READER_HFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -g reader_h $^
+$(READER_HFILE):$(TDR_FILE)
+	$(REALTDR) -o $(INCLUDE) -g reader_h $^
 
-$(WRITER_HFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(INCLUDE) -g writer_h $^
+$(WRITER_HFILE):$(TDR_FILE)
+	$(REALTDR) -o $(INCLUDE) -g writer_h $^
 
-$(READER_CFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(SOURCE) -g reader_c $^
+$(READER_CFILE):$(TDR_FILE)
+	@mkdir -p $(SOURCE)
+	$(REALTDR) -o $(SOURCE) -g reader_c $^
 	
-$(WRITER_CFILE):$(TDATA_FILE)
-	$(REALTDATA) -o $(SOURCE) -g writer_c $^
+$(WRITER_CFILE):$(TDR_FILE)
+	@mkdir -p $(SOURCE)
+	$(REALTDR) -o $(SOURCE) -g writer_c $^
 
 install:
 	@mkdir -p $(PREFIX)

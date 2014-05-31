@@ -68,7 +68,7 @@ tlog_fini:
 
 }
 
-static TERROR_CODE process()
+static TERROR_CODE process(void *arg)
 {
     TERROR_CODE ret = E_TS_WOULD_BLOCK;
     TERROR_CODE r;
@@ -124,7 +124,9 @@ int main(int argc, char **argv)
 		goto ERROR_RET;
 	}   
 
-    if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
+    if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+                , process, NULL
+                , NULL, NULL) == E_TS_NOERROR)
     {
         ret = 0;
     }

@@ -1,3 +1,3 @@
-SUBMODS = tcommon tapp tlog tbus tlogd tbusmgr tconnd tutorials utils
+SUBMODS = tcommon tapp tlog tbusapi tbus tlogd tbusmgr tconnd tconnapi tutorials utils
 
 include search.mk

@@ -1,6 +1,5 @@
-NAME=tcommon
+NAME=tbusapi
 EXECUTABLE=0
-DEPTARGET=tbus tlog
+DEPTARGET=tcommon tbus tlog
 DEPTARET_DIR?=..
-
 include ../build.mk

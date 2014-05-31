@@ -1,41 +1,41 @@
-#include "tbus.h"
-
-
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
+#include "tbusapi.h"
+#include "tapp.h"
 
 #include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
 
 #define SHM_KEY 123456
 
-char *message = NULL;
-
-int main()
+static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 {
-	int shm_id = shmget(SHM_KEY, 0, 0666);
-	tbus_t *tb = shmat(shm_id, NULL, 0);
-	tbus_atomic_size_t len = 0;
-	uint32_t i;
+	printf("recv %zu bytes, message:%s\n", buf_len, buf);
+}
 
-	for(i = 0;; ++i)
+tbusapi_t g_tbusapi;
+
+int main(int argc, char *argv[])
+{
+    TERROR_CODE ret;
+
+	if(tbusapi_init(&g_tbusapi, SHM_KEY, 1, 0) != E_TS_NOERROR)
 	{
-		len = tbus_read_begin(tb, &message);
-		if(len == 0)
-		{
-    		usleep(1000);
-			continue;
-		}
-		else
-		{
-            printf("recv %u bytes, message:%s\n", len, message);
-			tbus_read_end(tb, len);	
-		}
+		fprintf(stderr, "tbusapi_init failed.\n");
+		exit(1);
 	}
-	
-	return 0;
+
+	g_tbusapi.on_recv = on_recv;
+    ret = tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+                     , tbusapi_process, &g_tbusapi
+                     , NULL, NULL);
+
+    tbusapi_fini(&g_tbusapi);
+    
+    if(ret == E_TS_NOERROR)
+    {
+        return 0;
+    }
+    else
+    {
+        return 1;
+    }
 }
 

@@ -10,6 +10,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <getopt.h>
+#include <stdarg.h>
+
 
 static void version()
 {
@@ -166,13 +168,17 @@ static void on_signal(int sig)
     }
 }
 
-TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_limit,
-                        tapp_func_t sigusr1, tapp_func_t sigusr2)
+TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
+                        tapp_func_t sigusr1, void* usr1_arg,
+                        tapp_func_t sigusr2, void* usr2_arg,
+                        ...)
 {
+	TERROR_CODE proc_ret;
 	TERROR_CODE r;
     TERROR_CODE ret = E_TS_NOERROR;
     uint32_t idle_count = 0;
     struct sigaction  sa;
+    va_list valist;
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = on_signal;
@@ -208,7 +214,7 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             g_sigusr1 = false;            
             if(sigusr1)
             {
-                r = sigusr1();
+                r = sigusr1(usr1_arg);
                 if(r != E_TS_NOERROR)
                 {
 					ret = r;
@@ -223,7 +229,7 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             g_sigusr2 = false;            
             if(sigusr2)
             {
-                r = sigusr2();
+                r = sigusr2(usr2_arg);
                 if(r != E_TS_NOERROR)
                 {
 					ret = r;
@@ -233,9 +239,34 @@ TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_lim
             idle_count = 0;
         }
 
-        
-        r = process();
-        switch(r)
+        proc_ret = E_TS_WOULD_BLOCK;
+        va_start(valist, usr2_arg);
+        for(;;)
+        {
+            tapp_func_t func = NULL;
+            void *arg = NULL;        
+
+            func = va_arg(valist, tapp_func_t);
+            if(func == NULL)
+            {
+                break;
+            }            
+            arg = va_arg(valist, void *);
+            
+            r = func(arg);
+            if(r == E_TS_NOERROR)
+            {
+                proc_ret = E_TS_NOERROR;
+            }
+            else if(r != E_TS_WOULD_BLOCK)
+            {
+                proc_ret = r;
+                break;
+            }
+        }
+        va_end(valist);
+
+        switch(proc_ret)
         {
         case E_TS_NOERROR:
             idle_count = 0;

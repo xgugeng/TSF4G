@@ -7,8 +7,8 @@ DEPLOCALINCLUDE=/usr/local/mysql/include
 DEPLOCALLD=/usr/local/mysql/lib
 DEPLOCALLIBS=mysqlclient
 
-DEPLOCALINCLUDE+=/usr/local/TLibC/include
-DEPLOCALLD+=/usr/local/TLibC/lib
+DEPLOCALINCLUDE+=/usr/local/tlibc/include
+DEPLOCALLD+=/usr/local/tlibc/lib
 DEPLOCALLIBS+=tlibc
 
 include ../build.mk

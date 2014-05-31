@@ -2,93 +2,59 @@
 #define _H_SIP_H
 /*
 * The Socket Interface Protocol
+* sip使用tbus进行传输， 对socket接口进行了包装。
 */
 
 #include <stdint.h>
-#include <unistd.h>
-#include "core/tlibc_util.h"
 
-#pragma pack(push,1)
+/*sn 在回话中不会重复*/
 typedef uint32_t sip_size_t;
-typedef struct _sip_cid_t
+typedef struct sip_cid_s
 {
     uint64_t sn;
     uint32_t id;
 }sip_cid_t;
 
 
-typedef enum _sip_req_cmd_t
+/*
+ * req =  固定长度的包头 +  包体
+ * tbus一次只发送一个req，server用此特性来简化处理流程。
+ */
+typedef enum sip_req_cmd_e
 {
-	e_sip_req_cmd_bein = 1,
-	e_sip_req_cmd_connect = 2,
-	e_sip_req_cmd_recv = 3,
-    e_sip_req_cmd_end = 4,
+	e_sip_req_cmd_connect = 1,
+	e_sip_req_cmd_recv = 2,
 }sip_req_cmd_t;
 
-/*请求=  固定长度的包头 +  包体*/
-typedef struct _sip_req_t
+typedef struct sip_req_s
 {
 	sip_req_cmd_t	cmd;            //指令
     sip_size_t      size;           //包体长度
 	sip_cid_t       cid;            //连接id
 }sip_req_t;
-#define SIP_REQ_SIZE sizeof(sip_req_t)
-
-#define sip_req_t_code(h) \
-{\
-    tlibc_host16_to_little((h)->cmd)\
-    tlibc_host64_to_little((h)->cid.sn)\
-    tlibc_host32_to_little((h)->cid.id)\
-    tlibc_host32_to_little((h)->size)\
-}
-
-#define sip_req_t_decode(h) \
-{\
-    tlibc_little_to_host16((h)->cmd)\
-    tlibc_little_to_host32((h)->size)\
-    tlibc_little_to_host64((h)->cid.sn)\
-    tlibc_little_to_host32((h)->cid.id)\
-}
 
 
-typedef enum _sip_rsp_cmd_t
+
+/*
+ * rsp = 不定长度的包头 + 包体
+ * tbus一次发送多个rsp，tconnd用此特性来减少系统调用次数。
+ */
+typedef enum sip_rsp_cmd_s
 {
 	e_sip_rsp_cmd_accept = 3,
 	e_sip_rsp_cmd_send = 4,
 	e_sip_rsp_cmd_close = 5,
 }sip_rsp_cmd_t;
 
-/*回复= 不定长度的包头 + 包体*/
-#define SIP_BROADCAST_NUM 65536
-typedef struct _sip_rsp_t
+#define SIP_BROADCAST_NUM 65535
+typedef struct sip_rsp_s
 {
 	sip_rsp_cmd_t		cmd;                                //指令
     sip_size_t          size;                               //包体长度
-	uint32_t            cid_list_num;                       //连接id个数
+	uint16_t            cid_list_num;                       //连接id个数, > 0
 	sip_cid_t           cid_list[SIP_BROADCAST_NUM];        //连接id数组
 }sip_rsp_t;
-#define SIP_RSP_T_CODE_SIZE(h) (sizeof(sip_rsp_t) - sizeof(sip_cid_t) * (SIP_BROADCAST_NUM - (h)->cid_list_num))
-
-#define sip_rsp_t_code(h) \
-{\
-    size_t i;\
-    tlibc_host16_to_little((h)->cmd)\
-    tlibc_host32_to_little((h)->size)\
-    tlibc_host32_to_little((h)->cid_list_num)\
-    for(i = 0; i < (h)->cid_list_num; ++i)\
-    {\
-        tlibc_host64_to_little((h)->cid_list[i].sn)\
-        tlibc_host32_to_little((h)->cid_list[i].id)\
-    }\
-}
-
-//正整数表示成功解码的长度
-//-1表示发生错误
-ssize_t sip_rst_t_decode(char *buff_start, char *buff_limit);
-
-
-
-#pragma pack(pop)
+#define SIZEOF_SIP_RSP_T(h) (size_t)((const char*)&(h)->cid_list[(h)->cid_list_num] - (const char*)(h))
 
 
 #endif//_H_SIP_H

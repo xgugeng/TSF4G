@@ -4,5 +4,5 @@
 
 TBUSMGR=../../tbusmgr/bin/tbusmgr
 ipcrm -M 20001
-${TBUSMGR} -s 6553600 -w 20001
+${TBUSMGR} -s65535 -n1024 -w 20001
 

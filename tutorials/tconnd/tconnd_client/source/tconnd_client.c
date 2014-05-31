@@ -18,7 +18,8 @@
 #include <sys/time.h>
 #include <string.h>
 #include <math.h>
-#include "bscp.h"
+#include "bscp_types.h"
+
 
 
 #include "tlog_log.h"
@@ -167,7 +168,6 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 	size_t send_size, total_size;
     
 	self->packet_buff.packet_head = sizeof(robot_proto_t);
-	tlibc_host16_to_little(*(bscp_head_t*)self->packet);
 	memcpy(self->packet_buff.packet + PACKET_HEAD_LENGTH, msg, sizeof(robot_proto_t));
 	total_size = PACKET_HEAD_LENGTH + sizeof(robot_proto_t);
 	send_size = 0;
@@ -186,6 +186,11 @@ static bool robot_send(robot_t *self, const robot_proto_t *msg)
 				return false;
 			}
 			usleep(IDLE_TIME_US);
+		}
+
+		if(!g_working)
+		{
+		    return false;
 		}
 	}
     self->total_send += total_size;
@@ -217,6 +222,11 @@ static bool robot_expect(robot_t *self, robot_proto_t *msg)
 				return false;
 			}
             usleep(IDLE_TIME_US);
+		}
+
+		if(!g_working)
+		{
+		    return false;
 		}
 	}
 }
@@ -258,6 +268,8 @@ static void robot_test_login(robot_t *self)
 		{
 			goto error_ret;
 		}
+
+		memset(&rsp, 0, sizeof(robot_proto_t));
 
 		if(!robot_expect(self, &rsp))
 		{
@@ -329,7 +341,7 @@ static void init()
 #define PRINT_INTERVAL_MS 1000
 static uint64_t last_print_time = 0;
 
-static TERROR_CODE process()
+static TERROR_CODE process(void *arg)
 {
 	uint32_t rtt_max, rtt_min;
 	TERROR_CODE ret = E_TS_WOULD_BLOCK;
@@ -427,8 +439,12 @@ static void fini()
 		total_send += g_robot[i].total_send;
         total_recv += g_robot[i].total_recv;
         lose_connection += g_robot[i].lost_connection;
-	}    
+	}
 	testing_time = get_current_ms() - g_prog_starting_ms;
+	if(testing_time < 1000)
+	{
+	    testing_time = 1000;
+	}
 	WARN_PRINT("Summary:");
 	INFO_PRINT("    robot_num : %u", g_config.robot_num);
     INFO_PRINT("    lose_connection : %u", lose_connection);
@@ -454,7 +470,9 @@ int main(int argc, char *argv[])
 
 	init();
 
-	if(tapp_loop(process, TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL) == E_TS_NOERROR)
+	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+	            , process, NULL
+	            , NULL, NULL) == E_TS_NOERROR)
 	{
 		ret = 0;
 	}

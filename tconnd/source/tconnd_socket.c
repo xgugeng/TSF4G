@@ -8,7 +8,6 @@
 
 #include "core/tlibc_util.h" 
 #include "sip.h"
-#include "bscp.h"
 
 #include "tconnd_timer.h"
 #include "tconnd_mempool.h"
@@ -131,11 +130,6 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
     ssize_t send_size;
     uint64_t cur_tick;
 
-    if(self->iov_num > 1)
-    {
-        INFO_LOG("socket [%d, %"PRIu64"] iov_num [%d].", self->id, self->mempool_entry.sn, self->iov_num);
-    }
-
 
     if(self->status != e_tconnd_socket_status_established)
     {
@@ -156,7 +150,7 @@ again:
 
     
     if(send_size < 0)
-    {    
+    {
         if((errno == EINTR) && ((g_cur_ticks != cur_tick)))
         {
             goto again;
@@ -180,19 +174,6 @@ again:
         ret = E_TS_CLOSE;
         goto done;
     }
-
-#if TS_DEBUG
-    {
-        int i;
-        
-        DEBUG_LOG("socket[%d, %llu] self->iov_num = %d", self->id, self->mempool_entry.sn, self->iov_num);
-        for(i = 0;i < self->iov_num; ++i)
-        {
-            DEBUG_LOG("socket[%d, %llu] self->iov[i].iov_base = %zu", self->id, self->mempool_entry.sn, (char*)self->iov[i].iov_base - g_input_tbus->buff);
-            DEBUG_LOG("socket[%d, %llu] self->iov[i].iov_len = %zu", self->id, self->mempool_entry.sn, self->iov[i].iov_len);
-        }
-    }
-#endif//
 
     self->iov_num = 0;
     self->iov_total_size = 0;
@@ -315,7 +296,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     assert(self->status == e_tconnd_socket_status_established);
     
-    header_size = SIP_REQ_SIZE;
+    header_size = sizeof(sip_req_t);
     if(self->package_buff == NULL)
     {
         package_size = 0;
@@ -329,7 +310,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         }
     }
     
-    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr, header_size + package_size + 1);
+    tbus_size = tbus_send_begin(g_output_tbus, &header_ptr);
 
     if(tbus_size < header_size + package_size + 1)
     {
@@ -366,7 +347,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         pkg->cid.id = self->id;
         pkg->cid.sn = self->mempool_entry.sn;
         pkg->size = 0;
-        sip_req_t_code(pkg);
         tbus_send_end(g_output_tbus, header_size);
         ret = E_TS_CLOSE;
         DEBUG_LOG("socket [%u, %"PRIu64"] closed by client.", self->id, self->mempool_entry.sn);
@@ -389,7 +369,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         ERROR_PRINT("haha\n");
     }
     
-    if(limit_ptr < package_ptr + BSCP_HEAD_T_SIZE)
+    if(limit_ptr < package_ptr + sizeof(bscp_head_t))
     {
         remain_ptr = package_ptr;
     }
@@ -400,12 +380,12 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         {        
             bscp_head_t remain_size;
             remain_ptr = iter;
-            if((size_t)(limit_ptr - iter) < BSCP_HEAD_T_SIZE)
+            if((size_t)(limit_ptr - iter) < sizeof(bscp_head_t))
             {
                 break;
             }
             remain_size = *(bscp_head_t*)iter;
-            bscp_head_t_decode(remain_size);
+
 
             DEBUG_LOG("receive a pakcage with length [%u]", remain_size);
             if(remain_size > g_config.package_size)
@@ -416,7 +396,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
                 goto done;            
             }
 
-            iter += BSCP_HEAD_T_SIZE + remain_size;
+            iter += sizeof(bscp_head_t) + remain_size;
         }
     }
     
@@ -441,8 +421,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         pkg->cid.id = self->id;
         pkg->cid.sn = self->mempool_entry.sn;
         pkg->size = (sip_size_t)(remain_ptr - package_ptr);
-
-        sip_req_t_code(pkg);
 
         tbus_send_end(g_output_tbus, (tbus_atomic_size_t)(remain_ptr - header_ptr));
         DEBUG_LOG("e_tdgi_cmd_recv sn[%u, %"PRIu64"] size[%u]", pkg->cid.id, pkg->cid.sn, pkg->size);

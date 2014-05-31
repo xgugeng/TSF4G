@@ -21,20 +21,29 @@ typedef tlibc_error_code_t (*tapp_xml_reader_t)(tlibc_abstract_reader_t *self, v
 void tapp_load_config(void *config, int argc, char *argv[], tapp_xml_reader_t reader);
 
 
-typedef TERROR_CODE (*tapp_func_t)();
+typedef TERROR_CODE (*tapp_func_t)(void *arg);
 /*
 *  首先会注册信号处理函数， 然后循环执行以下操作
 * 1. 如果收到SIGTERM 或SIGINT 信号，主循环会break。
 * 2. 如果收到SIGUSR1 信号，执行sigusr1，如果出错则返回。
 * 3. 如果收到SIGUSR2 信号，执行sigusr2，如果出错则返回。
 * 4. 忽略SIGPIPE信号
-* 5. 执行process
-*      如果process 返回E_TS_NOERROR则会马上进入下一次process
-*      如果process 连续返回E_TS_WOULD_BLOCK 超过idle_limit次, 则usleep(usec)。
-*      如果process 出错， 那么tapp_loop函数会返回process的这个错误码。
+* 5. 执行所有的process 函数， 直到遇到一个NULL。
+*      如果有process出错， 那么tapp_loop返回这个错误码
+*      如果所有process都返回E_TS_WOULD_BLOCK,  那么++idle_count， 如果超过idle_limit次则usleep(usec)。
+*      如果有一个process返回E_TS_NOERROR， 那么idle_count = 0。
+* 例子:
+*     tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+                     , process, NULL
+                     , NULL, NULL)
+
 */
-TERROR_CODE tapp_loop(tapp_func_t process, useconds_t idle_usec, size_t idle_limit,
-                        tapp_func_t sigusr1, tapp_func_t sigusr2);
+TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
+                        tapp_func_t sigusr1, void* usr1_arg,
+                        tapp_func_t sigusr2, void* usr2_arg,
+                        ...);
+
+
 
 
 
