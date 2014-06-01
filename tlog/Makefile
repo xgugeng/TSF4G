@@ -1,5 +1,5 @@
 LIBRARY=lib/libtlog.a
-TARGET=dep $(LIBRARY)
+TARGET= $(LIBRARY)
 HOME=../
 CINC=-Iinclude -Itdr -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr/ -I$(HOME)/tbus/include/ -I/usr/local/tlibc/include
 TDRINC=-Itdr -I$(HOME)/tcommon/tdr/
@@ -13,7 +13,7 @@ READER_TDR_FILE=$(wildcard tdr/*.td)
 include $(HOME)/build.mk
 
 dep:
-	mkdir -p lib
+	@mkdir -p lib
 
 install:
 	mkdir -p $(PREFIX)

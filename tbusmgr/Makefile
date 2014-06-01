@@ -1,5 +1,5 @@
 BINARY=bin/tbusmgr
-TARGET=dep $(BINARY)
+TARGET= $(BINARY)
 HOME=../
 CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/
 LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbus/lib/
@@ -10,7 +10,7 @@ CFILE=$(wildcard source/*.c)
 include $(HOME)/build.mk
 
 dep:
-	mkdir -p bin
+	@mkdir -p bin
 
 install:
 	mkdir -p $(PREFIX)

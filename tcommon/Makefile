@@ -1,5 +1,5 @@
 LIBRARY=lib/libtcommon.a
-TARGET=dep $(LIBRARY)
+TARGET= $(LIBRARY)
 HOME=../
 CINC=-I/usr/local/tlibc/include
 TDRINC=-Itdr
@@ -10,7 +10,7 @@ WRITER_TDR_FILE=$(wildcard tdr/*.td)
 include $(HOME)/build.mk
 
 dep:
-	mkdir -p lib
+	@mkdir -p lib
 
 install:
 	mkdir -p $(PREFIX)

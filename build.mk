@@ -5,10 +5,11 @@ INSTALL=cp -rpf
 TDR=tdr
 
 PREFIX?=/usr/local/tsf4g/
+SOURCES?=.
 
 CFLAGS?=-Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
 
-ifdef MAKE_DEBUG
+ifdef debug
 DEBUG_CFLAGS=-g -ggdb -DMAKE_DEBUG
 else
 DEBUG_CFLAGS=-O3 -DMAKE_RELEASE
@@ -31,11 +32,13 @@ WRITER_OFILE=$(WRITER_HFILE:.h=.o)
 
 
 OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
+
 DFILE=$(CFILE:.c=.d)
+
 GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE)
 .PHONY: all clean dep install tags
 
-all:$(GENFILE) $(TARGET)
+all:dep $(GENFILE) $(TARGET)
 
 $(LIBRARY): $(OFILE)
 	$(REALAR) r $(LIBRARY) $^
@@ -68,14 +71,11 @@ $(WRITER_HFILE):$(WRITER_TDR_FILE)
 $(WRITER_CFILE):$(WRITER_TDR_FILE)
 	$(REALTDR) -g writer_c $^
 
--include $(DFILE)
-
-debug:
-	$(MAKE) all MAKE_DEBUG=1
-
-tags:
-	@find $(SOURCES) -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	@find $(SOURCES) -name "*.h" -or -name "*.c" | cscope -Rbq
+tags:$(GENFILE)
+	find $(SOURCES) -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	find $(SOURCES) -name "*.h" -or -name "*.c" | cscope -Rbq
 
 clean:
 	$(RM) $(TARGET) $(OFILE) $(DFILE) $(GENFILE) tags cscope.in.out cscope.po.out cscope.out
+
+-include $(DFILE)
