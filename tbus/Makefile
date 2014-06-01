@@ -1,5 +1,8 @@
-NAME=tbus
-EXECUTABLE=0
-DEPTARGET=tcommon tbus tlog
-DEPTARET_DIR?=..
-include ../build.mk
+LIBRARY=lib/libtbus.a
+TARGET=$(LIBRARY)
+HOME=../
+CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)tcommon/include
+
+CFILE=$(wildcard source/*.c)
+
+include $(HOME)/build.mk

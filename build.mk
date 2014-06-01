@@ -1,136 +1,79 @@
-#constant
-SOURCE=source
-INCLUDE=include
-BINARY=bin
-LIBRARY=lib
-ETC=etc
+CC=gcc
+AR=ar
+RM=/bin/rm -f
+INSTALL=cp -rpf
 TDR=tdr
 
-CC = gcc
-AR = ar
-RM = /bin/rm -f
-INSTALL=cp -rpf
+CFLAGS?=-Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
 
-#parameter list
-NAME?=
-EXECUTABLE?=0
-
-DEPTARET_DIR?=..
-DEPTARGET?=
-
-DEPLOCALINCLUDE?=/usr/local/tlibc/include
-DEPLOCALLD?=/usr/local/tlibc/lib
-DEPLOCALLIBS?=tlibc
-
-PREFIX?=/usr/local/$(NAME)
-TDR_FILE?=$(wildcard $(INCLUDE)/*.td)
-SQL_TDR_FILE?=
-CFILE?=$(wildcard $(SOURCE)/*.c)
-
-CINC?=-I $(INCLUDE) 
-CINC+=$(patsubst %, -I $(DEPTARET_DIR)/%/include, $(DEPTARGET))
-CINC+=$(patsubst %, -I %, $(DEPLOCALINCLUDE))
 ifdef MAKE_RELEASE
-CFLAGS ?= -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -O3 $(CINC) -DMAKE_RELEASE
+DEBUG_CFLAGS=-O3 -DMAKE_RELEASE
 else
-CFLAGS ?= -Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -g -ggdb $(CINC) -DMAKE_DEBUG
+DEBUG_CFLAGS=-g -ggdb -DMAKE_DEBUG
 endif
-#parameter list
 
-LDPATH+=$(patsubst %, -L $(DEPTARET_DIR)/%/lib, $(DEPTARGET))
-DEPLIBS+=$(patsubst %, -l %, $(DEPTARGET))
-
-LDPATH+=$(patsubst %, -L %, $(DEPLOCALLD))
-DEPLIBS+=$(patsubst %, -l %, $(DEPLOCALLIBS))
-
-
-
-
-
-REALCC=$(CC) $(CFLAGS)
+REALCC=$(CC) $(CFLAGS) $(DEBUG_CFLAGS) $(CINC)
 REALLD=$(CC) $(LDPATH)
 REALAR=$(AR)
 REALINSTALL=$(INSTALL)
-REALTDR=$(TDR) $(CINC)
+REALTDR=$(TDR) $(TDRINC)
+
+SQL_FILE=$(SQL_TDR_FILE:.td=_tables.sql)
+TYPES_HFILE=$(TYPES_TDR_FILE:.td=_types.h)
+READER_HFILE=$(READER_TDR_FILE:.td=_reader.h)
+READER_CFILE=$(READER_HFILE:.h=.c)
+READER_OFILE=$(READER_HFILE:.h=.o)
+WRITER_HFILE=$(WRITER_TDR_FILE:.td=_writer.h)
+WRITER_CFILE=$(WRITER_HFILE:.h=.c)
+WRITER_OFILE=$(WRITER_HFILE:.h=.o)
 
 
-
-SQL_FILE=$(patsubst %.td, %_tables.sql, $(SQL_TDR_FILE))
-
-TYPES_HFILE=$(patsubst %.td, %_types.h, $(TDR_FILE))
-READER_HFILE=$(TDR_FILE:.td=_reader.h)
-WRITER_HFILE=$(TDR_FILE:.td=_writer.h)
-READER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_reader.c, $(TDR_FILE))
-READER_OFILE=$(READER_CFILE:.c=.o)
-WRITER_CFILE=$(patsubst $(INCLUDE)/%.td, $(SOURCE)/%_writer.c, $(TDR_FILE))
-WRITER_OFILE=$(WRITER_CFILE:.c=.o)
-
-
-OFILE=$(CFILE:.c=.o)
-
-LIB=$(LIBRARY)/lib$(NAME).a
-APP=$(BINARY)/$(NAME)
-ifeq ($(EXECUTABLE),1)
-TARGET=$(APP)
-else
-TARGET=$(LIB)
-endif
-
+OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
+DFILE=$(CFILE:.c=.d)
+GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE)
 .PHONY: all clean install tags
 
-all:$(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(SQL_FILE) $(TARGET)
+all:$(GENFILE) $(TARGET)
 
-$(LIB): $(OFILE) $(WRITER_OFILE) $(READER_OFILE) 
-	@mkdir -p $(LIBRARY)
-	@mkdir -p $(INCLUDE)
-	$(REALAR) r $(LIB) $^
+$(LIBRARY): $(OFILE)
+	$(REALAR) r $(LIBRARY) $^
 
-$(APP): $(OFILE) $(WRITER_OFILE) $(READER_OFILE)
-	@mkdir -p $(BINARY)
-	@mkdir -p $(ETC)
+$(BINARY): $(OFILE)
 	$(REALLD) -o $@ $^ $(DEPLIBS)
 
-release:
-	$(MAKE) all MAKE_RELEASE=1
+%.d: %.c $(GENFILE)
+	$(REALCC) -MM -MF $@ $<
+	sed -i 's,.*[:],$*.o: ,g' $@
 
 %.o: %.c
 	$(REALCC) -o $@ -c $<
 
 $(SQL_FILE):$(SQL_TDR_FILE)
-	$(REALTDR) -o $(INCLUDE) -g sql $^
+	$(REALTDR) -g sql $^
 
-$(TYPES_HFILE):$(TDR_FILE)
-	$(REALTDR) -o $(INCLUDE) -g types_h $^
+$(TYPES_HFILE):$(TYPES_TDR_FILE)
+	$(REALTDR) -g types_h $^
 
-$(READER_HFILE):$(TDR_FILE)
-	$(REALTDR) -o $(INCLUDE) -g reader_h $^
+$(READER_HFILE):$(READER_TDR_FILE)
+	$(REALTDR) -g reader_h $^
 
-$(WRITER_HFILE):$(TDR_FILE)
-	$(REALTDR) -o $(INCLUDE) -g writer_h $^
-
-$(READER_CFILE):$(TDR_FILE)
-	@mkdir -p $(SOURCE)
-	$(REALTDR) -o $(SOURCE) -g reader_c $^
+$(READER_CFILE):$(READER_TDR_FILE)
+	$(REALTDR) -g reader_c $^
 	
-$(WRITER_CFILE):$(TDR_FILE)
-	@mkdir -p $(SOURCE)
-	$(REALTDR) -o $(SOURCE) -g writer_c $^
+$(WRITER_HFILE):$(WRITER_TDR_FILE)
+	$(REALTDR) -g writer_h $^
 
-install:
-	@mkdir -p $(PREFIX)
-ifeq ($(EXECUTABLE),1)
-	$(REALINSTALL) $(BINARY) $(PREFIX)
-	$(REALINSTALL) $(ETC) $(PREFIX)
-else
-	$(REALINSTALL) $(LIBRARY) $(PREFIX)
-	$(REALINSTALL) $(INCLUDE) $(PREFIX)
-endif
+$(WRITER_CFILE):$(WRITER_TDR_FILE)
+	$(REALTDR) -g writer_c $^
+
+-include $(DFILE)
+
+release:
+	$(MAKE) all MAKE_RELEASE=1
 
 tags:
-	@find $(DEPLOCALINCLUDE) -name "*.h" | xargs ctags -a --c-types=+p+x 
-	@find . -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	@find . -name "*.h" -or -name "*.c" | cscope -Rbq
+	@find $(SOURCES) -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	@find $(SOURCES) -name "*.h" -or -name "*.c" | cscope -Rbq
 
 clean:
-	@find . -name "*.o" | xargs $(RM)
-	@$(RM) $(TARGET) $(TYPES_HFILE) $(READER_HFILE) $(WRITER_HFILE) $(SQL_FILE) $(READER_CFILE) $(READER_OFILE) $(WRITER_CFILE) $(WRITER_OFILE) tags cscope.in.out cscope.po.out cscope.out
+	$(RM) $(TARGET) $(OFILE) $(DFILE) $(GENFILE) tags cscope.in.out cscope.po.out cscope.out

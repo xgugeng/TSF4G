@@ -174,8 +174,8 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
                         ...)
 {
 	TERROR_CODE proc_ret;
-	TERROR_CODE r;
     TERROR_CODE ret = E_TS_NOERROR;
+	TERROR_CODE r;
     uint32_t idle_count = 0;
     struct sigaction  sa;
     va_list valist;
@@ -286,7 +286,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
             }
             break;
         default:
-			ret = r;
+			ret = proc_ret;
             goto done;
         }
     }   

@@ -1,11 +1,11 @@
-NAME=start-stop-daemon
-EXECUTABLE=1
+BINARY=bin/start-stop-daemon
+TARGET=$(BINARY)
+HOME=../../
 
-ifdef MAKE_RELEASE
-CFLAGS = -Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -O3 $(CINC) -DMAKE_RELEASE
-else
-CFLAGS = -Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -g -ggdb $(CINC) -DMAKE_DEBUG
-endif
-DEPTARET_DIR?=../../
+CINC=-Iinclude
 
-include ../../build.mk
+CFLAGS=-Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
+
+CFILE=$(wildcard source/*.c)
+
+include $(HOME)build.mk

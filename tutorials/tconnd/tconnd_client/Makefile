@@ -1,10 +1,14 @@
-NAME=tconnd_client
-EXECUTABLE=1
-DEPTARET_DIR=../../../
-DEPTARGET=tcommon tapp tbus tlog
+BINARY=bin/tconnd_client
+TARGET=$(BINARY)
+HOME=../../../
+CINC=-I/usr/local/tlibc/include/ -Iinclude -Itdr -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tbusapi/include -I$(HOME)/tapp/include -I../tconnd_proto/include/
+LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbusapi/lib -L$(HOME)/tbus/lib/ -L$(HOME)/tapp/lib -L/usr/local/tlibc/lib
+DEPLIBS=-ltlog -ltbusapi -ltbus -ltapp -ltlibc -lpthread
 
-CINC=-I ../tconnd_proto/include -I include
+TDRINC=-I$(HOME)/tcommon/tdr/
+TYPES_TDR_FILE=$(wildcard tdr/*.td)
+READER_TDR_FILE=$(wildcard tdr/*.td)
 
-DEPLOCALLIBS=pthread tlibc
+CFILE=$(wildcard source/*.c)
 
-include ../../../build.mk
+include $(HOME)/build.mk

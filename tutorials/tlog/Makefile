@@ -1,6 +1,10 @@
-NAME=tlog_example
-EXECUTABLE=1
-DEPTARET_DIR=../../
-DEPTARGET=tlog tbus tcommon tapp
+BINARY=bin/tlog_example
+TARGET=$(BINARY)
+HOME=../../
+CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tbusapi/include -I$(HOME)/tapp/include
+LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbusapi/lib -L$(HOME)/tbus/lib/ -L$(HOME)/tapp/lib -L/usr/local/tlibc/lib
+DEPLIBS=-ltlog -ltbusapi -ltbus -ltapp -ltlibc
 
-include ../../build.mk
+CFILE=$(wildcard source/*.c)
+
+include $(HOME)/build.mk

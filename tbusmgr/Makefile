@@ -1,6 +1,10 @@
-NAME=tbusmgr
-EXECUTABLE=1
-DEPTARGET=tcommon tbus tlog
-DEPTARET_DIR?=..
+BINARY=bin/tbusmgr
+TARGET=$(BINARY)
+HOME=../
+CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/
+LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbus/lib/
+DEPLIBS=-ltlog -ltbus
 
-include ../build.mk
+CFILE=$(wildcard source/*.c)
+
+include $(HOME)/build.mk
