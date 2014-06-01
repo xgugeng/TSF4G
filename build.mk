@@ -4,12 +4,14 @@ RM=/bin/rm -f
 INSTALL=cp -rpf
 TDR=tdr
 
+PREFIX?=/usr/local/tsf4g/
+
 CFLAGS?=-Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
 
-ifdef MAKE_RELEASE
-DEBUG_CFLAGS=-O3 -DMAKE_RELEASE
-else
+ifdef MAKE_DEBUG
 DEBUG_CFLAGS=-g -ggdb -DMAKE_DEBUG
+else
+DEBUG_CFLAGS=-O3 -DMAKE_RELEASE
 endif
 
 REALCC=$(CC) $(CFLAGS) $(DEBUG_CFLAGS) $(CINC)
@@ -31,7 +33,7 @@ WRITER_OFILE=$(WRITER_HFILE:.h=.o)
 OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
 DFILE=$(CFILE:.c=.d)
 GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE)
-.PHONY: all clean install tags
+.PHONY: all clean dep install tags
 
 all:$(GENFILE) $(TARGET)
 
@@ -68,8 +70,8 @@ $(WRITER_CFILE):$(WRITER_TDR_FILE)
 
 -include $(DFILE)
 
-release:
-	$(MAKE) all MAKE_RELEASE=1
+debug:
+	$(MAKE) all MAKE_DEBUG=1
 
 tags:
 	@find $(SOURCES) -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x

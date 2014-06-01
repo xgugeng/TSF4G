@@ -1,5 +1,5 @@
 BINARY=bin/start-stop-daemon
-TARGET=$(BINARY)
+TARGET=dep $(BINARY)
 HOME=../../
 
 CINC=-Iinclude
@@ -9,3 +9,10 @@ CFLAGS=-Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declaration
 CFILE=$(wildcard source/*.c)
 
 include $(HOME)build.mk
+
+dep:
+	mkdir -p bin
+
+install:
+	mkdir -p $(PREFIX)
+	cp -rf bin $(PREFIX)

@@ -1,5 +1,5 @@
 BINARY=bin/tbus_client
-TARGET=$(BINARY)
+TARGET=dep $(BINARY)
 HOME=../../../
 CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tbusapi/include
 LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbusapi/lib -L$(HOME)/tbus/lib/
@@ -8,3 +8,5 @@ DEPLIBS=-ltlog -ltbusapi -ltbus
 CFILE=$(wildcard source/*.c)
 
 include $(HOME)/build.mk
+dep:
+	mkdir -p bin
