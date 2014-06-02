@@ -2,7 +2,7 @@ CC=gcc
 AR=ar
 RM=/bin/rm -f
 INSTALL=cp -rpf
-TDR=tdr
+TDR=tdr --MMD
 
 PREFIX?=/usr/local/tsf4g/
 SOURCES?=.
