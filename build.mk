@@ -33,8 +33,6 @@ WRITER_OFILE=$(WRITER_HFILE:.h=.o)
 
 OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
 
-DFILE=$(CFILE:.c=.d)
-
 GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE)
 .PHONY: all clean dep install tags
 
@@ -46,12 +44,8 @@ $(LIBRARY): $(OFILE)
 $(BINARY): $(OFILE)
 	$(REALLD) -o $@ $^ $(DEPLIBS)
 
-%.d: %.c $(GENFILE)
-	$(REALCC) -MM -MF $@ $<
-	sed -i 's,.*[:],$*.o: ,g' $@
-
 %.o: %.c
-	$(REALCC) -o $@ -c $<
+	$(REALCC) -o $@ -MMD -c $<
 
 $(SQL_FILE):$(SQL_TDR_FILE)
 	$(REALTDR) -g sql $^
@@ -78,4 +72,4 @@ tags:$(GENFILE)
 clean:
 	$(RM) $(TARGET) $(OFILE) $(DFILE) $(GENFILE) tags cscope.in.out cscope.po.out cscope.out
 
--include $(DFILE)
+include $(DFILE)

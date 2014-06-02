@@ -10,6 +10,8 @@ TYPES_TDR_FILE=$(wildcard tdr/*.td)
 READER_TDR_FILE=$(wildcard tdr/*.td)
 
 CFILE=$(wildcard source/*.c)
+DFILE=$(wildcard source/*.d)
+DFILE+=$(wildcard tdr/*.d)
 
 include $(HOME)/build.mk
 dep:

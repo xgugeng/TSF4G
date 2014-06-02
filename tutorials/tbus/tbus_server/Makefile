@@ -6,6 +6,7 @@ LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbusapi/lib -L$(HOME)/tbus/lib/ -L$(HOME)/t
 DEPLIBS=-ltlog -ltbusapi -ltbus -ltapp -ltlibc
 
 CFILE=$(wildcard source/*.c)
+DFILE=$(wildcard source/*.d)
 
 include $(HOME)/build.mk
 dep:

@@ -6,6 +6,8 @@ LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbus/lib/ -L$(HOME)/tapp/lib/ -L/usr/local/
 DEPLIBS=-ltlog -ltbus -lmysqlclient -ltapp -ltlibc
 TDRINC=-I$(HOME)/tcommon/tdr/
 CFILE=$(wildcard source/*.c)
+DFILE=$(wildcard source/*.d)
+DFILE+=$(wildcard tdr/*.d)
 TYPES_TDR_FILE=$(wildcard tdr/*.td)
 READER_TDR_FILE=$(wildcard tdr/*.td)
 
