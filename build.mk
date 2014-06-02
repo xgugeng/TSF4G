@@ -72,8 +72,8 @@ $(WRITER_CFILE):$(WRITER_TDR_FILE)
 	$(REALTDR) -g writer_c $^
 
 tags:$(GENFILE)
-	find $(SOURCES) -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
-	find $(SOURCES) -name "*.h" -or -name "*.c" | cscope -Rbq
+	find $(SOURCES) $^ -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x
+	find $(SOURCES) $^ -name "*.h" -or -name "*.c" | cscope -Rbq
 
 clean:
 	$(RM) $(TARGET) $(OFILE) $(DFILE) $(GENFILE) tags cscope.in.out cscope.po.out cscope.out
