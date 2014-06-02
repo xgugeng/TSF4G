@@ -5,12 +5,6 @@
 #include <limits.h>
 #include <getopt.h>
 
-#ifdef INFO_PRINT_OFF
-#undef INFO_PRINT_OFF
-#endif
-
-#include "tlog_print.h"
-
 #include <sys/shm.h>
 
 
@@ -18,17 +12,17 @@
 
 static void version()
 {
-	INFO_PRINT( "TBus Version %s.", TBUS_VERSION);
+	fprintf(stdout, "TBus Version %s.\n", TBUS_VERSION);
 }
 
 static void help() 
 {
-	INFO_PRINT("tbusmgr ([-s size] && [-n number] && [-w shmkey] | --help | --version)");
-	INFO_PRINT("--help, -v                Print the help.");
-	INFO_PRINT("--version, -h             Print the version.");
-	INFO_PRINT("--size, -s size           Set the maximum packet size.");
-	INFO_PRINT("--number, -n number       Set the maxinum packet number.");
-	INFO_PRINT("--write, -w tbuskey       Create shared memory segments with shmkey, and initialize the memory for tbus.");
+	fprintf(stdout, "tbusmgr ([-s size] && [-n number] && [-w shmkey] | --help | --version)\n");
+	fprintf(stdout, "--help, -v                Print the help.\n");
+	fprintf(stdout, "--version, -h             Print the version.\n");
+	fprintf(stdout, "--size, -s size           Set the maximum packet size.\n");
+	fprintf(stdout, "--number, -n number       Set the maxinum packet number.\n");
+	fprintf(stdout, "--write, -w tbuskey       Create shared memory segments with shmkey, and initialize the memory for tbus.\n");
 }
 
 const char* const short_options = "vhs:n:w:";
@@ -74,12 +68,12 @@ int main(int argc, char**argv)
 				size = (size_t)strtoull(arg, &endptr, 10);
 				if(errno != 0)
 				{
-					ERROR_PRINT("strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno , strerror(errno));
+					fprintf(stderr, "strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.\n", arg, errno , strerror(errno));
 					exit(1);
 				}
 				if(endptr == arg)
 				{
-					ERROR_PRINT("strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].", arg, size, *endptr);
+					fprintf(stderr, "strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].\n", arg, size, *endptr);
 					exit(1);
 				}
 				break;
@@ -91,12 +85,12 @@ int main(int argc, char**argv)
 				number = (size_t)strtoull(arg, &endptr, 10);
 				if(errno != 0)
 				{
-					ERROR_PRINT("strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno , strerror(errno));
+					fprintf(stderr, "strtoull(\"%s\", &endptr, 10) returned an errno[%d], %s.\n", arg, errno , strerror(errno));
 					exit(1);
 				}
 				if(endptr == arg)
 				{
-					ERROR_PRINT("strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].", arg, number, *endptr);
+					fprintf(stderr, "strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].\n", arg, number, *endptr);
 					exit(1);
 				}
 				break;
@@ -109,13 +103,13 @@ int main(int argc, char**argv)
 				shm_key = (key_t)strtol(arg, &endptr, 10);
 				if(errno != 0)
 				{
-					ERROR_PRINT("strtol(\"%s\", &endptr, 10) returned an errno[%d], %s.", arg, errno, strerror(errno));
+					fprintf(stderr, "strtol(\"%s\", &endptr, 10) returned an errno[%d], %s.\n", arg, errno, strerror(errno));
 					exit(1);
 				}
 
 				if(endptr == arg)
 				{
-					ERROR_PRINT("strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].", arg, shm_size, *endptr);
+					fprintf(stderr, "strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].\n", arg, shm_size, *endptr);
 					exit(1);
 				}
 				shm_size = TLIBC_OFFSET_OF(tbus_t, buff) + (size + sizeof(tbus_header_t)) * number;
@@ -124,26 +118,34 @@ int main(int argc, char**argv)
 				shm_id = shmget(shm_key, shm_size, 0664 | IPC_CREAT|IPC_EXCL);
 				if(shm_id == -1)
 				{
-					ERROR_PRINT("shmget(%d, %zu, IPC_CREAT|IPC_EXCL) returned an errno[%d], %s.", shm_key, shm_size, errno, strerror(errno));
+					fprintf(stderr, "shmget(%d, %zu, IPC_CREAT|IPC_EXCL) returned an errno[%d], %s.\n", shm_key, shm_size, errno, strerror(errno));
 					exit(1);
 				}
 				shm_ptr = shmat(shm_id, NULL, 0);
 				if(shm_ptr == NULL)
 				{
-					ERROR_PRINT("shmat(%d, NULL, 0) returned an errno[%d], %s.", shm_id, errno, strerror(errno));
+					fprintf(stderr, "shmat(%d, NULL, 0) returned an errno[%d], %s.\n", shm_id, errno, strerror(errno));
 					goto error_free_memory;
 				}
 				tbus_ptr = (tbus_t*)shm_ptr;
 				tbus_init(tbus_ptr, size, number);				
-				INFO_PRINT("tbus_init succeed, shm_key = [%d] shm_size = [%zu].", shm_key, shm_size);
+				fprintf(stdout, "tbus_init succeed, shm_key = [%d] shm_size = [%zu].\n", shm_key, shm_size);
 				return 0;
 			error_free_memory:
 				shmctl(shm_id, IPC_RMID, 0);
 				exit(1);
 			}
+        default:
+            {
+                fprintf(stderr, "Unrecognized option: \"%s\"\n", argv[optind]);
+                help();
+                exit(1);
+            }
 		}
 	}
 
-	return 0;
+    fprintf(stderr, "Missing --write\n");
+    help();
+	return 1;
 }
 
