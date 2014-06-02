@@ -6,8 +6,8 @@ LDPATH=-L$(HOME)/tlog/lib/ -L$(HOME)/tbusapi/lib -L$(HOME)/tbus/lib/ -L$(HOME)/t
 DEPLIBS=-ltlog -ltbusapi -ltbus -ltapp -ltlibc -lpthread
 
 TDRINC=-I$(HOME)/tcommon/tdr/
-TYPES_TDR_FILE=$(wildcard tdr/*.td)
-READER_TDR_FILE=$(wildcard tdr/*.td)
+TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
+READER_TDR_FILE=$(wildcard tdr/*.tdr)
 
 CFILE=$(wildcard source/*.c)
 DFILE=$(wildcard source/*.d)

@@ -9,10 +9,10 @@ DFILE=$(wildcard source/*.d)
 DFILE+=$(wildcard source/appender/*.d)
 DFILE+=$(wildcard tdr/*.d)
 
-TYPES_TDR_FILE=$(wildcard tdr/*.td)
-SQL_TDR_FILE=tdr/tlog_sql.td
-WRITER_TDR_FILE=tdr/tlog_sql.td
-READER_TDR_FILE=$(wildcard tdr/*.td)
+TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
+SQL_TDR_FILE=tdr/tlog_sql.tdr
+WRITER_TDR_FILE=tdr/tlog_sql.tdr
+READER_TDR_FILE=$(wildcard tdr/*.tdr)
 
 include $(HOME)/build.mk
 

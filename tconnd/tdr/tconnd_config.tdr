@@ -1,6 +1,6 @@
-import "tcommon.td"
-import "bscp.td"
-import "tlog_config.td"
+import "tcommon.tdr"
+import "bscp.tdr"
+import "tlog_config.tdr"
 
 #这个进程处理bscp(The Binary Stream Cutting Protocol)协议，并由sip(The Socket Interface Protocol)协议把结果发送给另一个进程处理
 

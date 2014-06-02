@@ -8,8 +8,8 @@ TDRINC=-I$(HOME)/tcommon/tdr/
 CFILE=$(wildcard source/*.c)
 DFILE=$(wildcard source/*.d)
 DFILE+=$(wildcard tdr/*.d)
-TYPES_TDR_FILE=$(wildcard tdr/*.td)
-READER_TDR_FILE=$(wildcard tdr/*.td)
+TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
+READER_TDR_FILE=$(wildcard tdr/*.tdr)
 
 include $(HOME)/build.mk
 

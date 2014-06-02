@@ -1,4 +1,4 @@
-import "tcommon.td"
+import "tcommon.tdr"
 
 struct tconnd_robot_config
 {

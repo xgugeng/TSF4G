@@ -1,4 +1,4 @@
-import "tcommon.td"
+import "tcommon.tdr"
 
 const uint32 TSERVER_DBNAME_LENGTH = 16;
 const uint32 TSERVER_SQL_LENGTH = 1024;
