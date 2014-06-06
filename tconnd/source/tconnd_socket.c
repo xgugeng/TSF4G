@@ -364,10 +364,6 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         self->package_buff = NULL;
     }
     limit_ptr = body_ptr + r;
-    if(g_output_tbus->size == 0)
-    {
-        ERROR_PRINT("haha\n");
-    }
     
     if(limit_ptr < package_ptr + sizeof(bscp_head_t))
     {
