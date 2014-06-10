@@ -15,7 +15,6 @@ struct tconnd_config
 	uint32								package_connections;			#包的个数
 	uint32								package_ticks_limit;			#包超时时间， 单位tick
 	uint32 								connections;					#最多可以接入的连接数
-	int32 								tdgi_pass;						#转发的tdgi服务器
 	int32 								input_tbuskey;					#输入tbuskey
 	int32								output_tbuskey; 				#输出tbuskey
 	int32 								backlog;						#未处理的连接数

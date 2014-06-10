@@ -10,7 +10,6 @@
 	<package_ticks_limit>5</package_ticks_limit>
 	<connections>32767</connections>
 
-	<tdgi_pass>123456</tdgi_pass>
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>
 	<backlog>128</backlog>
