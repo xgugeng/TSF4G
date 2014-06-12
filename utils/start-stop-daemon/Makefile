@@ -7,7 +7,6 @@ CINC=-Iinclude
 CFLAGS=-Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
 
 CFILE=$(wildcard source/*.c)
-DFILE=$(wildcard source/*.d)
 
 include $(HOME)build.mk
 

@@ -5,7 +5,6 @@ CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/t
 DEPOFILE=$(HOME)/tbus/lib/libtbus.a
 
 CFILE=$(wildcard source/*.c)
-DFILE=$(wildcard source/*.d)
 
 include $(HOME)/build.mk
 

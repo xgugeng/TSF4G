@@ -7,8 +7,6 @@ TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
 READER_TDR_FILE=$(wildcard tdr/*.tdr)
 WRITER_TDR_FILE=$(wildcard tdr/*.tdr)
 
-DFILE=$(wildcard tdr/*.d)
-
 include $(HOME)/build.mk
 
 dep:

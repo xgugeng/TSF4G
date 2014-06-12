@@ -7,7 +7,6 @@ DEPOFILE=$(HOME)/tlog/lib/libtlog.a $(HOME)/tbusapi/lib/libtbusapi.a $(HOME)/tbu
 DEPLIBS=-ltlibc
 
 CFILE=$(wildcard source/*.c)
-DFILE=$(wildcard source/*.d)
 
 include $(HOME)/build.mk
 dep:

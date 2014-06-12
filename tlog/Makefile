@@ -5,9 +5,6 @@ CINC=-Iinclude -Itdr -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr/ -I$(HOME)/
 TDRINC=-Itdr -I$(HOME)/tcommon/tdr/
 CFILE=$(wildcard source/*.c)
 CFILE+=$(wildcard source/appender/*.c)
-DFILE=$(wildcard source/*.d)
-DFILE+=$(wildcard source/appender/*.d)
-DFILE+=$(wildcard tdr/*.d)
 
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
 SQL_TDR_FILE=tdr/tlog_sql.tdr

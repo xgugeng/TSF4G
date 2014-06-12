@@ -10,7 +10,7 @@ SOURCES?=.
 CFLAGS?=-Wall -Wconversion -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
 
 ifdef debug
-DEBUG_CFLAGS=-g -ggdb -DMAKE_DEBUG
+DEBUG_CFLAGS=-g3 -ggdb3 -DMAKE_DEBUG
 else
 DEBUG_CFLAGS=-O3 -DMAKE_RELEASE
 endif
@@ -25,13 +25,12 @@ SQL_FILE=$(SQL_TDR_FILE:.tdr=_tables.sql)
 TYPES_HFILE=$(TYPES_TDR_FILE:.tdr=_types.h)
 READER_HFILE=$(READER_TDR_FILE:.tdr=_reader.h)
 READER_CFILE=$(READER_HFILE:.h=.c)
-READER_OFILE=$(READER_HFILE:.h=.o)
 WRITER_HFILE=$(WRITER_TDR_FILE:.tdr=_writer.h)
 WRITER_CFILE=$(WRITER_HFILE:.h=.c)
-WRITER_OFILE=$(WRITER_HFILE:.h=.o)
 
 
 OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
+DFILE=$(OFILE:.o=.d) $(SQL_FILE:.sql=.sql.d) $(TYPES_HFILE:.h=.h.d) $(READER_HFILE:.h=.h.d) $(READER_CFILE:.c=.c.d) $(WRITER_HFILE:.h=.h.d) $(WRITER_CFILE:.c=.c.d)
 
 GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE)
 .PHONY: all clean dep install tags
@@ -72,4 +71,4 @@ tags:$(GENFILE)
 clean:
 	$(RM) $(TARGET) $(OFILE) $(DFILE) $(GENFILE) tags cscope.in.out cscope.po.out cscope.out
 
-include $(DFILE)
+-include $(DFILE)

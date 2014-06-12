@@ -7,8 +7,6 @@ DEPLIBS=-lmysqlclient -ltlibc
 TDRINC=-I$(HOME)/tcommon/tdr/
 DEPOFILE=$(HOME)/tapp/lib/libtapp.a $(HOME)/tlog/lib/libtlog.a $(HOME)/tbus/lib/libtbus.a
 CFILE=$(wildcard source/*.c)
-DFILE=$(wildcard source/*.d)
-DFILE+=$(wildcard tdr/*.d)
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
 READER_TDR_FILE=$(wildcard tdr/*.tdr)
 

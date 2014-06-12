@@ -8,8 +8,6 @@ DEPOFILE=$(HOME)/tlog/lib/libtlog.a $(HOME)/tbus/lib/libtbus.a $(HOME)/tapp/lib/
 TDRINC=-I$(HOME)/tcommon/tdr/ -I$(HOME)/tlog/tdr/
 
 CFILE=$(wildcard source/*.c)
-DFILE=$(wildcard source/*.d)
-DFILE+=$(wildcard tdr/*.d)
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
 READER_TDR_FILE=$(wildcard tdr/*.tdr)
 
