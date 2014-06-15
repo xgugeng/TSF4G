@@ -13,8 +13,10 @@ The Service Framework For Game
 项目依赖
 ========
 
-- 1.[TLibC](http://github.com/randyliu/TLibC)
-- 2.[TDR](http://github.com/randyliu/TDR)
+- 1.[MySQL](http://github.com/randyliu/TLibC)
+- 2.[RE2C](http://http://www.re2c.org)
+- 3.[Bison](http://www.gnu.org/software/bison)
+- 4.[TDR](http://github.com/randyliu/TDR)
 
 安装
 ====
