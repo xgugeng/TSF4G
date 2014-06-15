@@ -21,7 +21,6 @@ REALAR=$(AR)
 REALINSTALL=$(INSTALL)
 REALTDR=$(TDR) $(TDRINC)
 
-SQL_FILE=$(SQL_TDR_FILE:.tdr=_tables.sql)
 TYPES_HFILE=$(TYPES_TDR_FILE:.tdr=_types.h)
 READER_HFILE=$(READER_TDR_FILE:.tdr=_reader.h)
 READER_CFILE=$(READER_HFILE:.h=.c)
@@ -33,9 +32,9 @@ RE2C_HFILE=$(REFILE:.re=.h)
 
 
 OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o) $(RE2C_CFILE:.c=.o)
-DFILE=$(OFILE:.o=.d) $(SQL_FILE:.sql=.sql.d) $(TYPES_HFILE:.h=.h.d) $(READER_HFILE:.h=.h.d) $(READER_CFILE:.c=.c.d) $(WRITER_HFILE:.h=.h.d) $(WRITER_CFILE:.c=.c.d)
+DFILE=$(OFILE:.o=.d) $(TYPES_HFILE:.h=.h.d) $(READER_HFILE:.h=.h.d) $(READER_CFILE:.c=.c.d) $(WRITER_HFILE:.h=.h.d) $(WRITER_CFILE:.c=.c.d)
 
-GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE) $(RE2C_HFILE) $(RE2C_CFILE)
+GENFILE=$(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE) $(RE2C_HFILE) $(RE2C_CFILE)
 .PHONY: all clean dep install tags
 
 all:dep $(GENFILE) $(TARGET)
@@ -48,9 +47,6 @@ $(BINARY): $(OFILE) $(DEPOFILE)
 
 %.o: %.c
 	$(REALCC) -o $@ -MMD -c $<
-
-$(SQL_FILE):$(SQL_TDR_FILE)
-	$(REALTDR) -g sql $^
 
 $(TYPES_HFILE):$(TYPES_TDR_FILE)
 	$(REALTDR) -g types_h $^

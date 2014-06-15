@@ -7,7 +7,6 @@ CFILE=$(wildcard source/*.c)
 CFILE+=$(wildcard source/appender/*.c)
 
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
-SQL_TDR_FILE=tdr/tlog_sql.tdr
 WRITER_TDR_FILE=tdr/tlog_sql.tdr
 READER_TDR_FILE=$(wildcard tdr/*.tdr)
 
