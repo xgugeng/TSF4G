@@ -201,14 +201,19 @@ tlibc_error_code_t tlibc_xml_write_double(tlibc_abstract_writer_t *super, const 
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	tlibc_xml_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_writer_t, super);
 	char str[TLIBC_XML_VALUE_LEN];
-	size_t len;
+	ssize_t len;
 	len = snprintf(str, TLIBC_XML_VALUE_LEN, "%lf", *val);
+	if(len < 0)
+	{
+		ret = E_TLIBC_OUT_OF_MEMORY;
+		goto done;
+	}
 	if((size_t)(self->limit - self->cur) < len)
 	{
 		ret = E_TLIBC_OUT_OF_MEMORY;
 		goto done;
 	}
-	memcpy(self->cur, str, len);
+	memcpy(self->cur, str, (size_t)len);
 	self->cur += len;
 done:
 	return ret;
@@ -248,14 +253,19 @@ tlibc_error_code_t tlibc_xml_write_int64(tlibc_abstract_writer_t *super, const i
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	tlibc_xml_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_writer_t, super);
 	char str[TLIBC_XML_VALUE_LEN];
-	size_t len;
+	ssize_t len;
 	len = snprintf(str, TLIBC_XML_VALUE_LEN, "%"PRIi64, *val);
+	if(len < 0)
+	{
+		ret = E_TLIBC_OUT_OF_MEMORY;
+		goto done;
+	}
 	if((size_t)(self->limit - self->cur) < len)
 	{
 		ret = E_TLIBC_OUT_OF_MEMORY;
 		goto done;
 	}
-	memcpy(self->cur, str, len);
+	memcpy(self->cur, str, (size_t)len);
 	self->cur += len;
 done:
 	return ret;
@@ -293,14 +303,19 @@ tlibc_error_code_t tlibc_xml_write_uint64(tlibc_abstract_writer_t *super, const 
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	tlibc_xml_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_writer_t, super);
 	char str[TLIBC_XML_VALUE_LEN];
-	size_t len;
+	ssize_t len;
 	len = snprintf(str, TLIBC_XML_VALUE_LEN, "%"PRIu64, *val);
+	if(len < 0)
+	{
+		ret = E_TLIBC_OUT_OF_MEMORY;
+		goto done;
+	}
 	if((size_t)(self->limit - self->cur) < len)
 	{
 		ret = E_TLIBC_OUT_OF_MEMORY;
 		goto done;
 	}
-	memcpy(self->cur, str, len);
+	memcpy(self->cur, str, (size_t)len);
 	self->cur += len;
 done:
 	return ret;

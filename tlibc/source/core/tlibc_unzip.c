@@ -57,7 +57,7 @@ static size_t search_central_dir(FILE* filestream)
     if (fseek(filestream,0,SEEK_END) != 0)
         return 0;
 
-    file_size = ftell(filestream);
+    file_size = (size_t)ftell(filestream);
 
 	read_end = file_size;
 	do
@@ -73,7 +73,7 @@ static size_t search_central_dir(FILE* filestream)
 			read_begin = 0;
 		}
 
-		if (fseek((FILE*)filestream, read_begin, SEEK_SET)!=0)
+		if (fseek((FILE*)filestream, (ssize_t)read_begin, SEEK_SET)!=0)
 			break;
 
 		read_size = read_end - read_begin;
@@ -366,7 +366,7 @@ static tlibc_error_code_t unz64local_GetCurrentFileInfoInternal (tlibc_unzip_s *
 
 			}
 
-			acc += 2 + 2 + dataSize;
+			acc += 2 + 2 + (uint32_t)dataSize;
 		}
 	}
 
@@ -440,8 +440,8 @@ static tlibc_error_code_t  unzGoToNextFile (tlibc_unzip_s  *self)
       if (self->num_file+1==self->gi.number_entry)
         return E_TLIBC_EOF;
 
-    self->pos_in_central_dir += SIZECENTRALDIRITEM + self->cur_file_info.size_filename +
-            self->cur_file_info.size_file_extra + self->cur_file_info.size_file_comment ;
+    self->pos_in_central_dir += (uint32_t)(SIZECENTRALDIRITEM + self->cur_file_info.size_filename +
+            self->cur_file_info.size_file_extra + self->cur_file_info.size_file_comment);
     self->num_file++;
     err = unz64local_GetCurrentFileInfoInternal(self,&self->cur_file_info,
                                                &self->cur_file_info_internal,
@@ -493,8 +493,8 @@ extern tlibc_error_code_t  tlibc_unzip_locate (tlibc_unzip_s *self, const char *
     /* We failed, so restore the state of the 'current file' to where we
      * were.
      */
-    self->num_file = num_fileSaved ;
-    self->pos_in_central_dir = pos_in_central_dirSaved ;
+    self->num_file = (uint32_t)num_fileSaved ;
+    self->pos_in_central_dir = (uint32_t)pos_in_central_dirSaved ;
     self->cur_file_info = cur_file_infoSaved;
     self->cur_file_info_internal = cur_file_info_internalSaved;
     return err;
@@ -660,7 +660,7 @@ static tlibc_error_code_t  unzOpenCurrentFile3 (tlibc_unzip_s *self, int* method
     pfile_in_zip_read_info = &self->pfile_in_zip_read;
 
     pfile_in_zip_read_info->read_buffer=(char*)malloc(self->cur_file_info.compressed_size);
-    pfile_in_zip_read_info->offset_local_extrafield = offset_local_extrafield;
+    pfile_in_zip_read_info->offset_local_extrafield = (uint32_t)offset_local_extrafield;
     pfile_in_zip_read_info->size_local_extrafield = size_local_extrafield;
     pfile_in_zip_read_info->pos_local_extrafield=0;
     pfile_in_zip_read_info->raw=raw;
@@ -774,7 +774,7 @@ tlibc_error_code_t tlibc_unzip_init(tlibc_unzip_s *self, const void *path)
 		goto free_filestream;
 	}
 
-	if(fseek(self->filestream, central_pos, SEEK_SET) != 0)
+	if(fseek(self->filestream, (long)central_pos, SEEK_SET) != 0)
 	{
 		err = E_TLIBC_ERROR;
 		goto free_filestream;
@@ -852,8 +852,8 @@ tlibc_error_code_t tlibc_unzip_init(tlibc_unzip_s *self, const void *path)
 		goto free_filestream;
 	}
 
-    self->byte_before_the_zipfile = central_pos - (self->offset_central_dir+self->size_central_dir);
-    self->central_pos = central_pos;
+    self->byte_before_the_zipfile = (uint32_t)(central_pos - (self->offset_central_dir+self->size_central_dir));
+    self->central_pos = (uint32_t)central_pos;
 
 
     unzGoToFirstFile(self);
@@ -963,7 +963,7 @@ tlibc_error_code_t  tlibc_read_current_file(tlibc_unzip_s *self, voidp buf, uint
 
             pfile_in_zip_read_info->total_out_64 = pfile_in_zip_read_info->total_out_64 + uDoCopy;
 
-            pfile_in_zip_read_info->crc32 = crc32(pfile_in_zip_read_info->crc32,
+            pfile_in_zip_read_info->crc32 = (uint32_t)crc32(pfile_in_zip_read_info->crc32,
                                 pfile_in_zip_read_info->stream.next_out,
                                 uDoCopy);
             pfile_in_zip_read_info->rest_read_uncompressed-=uDoCopy;
@@ -996,13 +996,13 @@ tlibc_error_code_t  tlibc_read_current_file(tlibc_unzip_s *self, voidp buf, uint
             uTotalOutAfter = pfile_in_zip_read_info->stream.total_out;
             uOutThis = uTotalOutAfter-uTotalOutBefore;
 
-            pfile_in_zip_read_info->total_out_64 = pfile_in_zip_read_info->total_out_64 + uOutThis;
+            pfile_in_zip_read_info->total_out_64 = (uint32_t)(pfile_in_zip_read_info->total_out_64 + uOutThis);
 
-            pfile_in_zip_read_info->crc32 =
+            pfile_in_zip_read_info->crc32 =(uint32_t)
                 crc32(pfile_in_zip_read_info->crc32,bufBefore,
                         (uInt)(uOutThis));
 
-            pfile_in_zip_read_info->rest_read_uncompressed -=
+            pfile_in_zip_read_info->rest_read_uncompressed -=(uint32_t)
                 uOutThis;
 
             iRead += (uInt)(uTotalOutAfter - uTotalOutBefore);

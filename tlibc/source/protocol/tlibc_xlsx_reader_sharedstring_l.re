@@ -12,6 +12,7 @@
 #define YYMARKER self->scanner.marker
 #define YYCTYPE char
 
+tlibc_error_code_t tlibc_xlsx_reader_load_sharedstring(tlibc_xlsx_reader_t *self);
 tlibc_error_code_t tlibc_xlsx_reader_load_sharedstring(tlibc_xlsx_reader_t *self)
 {
 	char* str_begin = NULL;
@@ -42,7 +43,7 @@ re2c:yyfill:enable   = 0;
 		++YYCURSOR;
 	*YYCURSOR = 0;
 	errno = 0;
-	num = strtoul(number_begin, NULL, 10);
+	num = (uint32_t)strtoul(number_begin, NULL, 10);
 	if(errno != 0)
 	{
 		goto ERROR_RET;

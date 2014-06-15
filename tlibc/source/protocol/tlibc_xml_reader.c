@@ -15,7 +15,7 @@ tlibc_error_code_t tlibc_xml_reader_push_file(tlibc_xml_reader_t *self, const ch
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	FILE* fin;
-	size_t file_size;
+	ssize_t file_size;
 	char c;
 	char *start, *curr, *limit;
 	size_t i;
@@ -57,8 +57,13 @@ tlibc_error_code_t tlibc_xml_reader_push_file(tlibc_xml_reader_t *self, const ch
 
 	fseek(fin, 0, SEEK_END);
 	file_size = ftell(fin);
+	if(file_size < 0)
+	{
+		ret = E_TLIBC_NOT_FOUND;
+		goto done;
+	}
 	fseek(fin, 0, SEEK_SET);
-	start = (char*)malloc(file_size);
+	start = (char*)malloc((size_t)file_size);
 	if(start == NULL)
 	{
 		ret = E_TLIBC_OUT_OF_MEMORY;		

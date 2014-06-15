@@ -20,7 +20,7 @@ static void xpos2pos(tlibc_xlsx_pos *self, const char* xpos)
 	while(*xpos >='A')
 	{
 		self->col *= 26;
-		self->col += *xpos - 'A' + 1;
+		self->col += (uint32_t)(*xpos - 'A' + 1);
 		++xpos;
 	}
 	--(self->col);
@@ -29,11 +29,12 @@ static void xpos2pos(tlibc_xlsx_pos *self, const char* xpos)
 	while(*xpos != 0)
 	{
 		self->row *= 10;
-		self->row += *xpos - '0';
+		self->row += (uint32_t)(*xpos - '0');
 		++xpos;
 	}
 }
 
+tlibc_error_code_t tlibc_xlsx_reader_loadsheet(tlibc_xlsx_reader_t *self, uint32_t bindinfo_row);
 tlibc_error_code_t tlibc_xlsx_reader_loadsheet(tlibc_xlsx_reader_t *self, uint32_t bindinfo_row)
 {
 	tlibc_xlsx_cell_s *cell = NULL;
@@ -111,7 +112,7 @@ restart:
 	}
 	*YYCURSOR = 0;
 	errno = 0;
-	row = strtoul(r, NULL, 10);
+	row = (uint32_t)strtoul(r, NULL, 10);
 	if(errno != 0)
 	{
 		goto ERROR_RET;
@@ -190,7 +191,7 @@ restart:
 	{
 		uint32_t string_index;
 		errno = 0;
-		string_index = strtoul(cell->val_begin, NULL, 10);
+		string_index = (uint32_t)strtoul(cell->val_begin, NULL, 10);
 		if(errno != 0)
 		{
 			goto ERROR_RET;

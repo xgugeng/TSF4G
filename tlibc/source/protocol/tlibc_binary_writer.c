@@ -40,7 +40,7 @@ tlibc_error_code_t tlibc_binary_write_int8(tlibc_abstract_writer_t *super, const
 		goto not_enough_bytebuff_size;
 	}
 	*(int8_t*)WRITER_PTR(self) = *val;
-	self->offset += sizeof(int8_t);
+	self->offset += (uint32_t)sizeof(int8_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -56,7 +56,7 @@ tlibc_error_code_t tlibc_binary_write_int16(tlibc_abstract_writer_t *super, cons
 	}
 	*(int16_t*)WRITER_PTR(self) = *val;
 	tlibc_host16_to_little(*(int16_t*)WRITER_PTR(self));
-	self->offset += sizeof(int16_t);
+	self->offset += (uint32_t)sizeof(int16_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -72,7 +72,7 @@ tlibc_error_code_t tlibc_binary_write_int32(tlibc_abstract_writer_t *super, cons
 	}
 	*(int32_t*)WRITER_PTR(self) = *val;
 	tlibc_host32_to_little(*(int32_t*)WRITER_PTR(self));
-	self->offset += sizeof(int32_t);
+	self->offset += (uint32_t)sizeof(int32_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -88,7 +88,7 @@ tlibc_error_code_t tlibc_binary_write_int64(tlibc_abstract_writer_t *super, cons
 	}
 	*(int64_t*)WRITER_PTR(self) = *val;
 	tlibc_host64_to_little(*(int64_t*)WRITER_PTR(self));
-	self->offset += sizeof(int64_t);
+	self->offset += (uint32_t)sizeof(int64_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -104,7 +104,7 @@ tlibc_error_code_t tlibc_binary_write_uint8(tlibc_abstract_writer_t *super, cons
 		goto not_enough_bytebuff_size;
 	}
 	*(uint8_t*)WRITER_PTR(self) = *val;
-	self->offset += sizeof(uint8_t);
+	self->offset += (uint32_t)sizeof(uint8_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -120,7 +120,7 @@ tlibc_error_code_t tlibc_binary_write_uint16(tlibc_abstract_writer_t *super, con
 	}
 	*(uint16_t*)WRITER_PTR(self) = *val;
 	tlibc_host16_to_little(*(uint16_t*)WRITER_PTR(self));
-	self->offset += sizeof(uint16_t);
+	self->offset += (uint32_t)sizeof(uint16_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -136,7 +136,7 @@ tlibc_error_code_t tlibc_binary_write_uint32(tlibc_abstract_writer_t *super, con
 	}
 	*(uint32_t*)WRITER_PTR(self) = *val;
 	tlibc_host32_to_little(*(uint32_t*)WRITER_PTR(self));
-	self->offset += sizeof(uint32_t);
+	self->offset += (uint32_t)sizeof(uint32_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -152,7 +152,7 @@ tlibc_error_code_t tlibc_binary_write_uint64(tlibc_abstract_writer_t *super, con
 	}
 	*(uint64_t*)WRITER_PTR(self) = *val;
 	tlibc_host64_to_little(*(uint64_t*)WRITER_PTR(self));
-	self->offset += sizeof(uint64_t);
+	self->offset += (uint32_t)sizeof(uint64_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -168,7 +168,7 @@ tlibc_error_code_t tlibc_binary_write_char(tlibc_abstract_writer_t *super, const
 		goto not_enough_bytebuff_size;
 	}
 	*(char*)WRITER_PTR(self) = *val;
-	self->offset += sizeof(char);
+	self->offset += (uint32_t)sizeof(char);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -183,7 +183,7 @@ tlibc_error_code_t tlibc_binary_write_double(tlibc_abstract_writer_t *super, con
 		goto not_enough_bytebuff_size;
 	}
 	*(double*)WRITER_PTR(self) = *val;
-	self->offset += sizeof(double);
+	self->offset += (uint32_t)sizeof(double);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:

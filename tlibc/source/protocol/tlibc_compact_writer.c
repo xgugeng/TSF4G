@@ -329,7 +329,7 @@ tlibc_error_code_t tlibc_compact_write_int8(tlibc_abstract_writer_t *super, cons
 		goto not_enough_bytebuff_size;
 	}
 	*(int8_t*)COMPACT_WRITER_PTR(self) = *val;
-	self->offset += sizeof(int8_t);
+	self->offset += (uint32_t)sizeof(int8_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -340,10 +340,10 @@ tlibc_error_code_t tlibc_compact_write_int16(tlibc_abstract_writer_t *super, con
 {
 	tlibc_compact_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_compact_writer_t, super);
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
-	int16_t v = tlibc_zigzag_encode16(*val);
+	int16_t v = (int16_t)tlibc_zigzag_encode16(*val);
 	tlibc_error_code_t ret;
 	tlibc_host16_to_little(v);
-	ret = tlibc_compact_varint16_encode(v, COMPACT_WRITER_PTR(self), &buff_size);
+	ret = tlibc_compact_varint16_encode((uint16_t)v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
 		goto done;
@@ -361,7 +361,7 @@ tlibc_error_code_t tlibc_compact_write_int32(tlibc_abstract_writer_t *super, con
 	int32_t v = tlibc_zigzag_encode16(*val);
 	tlibc_error_code_t ret;
 	tlibc_host32_to_little(v);
-	ret = tlibc_compact_varint32_encode(v, COMPACT_WRITER_PTR(self), &buff_size);
+	ret = tlibc_compact_varint32_encode((uint16_t)v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
 		goto done;
@@ -376,10 +376,10 @@ tlibc_error_code_t tlibc_compact_write_int64(tlibc_abstract_writer_t *super, con
 {
 	tlibc_compact_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_compact_writer_t, super);
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
-	int64_t v = tlibc_zigzag_encode64(*val);
+	int64_t v = (int64_t)tlibc_zigzag_encode64(*val);
 	tlibc_error_code_t ret;
 	tlibc_host64_to_little(v);
-	ret = tlibc_compact_varint64_encode(v, COMPACT_WRITER_PTR(self), &buff_size);
+	ret = tlibc_compact_varint64_encode((uint64_t)v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
 		goto done;
@@ -399,7 +399,7 @@ tlibc_error_code_t tlibc_compact_write_uint8(tlibc_abstract_writer_t *super, con
 		goto not_enough_bytebuff_size;
 	}
 	*(uint8_t*)COMPACT_WRITER_PTR(self) = *val;
-	self->offset += sizeof(uint8_t);
+	self->offset += (uint32_t)sizeof(uint8_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -468,7 +468,7 @@ tlibc_error_code_t tlibc_compact_write_char(tlibc_abstract_writer_t *super, cons
 		goto not_enough_bytebuff_size;
 	}
 	*(char*)COMPACT_WRITER_PTR(self) = *val;
-	self->offset += sizeof(char);
+	self->offset += (uint32_t)sizeof(char);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -483,7 +483,7 @@ tlibc_error_code_t tlibc_compact_write_double(tlibc_abstract_writer_t *super, co
 		goto not_enough_bytebuff_size;
 	}
 	*(double*)COMPACT_WRITER_PTR(self) = *val;
-	self->offset += sizeof(double);
+	self->offset += (uint32_t)sizeof(double);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:

@@ -204,7 +204,7 @@ ERROR_RET:
 		if(!self->bindinfo_row[i].empty)
 		{
 			tlibc_hash_insert(&self->name2index, self->bindinfo_row[i].val_begin
-				, self->bindinfo_row[i].val_end - self->bindinfo_row[i].val_begin, &self->bindinfo_row[i].name2index);
+				, (uint32_t)(self->bindinfo_row[i].val_end - self->bindinfo_row[i].val_begin), &self->bindinfo_row[i].name2index);
 		}
 		if(self->use_cache)
 		{
@@ -297,7 +297,7 @@ static void tlibc_xlsx_locate(tlibc_xlsx_reader_t *self)
 		{
 			goto done;
 		}
-		head = tlibc_hash_find(&self->name2index, self->super.name + 1, self->super.name_ptr - self->super.name - 1);
+		head = tlibc_hash_find(&self->name2index, self->super.name + 1, (uint32_t)(self->super.name_ptr - self->super.name - 1));
 		if(head == NULL)
 		{
 			goto done;
@@ -310,7 +310,7 @@ static void tlibc_xlsx_locate(tlibc_xlsx_reader_t *self)
 	}
 	++self->row_index;
 	self->curr_cell = self->curr_row + (cell - self->bindinfo_row);
-	self->last_col = self->curr_cell - self->curr_row;
+	self->last_col = (int32_t)(self->curr_cell - self->curr_row);
 
 done:	
 	return;
@@ -695,7 +695,7 @@ done:
 
 size_t tlibc_xlsx_current_col(tlibc_xlsx_reader_t *self)
 {
-	return self->last_col + 1;
+	return (size_t)self->last_col + 1;
 }
 
 size_t tlibc_xlsx_str2num(const char* str)
@@ -711,7 +711,7 @@ size_t tlibc_xlsx_str2num(const char* str)
 
 	for(i = 0; i < len; ++i)
 	{
-		num = num * 26 + str[i] - 'A' + 1;
+		num = num * 26 + (uint32_t)(str[i] - 'A') + 1;
 	}
 	return num;
 }

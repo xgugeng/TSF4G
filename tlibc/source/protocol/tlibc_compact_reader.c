@@ -15,7 +15,7 @@ static tlibc_error_code_t tlibc_compact_varint16_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 0);
+	b = *(const uint8_t*)(buff_ptr + 0);
 	*result = (b & 0x7F);
 	if (!(b & 0x80))
 	{
@@ -27,8 +27,8 @@ static tlibc_error_code_t tlibc_compact_varint16_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 1);
-	*result |= (b & 0x7F) << 7;
+	b = *(const uint8_t*)(buff_ptr + 1);
+	*result |= (uint16_t)((b & 0x7F) << 7);
 	if (!(b & 0x80))
 	{
 		*buff_size = 2;
@@ -39,8 +39,8 @@ static tlibc_error_code_t tlibc_compact_varint16_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 2);
-	*result |= (b & 0x7F) << 14;
+	b = *(const uint8_t*)(buff_ptr + 2);
+	*result |= (uint16_t)((b & 0x7F) << 14);
 	if (!(b & 0x80))
 	{
 		*buff_size = 3;
@@ -64,7 +64,7 @@ static tlibc_error_code_t tlibc_compact_varint32_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 0);
+	b = *(const uint8_t*)(buff_ptr + 0);
 	*result = (b & 0x7F);
 	if (!(b & 0x80))
 	{
@@ -76,8 +76,8 @@ static tlibc_error_code_t tlibc_compact_varint32_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 1);
-	*result |= (b & 0x7F) << 7;
+	b = *(const uint8_t*)(buff_ptr + 1);
+	*result |= (uint32_t)((b & 0x7F) << 7);
 	if (!(b & 0x80))
 	{
 		*buff_size = 2;
@@ -88,8 +88,8 @@ static tlibc_error_code_t tlibc_compact_varint32_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 2);
-	*result |= (b & 0x7F) << 14;
+	b = *(const uint8_t*)(buff_ptr + 2);
+	*result |= (uint32_t)((b & 0x7F) << 14);
 	if (!(b & 0x80))
 	{
 		*buff_size = 3;
@@ -100,8 +100,8 @@ static tlibc_error_code_t tlibc_compact_varint32_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 3);
-	*result |= (b & 0x7F) << 21;
+	b = *(const uint8_t*)(buff_ptr + 3);
+	*result |= (uint32_t)((b & 0x7F) << 21);
 	if (!(b & 0x80))
 	{
 		*buff_size = 4;
@@ -112,8 +112,8 @@ static tlibc_error_code_t tlibc_compact_varint32_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 4);
-	*result |= (b & 0x7F) << 28;
+	b = *(const uint8_t*)(buff_ptr + 4);
+	*result |= (uint32_t)((b & 0x7F) << 28);
 	if (!(b & 0x80))
 	{
 		*buff_size = 5;
@@ -142,7 +142,7 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 0);
+	b = *(const uint8_t*)(buff_ptr + 0);
 	par0 = (b & 0x7F);
 	if (!(b & 0x80))
 	{
@@ -154,8 +154,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 1);
-	par0 |= (b & 0x7F) << 7;
+	b = *(const uint8_t*)(buff_ptr + 1);
+	par0 |= (uint32_t)((b & 0x7F) << 7);
 	if (!(b & 0x80))
 	{
 		*buff_size = 2;
@@ -166,8 +166,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 2);
-	par0 |= (b & 0x7F) << 14;
+	b = *(const uint8_t*)(buff_ptr + 2);
+	par0 |= (uint32_t)((b & 0x7F) << 14);
 	if (!(b & 0x80))
 	{
 		*buff_size = 3;
@@ -178,8 +178,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 3);
-	par0 |= (b & 0x7F) << 21;
+	b = *(const uint8_t*)(buff_ptr + 3);
+	par0 |= (uint32_t)((b & 0x7F) << 21);
 	if (!(b & 0x80))
 	{
 		*buff_size = 4;
@@ -191,7 +191,7 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 4);
+	b = *(const uint8_t*)(buff_ptr + 4);
 	par1 = (b & 0x7F);
 	if (!(b & 0x80))
 	{
@@ -203,8 +203,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 5);
-	par1 |= (b & 0x7F) << 7;
+	b = *(const uint8_t*)(buff_ptr + 5);
+	par1 |= (uint32_t)((b & 0x7F) << 7);
 	if (!(b & 0x80))
 	{
 		*buff_size = 6;
@@ -215,8 +215,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 6);
-	par1 |= (b & 0x7F) << 14;
+	b = *(const uint8_t*)(buff_ptr + 6);
+	par1 |= (uint32_t)((b & 0x7F) << 14);
 	if (!(b & 0x80))
 	{
 		*buff_size = 7;
@@ -227,8 +227,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 7);
-	par1 |= (b & 0x7F) << 21;
+	b = *(const uint8_t*)(buff_ptr + 7);
+	par1 |= (uint32_t)((b & 0x7F) << 21);
 	if (!(b & 0x80))
 	{
 		*buff_size = 8;
@@ -240,7 +240,7 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 8);
+	b = *(const uint8_t*)(buff_ptr + 8);
 	par2 = (b & 0x7F);
 	if (!(b & 0x80))
 	{
@@ -252,8 +252,8 @@ static tlibc_error_code_t tlibc_compact_varint64_decode(const char *buff_ptr, ui
 	{
 		goto not_enough_byte_size;
 	}
-	b = *(uint8_t*)(buff_ptr + 9);
-	par2 |= (b & 0x7F) << 7;
+	b = *(const uint8_t*)(buff_ptr + 9);
+	par2 |= (uint32_t)((b & 0x7F) << 7);
 	if (!(b & 0x80))
 	{
 		*buff_size = 10;
@@ -302,8 +302,8 @@ tlibc_error_code_t tlibc_compact_read_int8(tlibc_abstract_reader_t *super, int8_
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*val = *(int8_t*)COMPACT_READER_PTR(self);
-	self->offset += sizeof(int8_t);
+	*val = *(const int8_t*)COMPACT_READER_PTR(self);
+	self->offset += (uint32_t)sizeof(int8_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -338,7 +338,7 @@ tlibc_error_code_t tlibc_compact_read_int32(tlibc_abstract_reader_t *super, int3
 		goto done;
 	}
 	tlibc_little_to_host32(res);
-	*val = tlibc_zigzag_decode32(res);
+	*val = tlibc_zigzag_decode32((int32_t)res);
 	self->offset +=buff_size;
 done:
 	return ret;
@@ -355,7 +355,7 @@ tlibc_error_code_t tlibc_compact_read_int64(tlibc_abstract_reader_t *super, int6
 		goto done;
 	}
 	tlibc_little_to_host64(res);
-	*val = tlibc_zigzag_decode64(res);
+	*val = tlibc_zigzag_decode64((int64_t)res);
 	self->offset +=buff_size;
 done:
 	return ret;
@@ -368,8 +368,8 @@ tlibc_error_code_t tlibc_compact_read_uint8(tlibc_abstract_reader_t *super, uint
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*val = *(uint8_t*)COMPACT_READER_PTR(self);
-	self->offset += sizeof(uint8_t);
+	*val = *(const uint8_t*)COMPACT_READER_PTR(self);
+	self->offset += (uint32_t)sizeof(uint8_t);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -428,8 +428,8 @@ tlibc_error_code_t tlibc_compact_read_char(tlibc_abstract_reader_t *super, char 
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*val = *(char*)COMPACT_READER_PTR(self);
-	self->offset += sizeof(char);
+	*val = *(const char*)COMPACT_READER_PTR(self);
+	self->offset += (uint32_t)sizeof(char);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:
@@ -444,8 +444,8 @@ tlibc_error_code_t tlibc_compact_read_double(tlibc_abstract_reader_t *super, dou
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*val = *(double*)COMPACT_READER_PTR(self);
-	self->offset += sizeof(double);
+	*val = *(const double*)COMPACT_READER_PTR(self);
+	self->offset += (uint32_t)sizeof(double);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:

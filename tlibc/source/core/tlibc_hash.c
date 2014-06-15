@@ -31,7 +31,8 @@ uint32_t tlibc_hash_key(const char* key, uint32_t key_size)
 	key_hash = 0;
 	for(i = 0; i < key_size; ++i)
 	{
-		key_hash = key_hash * 31 + key[i];
+		key_hash*=31;
+		key_hash+=(unsigned char)key[i];
 	}
 	return key_hash;
 }

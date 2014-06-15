@@ -28,11 +28,14 @@ READER_CFILE=$(READER_HFILE:.h=.c)
 WRITER_HFILE=$(WRITER_TDR_FILE:.tdr=_writer.h)
 WRITER_CFILE=$(WRITER_HFILE:.h=.c)
 
+RE2C_CFILE=$(REFILE:.re=.c)
+RE2C_HFILE=$(REFILE:.re=.h)
 
-OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o)
+
+OFILE=$(CFILE:.c=.o) $(READER_CFILE:.c=.o) $(WRITER_CFILE:.c=.o) $(RE2C_CFILE:.c=.o)
 DFILE=$(OFILE:.o=.d) $(SQL_FILE:.sql=.sql.d) $(TYPES_HFILE:.h=.h.d) $(READER_HFILE:.h=.h.d) $(READER_CFILE:.c=.c.d) $(WRITER_HFILE:.h=.h.d) $(WRITER_CFILE:.c=.c.d)
 
-GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE)
+GENFILE=$(SQL_FILE) $(TYPES_HFILE) $(WRITER_HFILE) $(WRITER_CFILE) $(READER_HFILE) $(READER_CFILE) $(RE2C_HFILE) $(RE2C_CFILE)
 .PHONY: all clean dep install tags
 
 all:dep $(GENFILE) $(TARGET)
@@ -63,6 +66,12 @@ $(WRITER_HFILE):$(WRITER_TDR_FILE)
 
 $(WRITER_CFILE):$(WRITER_TDR_FILE)
 	$(REALTDR) -g writer_c $^
+
+%.c: %.re
+	re2c -c -F -t$*.h -o$*.c $<
+
+%.h: %.re
+	re2c -c -F -t$*.h -o$*.c $<
 
 tags:$(GENFILE)
 	find $(SOURCES) $^ -name "*.c" -or -name "*.h" | xargs ctags -a --c-types=+p+x

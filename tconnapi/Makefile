@@ -1,7 +1,7 @@
 LIBRARY=lib/libtconnapi.a
 TARGET= $(LIBRARY)
 HOME=../
-CINC=-I/usr/local/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr/ -I$(HOME)/tbusapi/include -I$(HOME)/tbus/include
+CINC=-Iinclude -I$(HOME)/tlibc/include -I$(HOME)/tlibc/tdr/ -I$(HOME)/tbusapi/include -I$(HOME)/tbus/include
 
 CFILE=$(wildcard source/*.c)
 

@@ -1,8 +1,8 @@
 LIBRARY=lib/libtlog.a
 TARGET= $(LIBRARY)
 HOME=../
-CINC=-Iinclude -Itdr -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr/ -I$(HOME)/tbus/include/ -I/usr/local/tlibc/include
-TDRINC=-Itdr -I$(HOME)/tcommon/tdr/
+CINC=-Iinclude -Itdr -I$(HOME)/tlibc/include -I$(HOME)/tlibc/tdr/ -I$(HOME)/tbus/include/
+TDRINC=-Itdr -I$(HOME)/tlibc/tdr/
 CFILE=$(wildcard source/*.c)
 CFILE+=$(wildcard source/appender/*.c)
 

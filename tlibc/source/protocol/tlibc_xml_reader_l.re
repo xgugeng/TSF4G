@@ -27,8 +27,8 @@ restart:
 		}
 		return tok_end;
 	}
-	sp->yylloc.first_line = sp->yylineno;
-	sp->yylloc.first_column = sp->yycolumn;
+	sp->yylloc.first_line = (int)sp->yylineno;
+	sp->yylloc.first_column = (int)sp->yycolumn;
 	yytext = YYCURSOR;
 /*!re2c
 re2c:yyfill:check = 0;
@@ -39,7 +39,7 @@ anychar			([^])
 
 
 
-<!*> := yyleng = YYCURSOR - yytext; tlibc_xml_reader_locate(self);
+<!*> := yyleng = (uint32_t)(YYCURSOR - yytext); tlibc_xml_reader_locate(self);
 
 <*>{comment}
 {
@@ -100,7 +100,7 @@ anychar			([^])
 			break;
 		}
 	}
-	file_len = file_end - file_begin;
+	file_len = (uint32_t)(file_end - file_begin);
 	if(file_len >= TLIBC_MAX_PATH_LENGTH)
 	{
 		self->error_code = E_TLIBC_OUT_OF_MEMORY;

@@ -1,11 +1,11 @@
 BINARY=bin/tconnd
 TARGET= $(BINARY)
 HOME=../
-CINC=-I/usr/local/tlibc/include/ -Iinclude -Itdr -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tapp/include/
-LDPATH=-L/usr/local/tlibc/lib/
-DEPLIBS=-ltlibc
-DEPOFILE=$(HOME)/tlog/lib/libtlog.a $(HOME)/tbus/lib/libtbus.a $(HOME)/tapp/lib/libtapp.a
-TDRINC=-I$(HOME)/tcommon/tdr/ -I$(HOME)/tlog/tdr/
+CINC=-I$(HOME)/tlibc/include/ -Iinclude -Itdr -I$(HOME)/tlibc/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tapp/include/
+LDPATH=
+DEPLIBS=
+DEPOFILE=$(HOME)/tlog/lib/libtlog.a $(HOME)/tbus/lib/libtbus.a $(HOME)/tapp/lib/libtapp.a $(HOME)/tlibc/lib/libtlibc.a
+TDRINC=-I$(HOME)/tlibc/tdr/ -I$(HOME)/tlog/tdr/
 
 CFILE=$(wildcard source/*.c)
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)

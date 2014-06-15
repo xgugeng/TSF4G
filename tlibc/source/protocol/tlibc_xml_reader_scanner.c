@@ -36,8 +36,8 @@ tlibc_xml_reader_token_t tlibc_xml_reader_get_token(tlibc_xml_reader_t *self)
 		goto done;
 	}
 	sp = &self->scanner_context_stack[self->scanner_context_stack_num - 1];
-	sp->yylloc.last_line = sp->yylineno;
-	sp->yylloc.last_column = sp->yycolumn;
+	sp->yylloc.last_line = (int)sp->yylineno;
+	sp->yylloc.last_column = (int)sp->yycolumn;
 
 	switch(token)
 	{

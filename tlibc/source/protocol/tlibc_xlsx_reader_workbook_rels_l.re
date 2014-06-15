@@ -11,6 +11,7 @@
 #define YYMARKER self->scanner.marker
 #define YYCTYPE char
 
+const char* tlibc_xlsx_reader_workbook_rels_search_file(tlibc_xlsx_reader_t *self, const char* rid);
 const char* tlibc_xlsx_reader_workbook_rels_search_file(tlibc_xlsx_reader_t *self, const char* rid)
 {
 	const char* target_begin = NULL;
