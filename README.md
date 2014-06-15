@@ -13,8 +13,8 @@ The Service Framework For Game
 œÓƒø“¿¿µ
 ========
 
-- 1.[MySQL](http://github.com/randyliu/TLibC)
-- 2.[RE2C](http://http://www.re2c.org)
+- 1.[MySQL](http://www.mysql.com)
+- 2.[RE2C](http://www.re2c.org)
 - 3.[Bison](http://www.gnu.org/software/bison)
 - 4.[TDR](http://github.com/randyliu/TDR)
 
