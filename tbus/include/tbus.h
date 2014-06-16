@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-#include "platform/tlibc_platform.h"
-
 #include "terrno.h"
 
 #include <stdint.h>

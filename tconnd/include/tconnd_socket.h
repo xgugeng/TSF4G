@@ -1,7 +1,6 @@
 #ifndef _H_TCONND_SOCKET_H
 #define _H_TCONND_SOCKET_H
 
-#include "platform/tlibc_platform.h"
 #include <netinet/in.h>
 #include "terrno.h"
 #include "sip.h"
@@ -12,6 +11,7 @@
 #include "bscp_types.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 
 
 

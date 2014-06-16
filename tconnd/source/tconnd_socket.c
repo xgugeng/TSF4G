@@ -1,13 +1,5 @@
 #include "tconnd_socket.h"
-#include <assert.h>
-
-#include <string.h>
-#include <unistd.h>
-#include <errno.h>
-#include <stdio.h>
-
 #include "sip.h"
-
 #include "tconnd_timer.h"
 #include "tconnd_mempool.h"
 #include "tconnd_tbus.h"
@@ -16,6 +8,7 @@
 #include "tconnd_listen.h"
 #include "tlog_log.h"
 #include "tlog_print.h"
+#include "tlibcdef.h"
 
 #include <sys/ioctl.h>
 #include <sys/epoll.h>
@@ -23,7 +16,11 @@
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <inttypes.h>
-
+#include <assert.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
 #include <stdbool.h>
 
 

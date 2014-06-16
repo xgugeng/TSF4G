@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 
-#include "platform/tlibc_platform.h"
+#include "tlibcdef.h"
 #include "protocol/tlibc_abstract_writer.h"
 
 #define tlibc_zigzag_encode16(n) ((uint16_t)(((uint16_t)n << 1) ^ ((uint16_t)n >> 15)))

@@ -5,8 +5,6 @@
 extern "C" {
 #endif
 
-#include "platform/tlibc_platform.h"
-
 typedef enum tlibc_error_code_e
 {
     E_TLIBC_NOERROR = 0,

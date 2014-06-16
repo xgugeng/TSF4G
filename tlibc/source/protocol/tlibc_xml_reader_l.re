@@ -1,9 +1,9 @@
-#include "platform/tlibc_platform.h"
 #include "protocol/tlibc_xml_reader.h"
 #include "protocol/tlibc_xml_reader_scanner.h"
 #include "tlibc_xml_reader_l.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 		
 tlibc_xml_reader_token_t tlibc_xml_reader_scan(tlibc_xml_reader_t *self)

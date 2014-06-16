@@ -1,7 +1,6 @@
 #ifndef _H_TCONND_MEMPOOL_H
 #define _H_TCONND_MEMPOOL_H
 
-#include "platform/tlibc_platform.h"
 #include "terrno.h"
 #include "core/tlibc_mempool.h"
 

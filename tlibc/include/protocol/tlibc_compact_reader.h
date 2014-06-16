@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "platform/tlibc_platform.h"
+#include <stdint.h>
 #include "protocol/tlibc_abstract_reader.h"
 
 #define tlibc_zigzag_decode16(n) ((int16_t)((n >> 1) ^ -(int16_t)(n & 1)))

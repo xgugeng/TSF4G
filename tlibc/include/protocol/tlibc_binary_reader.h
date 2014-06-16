@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 
-#include "platform/tlibc_platform.h"
 #include "protocol/tlibc_abstract_reader.h"
 
 typedef struct tlibc_binary_reader_s

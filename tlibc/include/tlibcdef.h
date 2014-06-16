@@ -1,5 +1,5 @@
-#ifndef _H_TLIBC_PLATFORM_COMMON
-#define _H_TLIBC_PLATFORM_COMMON
+#ifndef _H_TLIBCDEF_H
+#define _H_TLIBCDEF_H
 
 #include <stdint.h>
 
@@ -13,9 +13,4 @@
 
 #define TLIBC_CONTAINER_OF(ptr, type, member) ((type *)((size_t)ptr - TLIBC_OFFSET_OF(type, member)))
 
-
-#ifdef  __cplusplus
-}
-#endif
-
-#endif
+#endif//_H_TLIBCDEF_H

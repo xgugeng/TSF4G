@@ -1,5 +1,5 @@
 #include "protocol/tlibc_binary_writer.h"
-#include "platform/tlibc_platform.h"
+#include "tlibcdef.h"
 #include "protocol/tlibc_abstract_writer.h"
 #include "core/tlibc_error_code.h"
 

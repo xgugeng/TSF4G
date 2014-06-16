@@ -2,6 +2,7 @@
 #include "core/tlibc_timer.h"
 #include "core/tlibc_mempool.h"
 #include "core/tlibc_unzip.h"
+#include "tlibcdef.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -9,7 +10,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
-
 #include <sys/time.h>
 #include <stdbool.h>
 

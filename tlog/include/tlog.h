@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-#include "platform/tlibc_platform.h"
 #include "tlog_config_types.h"
 #include "appender/tlog_appender_rolling_file.h"
 #include "appender/tlog_appender_shm.h"
@@ -13,6 +12,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "terrno.h"
 
 #define TLOG_VERSION "0.0.1"

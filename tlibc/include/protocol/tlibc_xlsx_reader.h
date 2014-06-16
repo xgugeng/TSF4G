@@ -6,11 +6,12 @@ extern "C" {
 #endif
 
 
-#include "platform/tlibc_platform.h"
 #include "protocol/tlibc_abstract_reader.h"
 #include "core/tlibc_error_code.h"
 #include "core/tlibc_unzip.h"
 #include "core/tlibc_hash.h"
+
+#include <stdint.h>
 #include <stdbool.h>
 
 typedef struct tlibc_xlsx_reader_scanner_s

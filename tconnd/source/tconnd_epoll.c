@@ -5,10 +5,11 @@
 #include "tconnd.h"
 #include "tlog_log.h"
 #include "tconnd_listen.h"
+#include "tlibcdef.h"
+
 #include <unistd.h>
 #include <assert.h>
 #include <sys/epoll.h>
-
 #include <errno.h>
 #include <string.h>
 #include <inttypes.h>

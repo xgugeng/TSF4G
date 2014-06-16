@@ -6,9 +6,9 @@ extern "C" {
 #endif
 
 
-#include "platform/tlibc_platform.h"
 #include "core/tlibc_list.h"
 #include "core/tlibc_error_code.h"
+
 #include <stdint.h>
 typedef struct _tlibc_hash_head_t tlibc_hash_head_t;
 struct _tlibc_hash_head_t

@@ -2,6 +2,7 @@
 #include "protocol/tlibc_abstract_reader.h"
 #include "core/tlibc_error_code.h"
 #include "protocol/tlibc_xml_reader.h"
+#include "tlibcdef.h"
 
 #include <string.h>
 #include <assert.h>

@@ -1,6 +1,5 @@
 #include "core/tlibc_unzip.h"
-
-#include "platform/tlibc_platform.h"
+#include "tlibcdef.h"
 
 #include "zlib.h"
 

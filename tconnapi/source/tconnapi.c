@@ -1,6 +1,7 @@
 #include "tconnapi.h"
 #include "tbus.h"
 #include "bscp_types.h"
+#include "tlibcdef.h"
 
 #include <sys/shm.h>
 #include <string.h>

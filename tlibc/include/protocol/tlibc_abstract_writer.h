@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-#include "platform/tlibc_platform.h"
 #include "core/tlibc_error_code.h"
 #include <stdint.h>
 

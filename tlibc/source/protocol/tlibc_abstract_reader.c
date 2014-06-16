@@ -1,9 +1,9 @@
 #include "protocol/tlibc_abstract_reader.h"
-#include "platform/tlibc_platform.h"
 #include "core/tlibc_error_code.h"
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stddef.h>
 
 void tlibc_abstract_reader_init(tlibc_abstract_reader_t *self)
 {

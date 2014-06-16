@@ -1,11 +1,13 @@
 #include "tconnd_mempool.h"
 #include "core/tlibc_mempool.h"
 #include "tconnd_socket.h"
-#include <assert.h>
 #include "tconnd.h"
 #include "tlog_log.h"
 #include "tconnd_timer.h"
+#include "tlibcdef.h"
+
 #include <stdlib.h>
+#include <assert.h>
 
 tlibc_mempool_t g_socket_pool;
 tlibc_mempool_t g_package_pool;

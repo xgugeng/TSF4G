@@ -4,10 +4,9 @@
 #include <errno.h>
 #include <limits.h>
 #include <getopt.h>
-
 #include <sys/shm.h>
 
-
+#include "tlibcdef.h"
 #include "tbus.h"
 
 static void version()
