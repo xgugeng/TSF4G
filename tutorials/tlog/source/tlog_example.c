@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlog_config);
 	
 
-	if(tlog_init(&g_tlog_instance, &g_config) != E_TS_NOERROR)
+	if(tlog_init(&g_tlog_instance, &g_config) != E_TLIBC_NOERROR)
 	{
 	    return 1;
 	}

@@ -169,14 +169,14 @@ static void on_signal(int sig)
     }
 }
 
-TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
+tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
                         tapp_func_t sigusr1, void* usr1_arg,
                         tapp_func_t sigusr2, void* usr2_arg,
                         ...)
 {
-	TERROR_CODE proc_ret;
-    TERROR_CODE ret = E_TS_NOERROR;
-	TERROR_CODE r;
+	tlibc_error_code_t proc_ret;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
+	tlibc_error_code_t r;
     uint32_t idle_count = 0;
     struct sigaction  sa;
     va_list valist;
@@ -185,7 +185,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
 	sa.sa_handler = on_signal;
 	if(sigemptyset(&sa.sa_mask) != 0)
 	{
-	    ret = E_TS_ERRNO;
+	    ret = E_TLIBC_ERRNO;
         goto done;
 	}
 
@@ -194,7 +194,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
 	|| (sigaction(SIGUSR1, &sa, NULL) != 0)
 	|| (sigaction(SIGUSR2, &sa, NULL) != 0))
 	{
-    	ret = E_TS_ERRNO;
+    	ret = E_TLIBC_ERRNO;
         goto done;
 	}
 
@@ -202,7 +202,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
 	sa.sa_handler = SIG_IGN;
     if(sigaction(SIGPIPE, &sa, NULL) != 0)
     {
-    	ret = E_TS_ERRNO;
+    	ret = E_TLIBC_ERRNO;
         goto done;
     }
 
@@ -216,7 +216,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
             if(sigusr1)
             {
                 r = sigusr1(usr1_arg);
-                if(r != E_TS_NOERROR)
+                if(r != E_TLIBC_NOERROR)
                 {
 					ret = r;
                     goto done;
@@ -231,7 +231,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
             if(sigusr2)
             {
                 r = sigusr2(usr2_arg);
-                if(r != E_TS_NOERROR)
+                if(r != E_TLIBC_NOERROR)
                 {
 					ret = r;
                     goto done;
@@ -240,7 +240,7 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
             idle_count = 0;
         }
 
-        proc_ret = E_TS_WOULD_BLOCK;
+        proc_ret = E_TLIBC_WOULD_BLOCK;
         va_start(valist, usr2_arg);
         for(;;)
         {
@@ -255,11 +255,11 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
             arg = va_arg(valist, void *);
             
             r = func(arg);
-            if(r == E_TS_NOERROR)
+            if(r == E_TLIBC_NOERROR)
             {
-                proc_ret = E_TS_NOERROR;
+                proc_ret = E_TLIBC_NOERROR;
             }
-            else if(r != E_TS_WOULD_BLOCK)
+            else if(r != E_TLIBC_WOULD_BLOCK)
             {
                 proc_ret = r;
                 break;
@@ -269,17 +269,17 @@ TERROR_CODE tapp_loop(useconds_t idle_usec, size_t idle_limit,
 
         switch(proc_ret)
         {
-        case E_TS_NOERROR:
+        case E_TLIBC_NOERROR:
             idle_count = 0;
             break;
-        case E_TS_WOULD_BLOCK:
+        case E_TLIBC_WOULD_BLOCK:
             {
                 ++idle_count;
                 if(idle_count >= idle_limit)
                 {
                     if((usleep(idle_usec) != 0) && (errno != EINTR))
                     {
-                        ret = E_TS_ERRNO;
+                        ret = E_TLIBC_ERRNO;
                         goto done;
                     }
                     idle_count = 0;                 

@@ -73,11 +73,11 @@ tconnd_socket_t *tconnd_socket_new();
 
 void tconnd_socket_delete(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self);
+tlibc_error_code_t tconnd_socket_flush(tconnd_socket_t *self);
 
-TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, void* body, size_t body_size);
+tlibc_error_code_t tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, void* body, size_t body_size);
 
-TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self);
+tlibc_error_code_t tconnd_socket_recv(tconnd_socket_t *self);
 
 
 

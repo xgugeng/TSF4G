@@ -32,6 +32,8 @@ const char *tstrerror(tlibc_error_code_t terrno)
 		return "忽略";
 	case E_TLIBC_PLEASE_READ_ENUM_NAME:
 		return "请读取枚举名";
+	case E_TLIBC_FILE_IS_ALREADY_ON_THE_STACK:
+		return "循环包含文件";
 	default:
 		return "未知错误";
 	}

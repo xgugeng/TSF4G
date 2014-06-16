@@ -41,7 +41,7 @@ typedef struct tlog_s
 }tlog_t;
 
 
-TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config);
+tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config);
 
 //所有的write都不带缓存，每次写入都将被立即执行， 如果确有需要可以增加缓存提高效率。
 void tlog_write(tlog_t *self, const tlog_message_t *message);

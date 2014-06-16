@@ -15,9 +15,9 @@ tbusapi_t g_tbusapi;
 
 int main(int argc, char *argv[])
 {
-    TERROR_CODE ret;
+    tlibc_error_code_t ret;
 
-	if(tbusapi_init(&g_tbusapi, SHM_KEY, 1, 0) != E_TS_NOERROR)
+	if(tbusapi_init(&g_tbusapi, SHM_KEY, 1, 0) != E_TLIBC_NOERROR)
 	{
 		fprintf(stderr, "tbusapi_init failed.\n");
 		exit(1);
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 
     tbusapi_fini(&g_tbusapi);
     
-    if(ret == E_TS_NOERROR)
+    if(ret == E_TLIBC_NOERROR)
     {
         return 0;
     }

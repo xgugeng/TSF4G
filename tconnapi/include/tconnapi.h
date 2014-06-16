@@ -28,7 +28,7 @@ struct tconnapi_s
 
 
 
-TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode);
+tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode);
 
 void tconnapi_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num);
 
@@ -36,7 +36,7 @@ void tconnapi_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_
 
 void tconnapi_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num);
 
-TERROR_CODE tconnapi_process(tconnapi_t *self);
+tlibc_error_code_t tconnapi_process(tconnapi_t *self);
 
 #ifdef  __cplusplus
 }

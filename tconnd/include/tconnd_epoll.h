@@ -8,9 +8,9 @@ extern int                  g_epollfd;
 extern tlibc_list_head_t      g_package_socket_list;
 extern tlibc_list_head_t      g_pending_socket_list;
 
-TERROR_CODE tconnd_epoll_init();
+tlibc_error_code_t tconnd_epoll_init();
 
-TERROR_CODE tconnd_epool_proc();
+tlibc_error_code_t tconnd_epool_proc();
 
 void tconnd_epoll_fini();
 

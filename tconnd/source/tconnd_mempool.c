@@ -12,15 +12,15 @@
 tlibc_mempool_t g_socket_pool;
 tlibc_mempool_t g_package_pool;
 
-TERROR_CODE tconnd_mempool_init()
+tlibc_error_code_t tconnd_mempool_init()
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
     g_socket_pool.unit_size = sizeof(tconnd_socket_t);
     g_socket_pool.unit_num = g_config.connections;
     if(g_socket_pool.unit_num > (SIZE_MAX / g_socket_pool.unit_size))
     {
-        ret = E_TS_NO_MEMORY;
+        ret = E_TLIBC_NO_MEMORY;
         ERROR_LOG("malloc failed, g_socket_pool.unit_size = %zu, g_socket_pool.unit_num = %zu"
             , g_socket_pool.unit_size, g_socket_pool.unit_num);
         goto done;
@@ -28,7 +28,7 @@ TERROR_CODE tconnd_mempool_init()
     g_socket_pool.pool = (char*)malloc(g_socket_pool.unit_size * g_socket_pool.unit_num);
     if(g_socket_pool.pool == NULL)
     {
-        ret = E_TS_NO_MEMORY;        
+        ret = E_TLIBC_NO_MEMORY;        
         ERROR_LOG("malloc failed, g_socket_pool.unit_size = %zu, g_socket_pool.unit_num = %zu"
             , g_socket_pool.unit_size, g_socket_pool.unit_num);
         goto done;
@@ -44,7 +44,7 @@ TERROR_CODE tconnd_mempool_init()
     g_package_pool.unit_num = g_config.package_connections;
     if(g_package_pool.unit_num > (SIZE_MAX / g_package_pool.unit_size))
     {
-        ret = E_TS_NO_MEMORY;
+        ret = E_TLIBC_NO_MEMORY;
         ERROR_LOG("malloc failed, g_socket_pool.unit_size = %zu, g_socket_pool.unit_num = %zu"
             , g_package_pool.unit_size, g_package_pool.unit_num);
         goto done;
@@ -52,7 +52,7 @@ TERROR_CODE tconnd_mempool_init()
     g_package_pool.pool = (char*)malloc(g_package_pool.unit_size * g_package_pool.unit_num);
     if(g_package_pool.pool == NULL)
     {
-        ret = E_TS_NO_MEMORY;        
+        ret = E_TLIBC_NO_MEMORY;        
         ERROR_LOG("malloc failed, g_package_pool.unit_size = %zu, g_package_pool.unit_num = %zu"
             , g_package_pool.unit_size, g_package_pool.unit_num);
         goto done;

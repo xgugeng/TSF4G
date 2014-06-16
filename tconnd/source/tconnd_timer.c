@@ -19,9 +19,9 @@ static void tconnd_timer_signal_handler(int signo)
     ++g_cur_ticks;
 }
 
-TERROR_CODE tconnd_timer_init()
+tlibc_error_code_t tconnd_timer_init()
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
 
     struct sigaction  sa;
@@ -35,7 +35,7 @@ TERROR_CODE tconnd_timer_init()
     if (sigaction(SIGALRM, &sa, NULL) == -1)
     {
         ERROR_LOG("sigaction return errno [%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERROR;
+        ret = E_TLIBC_ERROR;
         goto done;
     }
     
@@ -47,7 +47,7 @@ TERROR_CODE tconnd_timer_init()
     if (setitimer(ITIMER_REAL, &itv, NULL) == -1)
     {
         ERROR_LOG("setitimer return errno [%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERROR;
+        ret = E_TLIBC_ERROR;
         goto done;
     }
 

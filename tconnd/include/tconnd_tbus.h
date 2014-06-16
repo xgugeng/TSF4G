@@ -6,9 +6,9 @@
 extern tbus_t              *g_input_tbus;
 extern tbus_t              *g_output_tbus;
 
-TERROR_CODE tconnd_tbus_init();
+tlibc_error_code_t tconnd_tbus_init();
 
-TERROR_CODE process_input_tbus();
+tlibc_error_code_t process_input_tbus();
 
 void tconnd_tbus_fini();
 

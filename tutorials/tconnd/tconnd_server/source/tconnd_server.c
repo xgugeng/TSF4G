@@ -78,7 +78,7 @@ done:
 
 int main()
 {
-	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, (encode_t)robot_proto_encode) != E_TS_NOERROR)
+	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, (encode_t)robot_proto_encode) != E_TLIBC_NOERROR)
 	{
 		ERROR_PRINT("tconnapi_init failed.");
 		return 1;

@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <unistd.h>
 
-TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config)
+tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config)
 {
     uint32_t i = 0;
     memcpy(&self->config, config, sizeof(tlog_config_t));
@@ -32,14 +32,14 @@ TERROR_CODE tlog_init(tlog_t *self, const tlog_config_t *config)
             break;
         case e_tlog_appender_shm:
             if(tlog_appender_shm_init(&self->instance.appender_vec[i].appender.shm
-                , &self->config.appender_vec[i].appender.shm) != E_TS_NOERROR)
+                , &self->config.appender_vec[i].appender.shm) != E_TLIBC_NOERROR)
             {
                 goto roll_back;
             }
             break;
         }   
     }
-    return E_TS_NOERROR;
+    return E_TLIBC_NOERROR;
 roll_back:
     for(--i; i > 0; --i)
     {
@@ -53,7 +53,7 @@ roll_back:
             break;
         }   
     }
-    return E_TS_ERROR;
+    return E_TLIBC_ERROR;
 }
 
 void tlog_write(tlog_t *self, const tlog_message_t *message)

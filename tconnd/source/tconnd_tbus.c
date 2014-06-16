@@ -17,9 +17,9 @@
 tbus_t              *g_input_tbus;
 tbus_t              *g_output_tbus;
 
-TERROR_CODE tconnd_tbus_init()
+tlibc_error_code_t tconnd_tbus_init()
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
     int input_tbusid;
     int output_tbusid;
 
@@ -27,14 +27,14 @@ TERROR_CODE tconnd_tbus_init()
 	if(input_tbusid == -1)
 	{
 	    ERROR_LOG("shmget errno[%d], %s.", errno, strerror(errno));
-	    ret = E_TS_ERRNO;
+	    ret = E_TLIBC_ERRNO;
 		goto done;
 	}
 	g_input_tbus = shmat(input_tbusid, NULL, 0);
 	if(g_input_tbus == NULL)
 	{
         ERROR_LOG("shmat errno[%d], %s.", errno, strerror(errno));
-	    ret = E_TS_ERRNO;
+	    ret = E_TLIBC_ERRNO;
 		goto done;
 	}
 
@@ -42,19 +42,19 @@ TERROR_CODE tconnd_tbus_init()
 	if(output_tbusid == -1)
 	{
         ERROR_LOG("shmget errno[%d], %s.", errno, strerror(errno));
-	    ret = E_TS_ERRNO;
+	    ret = E_TLIBC_ERRNO;
 		goto shmdt_input;
 	}
 	g_output_tbus = shmat(output_tbusid, NULL, 0);
 	if(g_output_tbus == NULL)
 	{
         ERROR_LOG("shmat errno[%d], %s.", errno, strerror(errno));
-	    ret = E_TS_ERRNO;
+	    ret = E_TLIBC_ERRNO;
 		goto shmdt_input;
 	}
 	
 
-	return E_TS_NOERROR;
+	return E_TLIBC_NOERROR;
 shmdt_input:
     shmdt(g_input_tbus);
 done:
@@ -62,9 +62,9 @@ done:
 }
 
 #define TCONND_IOV_NUM 65535
-TERROR_CODE process_input_tbus()
+tlibc_error_code_t process_input_tbus()
 {
-	TERROR_CODE ret = E_TS_NOERROR;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
     struct iovec iov[TCONND_IOV_NUM];
     size_t iov_num;    
@@ -88,7 +88,7 @@ TERROR_CODE process_input_tbus()
         }
         else
         {
-            ret = E_TS_WOULD_BLOCK;
+            ret = E_TLIBC_WOULD_BLOCK;
             goto done;
         }
     }
@@ -149,7 +149,7 @@ TERROR_CODE process_input_tbus()
                 continue;
             }
             
-            if(tconnd_socket_push_pkg(socket, head, body_addr, body_size) == E_TS_CLOSE)
+            if(tconnd_socket_push_pkg(socket, head, body_addr, body_size) == E_TLIBC_CLOSE)
             {
                 if(socket->writable)
                 {
@@ -173,10 +173,10 @@ flush_socket:
     for(iter = writable_list.next; iter != &writable_list; iter = iter->next)
     {
         tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
-        TERROR_CODE r = tconnd_socket_flush(socket);        
+        tlibc_error_code_t r = tconnd_socket_flush(socket);        
         socket->writable = false;
         
-        if(r == E_TS_CLOSE)
+        if(r == E_TLIBC_CLOSE)
         {
             tconnd_socket_delete(socket);
         }        

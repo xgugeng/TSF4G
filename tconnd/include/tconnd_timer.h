@@ -7,7 +7,7 @@
 extern uint64_t       g_cur_ticks;
 
 
-TERROR_CODE tconnd_timer_init();
+tlibc_error_code_t tconnd_timer_init();
 
 void tconnd_timer_process();
 

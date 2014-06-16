@@ -43,7 +43,7 @@ tlibc_mybind_reader_t    g_mybind_reader;
 bool					 g_myinited;
 time_t					 g_last_myinit;
 
-static TERROR_CODE init()
+static tlibc_error_code_t init()
 {
     g_input_tbus_id = shmget(g_config.input_tbuskey, 0, 0666);
     if(g_input_tbus_id == -1)
@@ -63,9 +63,9 @@ static TERROR_CODE init()
 
 	g_myinited = false;
 	g_last_myinit = 0;
-	return E_TS_NOERROR;
+	return E_TLIBC_NOERROR;
 ERROR_RET:
-	return E_TS_ERROR;
+	return E_TLIBC_ERROR;
 }
 
 static void fini()
@@ -74,7 +74,7 @@ static void fini()
 }
 
 
-static TERROR_CODE myinit()
+static tlibc_error_code_t myinit()
 {
     char                *password = NULL;
 	time_t				current_time = time(NULL);
@@ -130,13 +130,13 @@ static TERROR_CODE myinit()
     }
 	INFO_PRINT("myinit succeed.");
 
-    return E_TS_NOERROR;
+    return E_TLIBC_NOERROR;
 close_stmt:
     mysql_stmt_close(g_stmt);
 close_mysql:
     mysql_close(g_conn);
 error_ret:
-    return E_TS_ERROR;
+    return E_TLIBC_ERROR;
 }
 
 static void myfini()
@@ -148,9 +148,9 @@ static void myfini()
 }
 
 
-static TERROR_CODE process(void *arg)
+static tlibc_error_code_t process(void *arg)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	tbus_atomic_size_t tbus_head;
 	struct iovec iov[TLOGD_IOV_NUM];
 	size_t iov_num;
@@ -158,13 +158,13 @@ static TERROR_CODE process(void *arg)
 
 	if(!g_myinited)
 	{
-		if(myinit() == E_TS_NOERROR)
+		if(myinit() == E_TLIBC_NOERROR)
 		{
 			g_myinited = true;
 		}
 		else
 		{
-			ret =  E_TS_WOULD_BLOCK;
+			ret =  E_TLIBC_WOULD_BLOCK;
 			goto done;
 		}
 	}
@@ -179,7 +179,7 @@ static TERROR_CODE process(void *arg)
 	    }
 	    else
 	    {
-	        ret = E_TS_WOULD_BLOCK;
+	        ret = E_TLIBC_WOULD_BLOCK;
 	        goto done;
 	    }
 	}
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
     int ret = 0;
     
     tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config);
-	if(init() != E_TS_NOERROR)
+	if(init() != E_TLIBC_NOERROR)
 	{
 		ret = 1;
 		goto done;
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
 
 	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
 	             , process, NULL
-	             , NULL, NULL) != E_TS_NOERROR)
+	             , NULL, NULL) != E_TLIBC_NOERROR)
 	{
 		ret = 1;
 	}

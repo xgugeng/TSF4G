@@ -25,9 +25,9 @@
 
 tconnd_socket_t g_listen;
 
-TERROR_CODE tconnd_listen_init()
+tlibc_error_code_t tconnd_listen_init()
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	struct sockaddr_in  listenaddr;
     int value;
     int socketfd;
@@ -39,7 +39,7 @@ TERROR_CODE tconnd_listen_init()
 	if(socketfd == -1)
 	{
 	    ERROR_LOG("socket errno[%d], %s.", errno, strerror(errno));
-	    ret = E_TS_ERRNO;
+	    ret = E_TLIBC_ERRNO;
 		goto done;
 	}
 
@@ -47,7 +47,7 @@ TERROR_CODE tconnd_listen_init()
 	if(ioctl(socketfd, FIONBIO, &value) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
 		goto close_listenfd;
 	}
 	
@@ -60,14 +60,14 @@ TERROR_CODE tconnd_listen_init()
 	if(bind(socketfd,(struct sockaddr *)(&listenaddr), sizeof(struct sockaddr_in)) == -1)
 	{
     	ERROR_LOG("bind errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
 		goto close_listenfd;
 	}	
 
 	if(listen(socketfd, g_config.backlog) == -1)
 	{
         ERROR_LOG("listen errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
 		goto close_listenfd;
 	}
 	
@@ -75,14 +75,14 @@ TERROR_CODE tconnd_listen_init()
 	if(ioctl(socketfd, FIONBIO, &value) == -1)
 	{
         ERROR_LOG("ioctl errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
 		goto close_listenfd;
 	}
 
     if (setsockopt(socketfd, IPPROTO_TCP, TCP_DEFER_ACCEPT, &g_config.defer_accept, sizeof(g_config.defer_accept)))
     {
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
 		goto close_listenfd;
     }
 
@@ -91,14 +91,14 @@ TERROR_CODE tconnd_listen_init()
     if(setsockopt(socketfd, SOL_SOCKET, SO_SNDBUF, &g_config.sndbuf, sizeof(g_config.sndbuf)) == -1)
 	{	
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto close_listenfd;
 	}
 
     if(setsockopt(socketfd, SOL_SOCKET, SO_RCVBUF, &g_config.rcvbuf, sizeof(g_config.rcvbuf)) == -1)
 	{	
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto close_listenfd;
 	}
 
@@ -108,14 +108,14 @@ TERROR_CODE tconnd_listen_init()
     if(setsockopt(socketfd, IPPROTO_TCP, TCP_NODELAY, &g_config.nodelay, sizeof(g_config.nodelay)) == -1)
     {    
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto close_listenfd;
     }
 
     if(setsockopt(socketfd, IPPROTO_TCP, TCP_CORK, &g_config.cork, sizeof(g_config.cork)) == -1)
     {    
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto close_listenfd;
     }
 
@@ -123,7 +123,7 @@ TERROR_CODE tconnd_listen_init()
     if(setsockopt(socketfd, SOL_SOCKET, SO_KEEPALIVE, &g_config.keepalive, sizeof(g_config.keepalive)) == -1)
     {   
         ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto close_listenfd;
     }
 
@@ -132,14 +132,14 @@ TERROR_CODE tconnd_listen_init()
 	    if(setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPIDLE, &g_config.keepidle, sizeof(g_config.keepidle)) == -1)
     	{	
             ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-            ret = E_TS_ERRNO;
+            ret = E_TLIBC_ERRNO;
             goto close_listenfd;
     	} 
 
     	if(setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPINTVL, &g_config.keepintvl, sizeof(g_config.keepintvl)) == -1)
     	{	
             ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-            ret = E_TS_ERRNO;
+            ret = E_TLIBC_ERRNO;
             goto close_listenfd;
     	}
 
@@ -147,7 +147,7 @@ TERROR_CODE tconnd_listen_init()
     	if(setsockopt(socketfd, IPPROTO_TCP, TCP_KEEPCNT, &g_config.keepcnt, sizeof(g_config.keepcnt)) == -1)
     	{	
             ERROR_LOG("setsockopt errno[%d], %s.", errno, strerror(errno));
-            ret = E_TS_ERRNO;
+            ret = E_TLIBC_ERRNO;
             goto close_listenfd;
     	}
 	}
@@ -158,7 +158,7 @@ TERROR_CODE tconnd_listen_init()
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, socketfd, &ev) == -1)
     {
         DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto close_listenfd;
     }
 
@@ -177,9 +177,9 @@ done:
     return ret;
 }
 
-TERROR_CODE tconnd_listen()
+tlibc_error_code_t tconnd_listen()
 {
-	int ret = E_TS_NOERROR;
+	int ret = E_TLIBC_NOERROR;
 	tconnd_socket_t *conn_socket;
 
     int socketfd;	
@@ -193,8 +193,8 @@ TERROR_CODE tconnd_listen()
 	tbus_writer_size = tbus_send_begin(g_output_tbus, (char**)&pkg);
 	if(tbus_writer_size < sizeof(sip_req_t))
 	{
-//	    WARN_LOG("tbus_send_begin return E_TS_TBUS_NOT_ENOUGH_SPACE");
-        ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
+//	    WARN_LOG("tbus_send_begin return E_TLIBC_TBUS_NOT_ENOUGH_SPACE");
+        ret = E_TLIBC_TBUS_NOT_ENOUGH_SPACE;
 		goto done;
 	}
 	
@@ -202,13 +202,13 @@ TERROR_CODE tconnd_listen()
     if(tlibc_mempool_over(&g_socket_pool))
     {
         ERROR_LOG("g_socket_pool.sn [%"PRIu64"] == tm_invalid_id", g_socket_pool.sn);
-        ret = E_TS_ERROR;
+        ret = E_TLIBC_ERROR;
         goto done;
     }
 
     if(tlibc_mempool_empty(&g_socket_pool))
     {
-        ret = E_TS_TOO_MANY_SOCKET;
+        ret = E_TLIBC_TOO_MANY_SOCKET;
         goto done;
     }
 
@@ -229,14 +229,14 @@ TERROR_CODE tconnd_listen()
                 ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
                 break;
         }
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto done;
     }
 
     nb = 1;
 	if(ioctl(socketfd, FIONBIO, &nb) == -1)
 	{
-    	ret = E_TS_ERRNO;
+    	ret = E_TLIBC_ERRNO;
 		goto close_socket;
 	}
 

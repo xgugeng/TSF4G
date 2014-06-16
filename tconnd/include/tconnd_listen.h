@@ -8,9 +8,9 @@
 extern tconnd_socket_t g_listen;
 
 
-TERROR_CODE tconnd_listen_init();
+tlibc_error_code_t tconnd_listen_init();
 
-TERROR_CODE tconnd_listen();
+tlibc_error_code_t tconnd_listen();
 
 void tconnd_listen_fini();
 

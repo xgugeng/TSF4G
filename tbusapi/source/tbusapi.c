@@ -25,9 +25,9 @@ static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, siz
 	return (tbus_atomic_size_t)src_len;
 }
 
-TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num, key_t output_tbuskey)
+tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num, key_t output_tbuskey)
 {
-	TERROR_CODE ret = E_TS_NOERROR;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
 	if(input_tbuskey == 0)
 	{
@@ -39,19 +39,19 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num,
 		self->itb_id = shmget(input_tbuskey, 0, 0666);
 		if(self->itb_id == -1)
 		{
-    		ret = E_TS_ERRNO;
+    		ret = E_TLIBC_ERRNO;
 		    goto done;
 		}
 		self->itb = shmat(self->itb_id, NULL, 0);
 		if((ssize_t)self->itb == -1)
 		{
-            ret = E_TS_ERRNO;
+            ret = E_TLIBC_ERRNO;
             goto done;
 		}
 		
 		if(iov_num <= 0)
 		{
-			ret = E_TS_ERRNO;
+			ret = E_TLIBC_ERRNO;
 			goto done;
 		}
 		self->iov_num = iov_num;
@@ -67,14 +67,14 @@ TERROR_CODE tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num,
 		self->otb_id = shmget(output_tbuskey, 0, 0666);
 		if(self->otb_id == -1)
 		{
-    		ret = E_TS_ERRNO;
+    		ret = E_TLIBC_ERRNO;
 		    goto shmdt_itb;
 		}
 		
 		self->otb = shmat(self->otb_id, NULL, 0);
 		if((ssize_t)self->otb == -1)
 		{
-            ret = E_TS_ERRNO;
+            ret = E_TLIBC_ERRNO;
             goto shmdt_itb;
 		}
 	}
@@ -92,9 +92,9 @@ shmdt_itb:
 	return ret;
 }
 
-TERROR_CODE tbusapi_process(tbusapi_t *self)
+tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 {
-	TERROR_CODE ret = E_TS_NOERROR;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	size_t iov_num = self->iov_num;
 	tbus_atomic_size_t tbus_head = tbus_read_begin(self->itb, self->iov, &iov_num);
 	if(iov_num == 0)
@@ -105,7 +105,7 @@ TERROR_CODE tbusapi_process(tbusapi_t *self)
 		}
 		else
 		{
-			ret = E_TS_WOULD_BLOCK;
+			ret = E_TLIBC_WOULD_BLOCK;
 			goto done;
 		}
 	}

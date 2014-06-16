@@ -153,17 +153,17 @@ done:
     return;
 }
 
-TERROR_CODE tconnapi_process(tconnapi_t *self)
+tlibc_error_code_t tconnapi_process(tconnapi_t *self)
 {
     return tbusapi_process(&self->tbusapi);
 }
 
-TERROR_CODE tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode)
+tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode)
 {
-	TERROR_CODE ret = E_TS_NOERROR;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
 	ret = tbusapi_init(&self->tbusapi, ikey, 1, okey);
-	if(ret != E_TS_NOERROR)
+	if(ret != E_TLIBC_NOERROR)
 	{
 	    goto done;
 	}

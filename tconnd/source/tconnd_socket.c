@@ -122,9 +122,9 @@ void tconnd_socket_delete(tconnd_socket_t *self)
     tlibc_mempool_free(&g_socket_pool, tconnd_socket_t, mempool_entry, self);
 }
 
-TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
+tlibc_error_code_t tconnd_socket_flush(tconnd_socket_t *self)
 {
-	TERROR_CODE ret = E_TS_NOERROR;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
     ssize_t send_size;
     uint64_t cur_tick;
 
@@ -132,7 +132,7 @@ TERROR_CODE tconnd_socket_flush(tconnd_socket_t *self)
     if(self->status != e_tconnd_socket_status_established)
     {
         DEBUG_LOG("socket [%d, %"PRIu64"] status != e_tconnd_socket_status_established", self->id, self->mempool_entry.sn);
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         goto done;
     }
 
@@ -162,14 +162,14 @@ again:
         {
             WARN_LOG("socket [%u, %"PRIu64"] writev return [%zi], errno [%d], %s", self->id, self->mempool_entry.sn, send_size, errno, strerror(errno));      
         }
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         goto done;
     }
     else if((size_t)send_size != self->iov_total_size)
     {
         DEBUG_LOG("socket [%d, %"PRIu64"] writev return [%zi].", self->id, self->mempool_entry.sn, send_size);
         
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         goto done;
     }
 
@@ -181,21 +181,21 @@ done:
     return ret;
 }
 
-static TERROR_CODE tconnd_socket_on_cmd_send(tconnd_socket_t *self, void* body, size_t body_size)
+static tlibc_error_code_t tconnd_socket_on_cmd_send(tconnd_socket_t *self, void* body, size_t body_size)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
     
     if((body_size > SSIZE_MAX) || (body_size == 0))
     {
         ERROR_LOG("socket [%"PRIu64"] send invalid buff, size = [%zu].", self->mempool_entry.sn, body_size);
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         goto done;
     }
     
     if((self->iov_num >= TCONND_SOCKET_OP_LIST_MAX) || (self->iov_total_size > SSIZE_MAX - body_size))
     {
         ret = tconnd_socket_flush(self);
-        if(ret != E_TS_NOERROR)
+        if(ret != E_TLIBC_NOERROR)
         {
             goto done;
         }        
@@ -211,15 +211,15 @@ done:
     return ret;
 }
 
-static TERROR_CODE tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
+static tlibc_error_code_t tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
     struct epoll_event  ev;
     
     if(self->status != e_tconnd_socket_status_syn_sent)
     {
         DEBUG_LOG("socket status[%d] != e_tconnd_socket_status_syn_sent", self->status);
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         goto done;
     }
     tlibc_list_del(&self->g_pending_socket_list);
@@ -231,7 +231,7 @@ static TERROR_CODE tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
     {
         DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         goto done;
     }
     else
@@ -245,9 +245,9 @@ done:
     return ret;
 }
 
-TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, void* body, size_t body_size)
+tlibc_error_code_t tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head, void* body, size_t body_size)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
     
     switch(head->cmd)
     {
@@ -258,11 +258,11 @@ TERROR_CODE tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t *head,
     case e_sip_rsp_cmd_close:
         {
             DEBUG_LOG("socket [%"PRIu64"] closing.", self->mempool_entry.sn);
-            ret = E_TS_CLOSE;
+            ret = E_TLIBC_CLOSE;
             goto done;
         };
     default:
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         ERROR_LOG("socket [%"PRIu64"] closing when it received the invalid cmd [%d].", self->mempool_entry.sn, head->cmd);
         goto done;
 
@@ -272,9 +272,9 @@ done:
     return ret;
 }
 
-TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
+tlibc_error_code_t tconnd_socket_recv(tconnd_socket_t *self)
 {
-    TERROR_CODE ret = E_TS_NOERROR;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
     char *header_ptr;
     tbus_atomic_size_t header_size;
     char *package_ptr;
@@ -312,8 +312,8 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     if(tbus_size < header_size + package_size + 1)
     {
-        ret = E_TS_TBUS_NOT_ENOUGH_SPACE;
-//        WARN_LOG("tbus_send_begin return E_TS_WOULD_BLOCK");
+        ret = E_TLIBC_TBUS_NOT_ENOUGH_SPACE;
+//        WARN_LOG("tbus_send_begin return E_TLIBC_WOULD_BLOCK");
         goto done;
     }
 
@@ -326,7 +326,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     if(tlibc_mempool_empty(&g_package_pool))
     {
-        ret = E_TS_NO_MEMORY;
+        ret = E_TLIBC_NO_MEMORY;
         WARN_LOG("socket [%u, %"PRIu64"] try to receive data with no package buff.", self->id, self->mempool_entry.sn);
         goto done;
     }
@@ -335,7 +335,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
 
     if((r < 0) && ((errno == EAGAIN) || (errno == EINTR)))
     {
-        ret = E_TS_ERRNO;
+        ret = E_TLIBC_ERRNO;
         goto done;
     }
 
@@ -346,7 +346,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
         pkg->cid.sn = self->mempool_entry.sn;
         pkg->size = 0;
         tbus_send_end(g_output_tbus, header_size);
-        ret = E_TS_CLOSE;
+        ret = E_TLIBC_CLOSE;
         DEBUG_LOG("socket [%u, %"PRIu64"] closed by client.", self->id, self->mempool_entry.sn);
         goto done;
     }
@@ -386,7 +386,7 @@ TERROR_CODE tconnd_socket_recv(tconnd_socket_t *self)
             {
                 DEBUG_LOG("package length [%u] > g_config.package_size[%u]"
                     , remain_size, g_config.package_size);
-                ret = E_TS_CLOSE;
+                ret = E_TLIBC_CLOSE;
                 goto done;            
             }
 

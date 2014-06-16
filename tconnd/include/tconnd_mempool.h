@@ -7,7 +7,7 @@
 extern tlibc_mempool_t g_package_pool;
 extern tlibc_mempool_t g_socket_pool;
 
-TERROR_CODE tconnd_mempool_init();
+tlibc_error_code_t tconnd_mempool_init();
 
 void tconnd_mempool_fini();
 
