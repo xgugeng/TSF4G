@@ -1,7 +1,6 @@
 #include "core/tlibc_unzip.h"
 
 #include "platform/tlibc_platform.h"
-#include "core/tlibc_util.h"
 
 #include "zlib.h"
 
@@ -22,7 +21,7 @@ static tlibc_error_code_t read_uint16(FILE* filestream, uint16_t *p)
 	{
 		goto ERROR_RET;
 	}
-	tlibc_little_to_host16(*p);
+	*p = le16toh(*p);
 
 	return E_TLIBC_NOERROR;
 ERROR_RET:
@@ -35,7 +34,7 @@ static tlibc_error_code_t read_uint32(FILE* filestream, uint32_t *p)
 	{
 		goto ERROR_RET;
 	}
-	tlibc_little_to_host32(*p);
+	*p = le32toh(*p);
 
 	return E_TLIBC_NOERROR;
 ERROR_RET:

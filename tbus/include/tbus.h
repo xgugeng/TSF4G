@@ -42,7 +42,7 @@ typedef struct tbus_s
 
 void tbus_init(tbus_t *tb, size_t size, size_t number);
 
-tbus_atomic_size_t tbus_send_begin(tbus_t *tb, TLIBC_OUT char** buf);
+tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf);
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);
 
 

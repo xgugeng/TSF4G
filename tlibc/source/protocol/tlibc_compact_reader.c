@@ -1,11 +1,11 @@
 #include "protocol/tlibc_compact_reader.h"
 #include "platform/tlibc_platform.h"
-#include "core/tlibc_util.h"
 #include "protocol/tlibc_abstract_reader.h"
 #include "core/tlibc_error_code.h"
 
 #include <string.h>
 #include <assert.h>
+#include <endian.h>
 
 static tlibc_error_code_t tlibc_compact_varint16_decode(const char *buff_ptr, uint32_t *buff_size, uint16_t *result)
 {
@@ -320,7 +320,7 @@ tlibc_error_code_t tlibc_compact_read_int16(tlibc_abstract_reader_t *super, int1
 	{
 		goto done;
 	}
-	tlibc_little_to_host16(res);
+	res = le16toh(res);
 	*val = tlibc_zigzag_decode16(res);
 	self->offset +=buff_size;
 done:
@@ -337,7 +337,7 @@ tlibc_error_code_t tlibc_compact_read_int32(tlibc_abstract_reader_t *super, int3
 	{
 		goto done;
 	}
-	tlibc_little_to_host32(res);
+	res = le32toh(res);
 	*val = tlibc_zigzag_decode32((int32_t)res);
 	self->offset +=buff_size;
 done:
@@ -354,7 +354,7 @@ tlibc_error_code_t tlibc_compact_read_int64(tlibc_abstract_reader_t *super, int6
 	{
 		goto done;
 	}
-	tlibc_little_to_host64(res);
+	res = le64toh(res);
 	*val = tlibc_zigzag_decode64((int64_t)res);
 	self->offset +=buff_size;
 done:
@@ -385,7 +385,7 @@ tlibc_error_code_t tlibc_compact_read_uint16(tlibc_abstract_reader_t *super, uin
 	{
 		goto done;
 	}
-	tlibc_little_to_host16(*val);
+	*val = le16toh(*val);
 	self->offset += buff_size;
 done:
 	return ret;
@@ -400,7 +400,7 @@ tlibc_error_code_t tlibc_compact_read_uint32(tlibc_abstract_reader_t *super, uin
 	{
 		goto done;
 	}
-	tlibc_little_to_host32(*val);
+	*val = le32toh(*val);
 	self->offset += buff_size;
 done:
 	return ret;
@@ -415,7 +415,7 @@ tlibc_error_code_t tlibc_compact_read_uint64(tlibc_abstract_reader_t *super, uin
 	{
 		goto done;
 	}
-	tlibc_little_to_host64(*val);
+	*val = le64toh(*val);
 	self->offset += buff_size;
 done:
 	return ret;

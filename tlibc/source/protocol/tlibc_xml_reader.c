@@ -1,5 +1,4 @@
 #include "protocol/tlibc_xml_reader.h"
-#include "core/tlibc_util.h"
 #include "protocol/tlibc_abstract_reader.h"
 #include "core/tlibc_error_code.h"
 #include "tlibc_xml_reader_l.h"

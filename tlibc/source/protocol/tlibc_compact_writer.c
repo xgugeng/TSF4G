@@ -1,11 +1,11 @@
 #include "protocol/tlibc_compact_writer.h"
 #include "platform/tlibc_platform.h"
-#include "core/tlibc_util.h"
 #include "protocol/tlibc_abstract_writer.h"
 #include "core/tlibc_error_code.h"
 
 #include <string.h>
 #include <assert.h>
+#include <endian.h>
 
 
 static tlibc_error_code_t tlibc_compact_varint16_encode(uint16_t n, char *buff_ptr, uint32_t *buff_size)
@@ -342,7 +342,7 @@ tlibc_error_code_t tlibc_compact_write_int16(tlibc_abstract_writer_t *super, con
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
 	int16_t v = (int16_t)tlibc_zigzag_encode16(*val);
 	tlibc_error_code_t ret;
-	tlibc_host16_to_little(v);
+	v = htole16(v);
 	ret = tlibc_compact_varint16_encode((uint16_t)v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
@@ -360,7 +360,7 @@ tlibc_error_code_t tlibc_compact_write_int32(tlibc_abstract_writer_t *super, con
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
 	int32_t v = tlibc_zigzag_encode16(*val);
 	tlibc_error_code_t ret;
-	tlibc_host32_to_little(v);
+	v = htole32(v);
 	ret = tlibc_compact_varint32_encode((uint16_t)v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
@@ -378,7 +378,7 @@ tlibc_error_code_t tlibc_compact_write_int64(tlibc_abstract_writer_t *super, con
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
 	int64_t v = (int64_t)tlibc_zigzag_encode64(*val);
 	tlibc_error_code_t ret;
-	tlibc_host64_to_little(v);
+	v = htole64(v);
 	ret = tlibc_compact_varint64_encode((uint64_t)v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
@@ -412,7 +412,7 @@ tlibc_error_code_t tlibc_compact_write_uint16(tlibc_abstract_writer_t *super, co
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
 	uint16_t v = *val;
 	tlibc_error_code_t ret;
-	tlibc_host16_to_little(v);
+	v = htole16(v);
 	ret = tlibc_compact_varint16_encode(v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
@@ -430,7 +430,7 @@ tlibc_error_code_t tlibc_compact_write_uint32(tlibc_abstract_writer_t *super, co
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
 	uint32_t v = *val;
 	tlibc_error_code_t ret;
-	tlibc_host32_to_little(v);
+	v = htole32(v);
 	ret = tlibc_compact_varint32_encode(v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{
@@ -448,7 +448,7 @@ tlibc_error_code_t tlibc_compact_write_uint64(tlibc_abstract_writer_t *super, co
 	uint32_t buff_size = COMPACT_WRITER_CAPACITY(self);
 	uint64_t v = *val;
 	tlibc_error_code_t ret;
-	tlibc_host64_to_little(v);
+	v = htole64(v);
 	ret = tlibc_compact_varint64_encode(v, COMPACT_WRITER_PTR(self), &buff_size);
 	if(ret != E_TLIBC_NOERROR)
 	{

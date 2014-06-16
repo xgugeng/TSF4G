@@ -1,11 +1,11 @@
 #include "protocol/tlibc_binary_reader.h"
 #include "platform/tlibc_platform.h"
-#include "core/tlibc_util.h"
 #include "protocol/tlibc_abstract_reader.h"
 #include "core/tlibc_error_code.h"
 
 #include <string.h>
 #include <assert.h>
+#include <endian.h>
 
 
 void tlibc_binary_reader_init(tlibc_binary_reader_t *self, const char *addr, uint32_t size)
@@ -58,7 +58,7 @@ tlibc_error_code_t tlibc_binary_read_int16(tlibc_abstract_reader_t *super, int16
 		goto not_enough_bytebuff_size;
 	}
 	*val = *(const int16_t*)READER_PTR(self);
-	tlibc_little_to_host16(*val);
+	*val = le16toh(*val);
 	self->offset += (uint32_t)sizeof(int16_t);
 
 	return E_TLIBC_NOERROR;
@@ -74,7 +74,7 @@ tlibc_error_code_t tlibc_binary_read_int32(tlibc_abstract_reader_t *super, int32
 		goto not_enough_bytebuff_size;
 	}
 	*val = *(const int32_t*)READER_PTR(self);
-	tlibc_little_to_host32(*val);
+	*val = le32toh(*val);
 	self->offset += (uint32_t)sizeof(int32_t);
 
 	return E_TLIBC_NOERROR;
@@ -90,7 +90,7 @@ tlibc_error_code_t tlibc_binary_read_int64(tlibc_abstract_reader_t *super, int64
 		goto not_enough_bytebuff_size;
 	}
 	*val = *(const int64_t*)READER_PTR(self);
-	tlibc_little_to_host64(*val)
+	*val = le64toh(*val);
 	self->offset += (uint32_t)sizeof(int64_t);
 
 	return E_TLIBC_NOERROR;
@@ -121,7 +121,7 @@ tlibc_error_code_t tlibc_binary_read_uint16(tlibc_abstract_reader_t *super, uint
 		goto not_enough_bytebuff_size;
 	}
 	*val = *(const uint8_t*)READER_PTR(self);
-	tlibc_little_to_host16(*val);
+	*val = le16toh(*val);
 	self->offset += (uint32_t)sizeof(uint16_t);
 
 	return E_TLIBC_NOERROR;
@@ -137,7 +137,7 @@ tlibc_error_code_t tlibc_binary_read_uint32(tlibc_abstract_reader_t *super, uint
 		goto not_enough_bytebuff_size;
 	}
 	*val = *(const uint32_t*)READER_PTR(self);
-	tlibc_little_to_host32(*val);
+	*val = le32toh(*val);
 	self->offset += (uint32_t)sizeof(uint32_t);
 
 	return E_TLIBC_NOERROR;
@@ -153,7 +153,7 @@ tlibc_error_code_t tlibc_binary_read_uint64(tlibc_abstract_reader_t *super, uint
 		goto not_enough_bytebuff_size;
 	}
 	*val = *(const uint64_t*)READER_PTR(self);
-	tlibc_little_to_host64(*val);
+	*val = le64toh(*val);
 	self->offset += (uint32_t)sizeof(uint64_t);
 
 	return E_TLIBC_NOERROR;

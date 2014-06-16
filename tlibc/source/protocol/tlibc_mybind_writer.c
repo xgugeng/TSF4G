@@ -1,6 +1,5 @@
 #include "protocol/tlibc_mybind_writer.h"
 #include "platform/tlibc_platform.h"
-#include "core/tlibc_util.h"
 #include "protocol/tlibc_abstract_writer.h"
 #include "core/tlibc_error_code.h"
 

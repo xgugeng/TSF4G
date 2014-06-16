@@ -2,7 +2,6 @@
 #include "core/tlibc_timer.h"
 #include "core/tlibc_mempool.h"
 #include "core/tlibc_unzip.h"
-#include "core/tlibc_util.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -273,11 +272,6 @@ static void test_unzip()
 
 int main()
 {
-	size_t t = 0x12345678;
-	tlibc_size_to_little(t);
-	tlibc_little_to_size(t);
-	assert(t == 0x12345678);
-
 	test_hash();
 
 	test_timer();

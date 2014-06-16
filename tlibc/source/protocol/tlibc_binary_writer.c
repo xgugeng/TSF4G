@@ -1,11 +1,11 @@
 #include "protocol/tlibc_binary_writer.h"
 #include "platform/tlibc_platform.h"
-#include "core/tlibc_util.h"
 #include "protocol/tlibc_abstract_writer.h"
 #include "core/tlibc_error_code.h"
 
 #include <string.h>
 #include <assert.h>
+#include <endian.h>
 
 
 void tlibc_binary_writer_init(tlibc_binary_writer_t *self, char *addr, uint32_t size)
@@ -54,8 +54,7 @@ tlibc_error_code_t tlibc_binary_write_int16(tlibc_abstract_writer_t *super, cons
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*(int16_t*)WRITER_PTR(self) = *val;
-	tlibc_host16_to_little(*(int16_t*)WRITER_PTR(self));
+	*(int16_t*)WRITER_PTR(self) =htole16(*val);
 	self->offset += (uint32_t)sizeof(int16_t);
 
 	return E_TLIBC_NOERROR;
@@ -70,8 +69,7 @@ tlibc_error_code_t tlibc_binary_write_int32(tlibc_abstract_writer_t *super, cons
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*(int32_t*)WRITER_PTR(self) = *val;
-	tlibc_host32_to_little(*(int32_t*)WRITER_PTR(self));
+	*(int32_t*)WRITER_PTR(self) = htole32(*val);
 	self->offset += (uint32_t)sizeof(int32_t);
 
 	return E_TLIBC_NOERROR;
@@ -86,8 +84,7 @@ tlibc_error_code_t tlibc_binary_write_int64(tlibc_abstract_writer_t *super, cons
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*(int64_t*)WRITER_PTR(self) = *val;
-	tlibc_host64_to_little(*(int64_t*)WRITER_PTR(self));
+	*(int64_t*)WRITER_PTR(self) = htole64(*val);
 	self->offset += (uint32_t)sizeof(int64_t);
 
 	return E_TLIBC_NOERROR;
@@ -118,8 +115,7 @@ tlibc_error_code_t tlibc_binary_write_uint16(tlibc_abstract_writer_t *super, con
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*(uint16_t*)WRITER_PTR(self) = *val;
-	tlibc_host16_to_little(*(uint16_t*)WRITER_PTR(self));
+	*(uint16_t*)WRITER_PTR(self) = htole16(*val);
 	self->offset += (uint32_t)sizeof(uint16_t);
 
 	return E_TLIBC_NOERROR;
@@ -134,8 +130,7 @@ tlibc_error_code_t tlibc_binary_write_uint32(tlibc_abstract_writer_t *super, con
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*(uint32_t*)WRITER_PTR(self) = *val;
-	tlibc_host32_to_little(*(uint32_t*)WRITER_PTR(self));
+	*(uint32_t*)WRITER_PTR(self) = htole32(*val);
 	self->offset += (uint32_t)sizeof(uint32_t);
 
 	return E_TLIBC_NOERROR;
@@ -150,8 +145,7 @@ tlibc_error_code_t tlibc_binary_write_uint64(tlibc_abstract_writer_t *super, con
 	{
 		goto not_enough_bytebuff_size;
 	}
-	*(uint64_t*)WRITER_PTR(self) = *val;
-	tlibc_host64_to_little(*(uint64_t*)WRITER_PTR(self));
+	*(uint64_t*)WRITER_PTR(self) = htole64(*val);
 	self->offset += (uint32_t)sizeof(uint64_t);
 
 	return E_TLIBC_NOERROR;

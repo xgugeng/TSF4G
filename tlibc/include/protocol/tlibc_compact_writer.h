@@ -9,6 +9,10 @@ extern "C" {
 #include "platform/tlibc_platform.h"
 #include "protocol/tlibc_abstract_writer.h"
 
+#define tlibc_zigzag_encode16(n) ((uint16_t)(((uint16_t)n << 1) ^ ((uint16_t)n >> 15)))
+#define tlibc_zigzag_encode32(n) ((uint32_t)(((uint32_t)n << 1) ^ ((uint32_t)n >> 31)))
+#define tlibc_zigzag_encode64(n) ((uint64_t)(((uint64_t)n << 1) ^ ((uint64_t)n >> 63)))
+
 typedef struct tlibc_compact_writer_s
 {
 	tlibc_abstract_writer_t super;

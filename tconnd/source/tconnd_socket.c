@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "core/tlibc_util.h" 
 #include "sip.h"
 
 #include "tconnd_timer.h"

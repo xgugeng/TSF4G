@@ -8,6 +8,10 @@ extern "C" {
 #include "platform/tlibc_platform.h"
 #include "protocol/tlibc_abstract_reader.h"
 
+#define tlibc_zigzag_decode16(n) ((int16_t)((n >> 1) ^ -(int16_t)(n & 1)))
+#define tlibc_zigzag_decode32(n) ((int32_t)((n >> 1) ^ -(int32_t)(n & 1)))
+#define tlibc_zigzag_decode64(n) ((int64_t)((n >> 1) ^ -(int64_t)(n & 1)))
+
 typedef struct tlibc_compact_reader_s
 {
 	tlibc_abstract_reader_t super;
