@@ -7,7 +7,7 @@
 
 void tlibc_abstract_reader_init(tlibc_abstract_reader_t *self)
 {
-	self->enable_name = FALSE;
+	self->enable_name = false;
 	self->name[0] = 0;
 	self->name_ptr = self->name;
 

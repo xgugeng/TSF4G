@@ -154,7 +154,7 @@ TERROR_CODE process_input_tbus()
             {
                 if(socket->writable)
                 {
-                    socket->writable = FALSE;                
+                    socket->writable = false;                
                     tlibc_list_del(&socket->writable_list);
                 }
                 tconnd_socket_delete(socket);
@@ -163,7 +163,7 @@ TERROR_CODE process_input_tbus()
             {
                 if(!socket->writable)
                 {
-                    socket->writable = TRUE;
+                    socket->writable = true;
                     tlibc_list_add_tail(&socket->writable_list, &writable_list);
                 }
             }
@@ -175,7 +175,7 @@ flush_socket:
     {
         tconnd_socket_t *socket = TLIBC_CONTAINER_OF(iter, tconnd_socket_t, writable_list);
         TERROR_CODE r = tconnd_socket_flush(socket);        
-        socket->writable = FALSE;
+        socket->writable = false;
         
         if(r == E_TS_CLOSE)
         {

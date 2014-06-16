@@ -169,8 +169,8 @@ void tlibc_xml_reader_init(tlibc_xml_reader_t *self)
 	self->super.read_string = tlibc_xml_read_string;
 	self->super.read_char = tlibc_xml_read_char;
 
-	self->pre_read_uint32_field_once = FALSE;
-	self->ignore_int32_once = FALSE;
+	self->pre_read_uint32_field_once = false;
+	self->ignore_int32_once = false;
 	self->scanner_context_stack_num = 0;
 	self->include_num = 0;
 	self->struct_deep = 0;
@@ -267,7 +267,7 @@ tlibc_error_code_t tlibc_xml_read_enum_begin(tlibc_abstract_reader_t *super, con
 	tlibc_xml_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_reader_t, super);
 	TLIBC_UNUSED(enum_name);
 
-	self->ignore_int32_once = TRUE;
+	self->ignore_int32_once = true;
 
 	return E_TLIBC_NOERROR;
 }
@@ -312,7 +312,7 @@ tlibc_error_code_t tlibc_xml_read_vector_begin(tlibc_abstract_reader_t *super, c
 	}while(level != 0);
 
 	ret = tlibc_xml_read_field_begin(super, vec_name);
-	self->pre_read_uint32_field_once = TRUE;
+	self->pre_read_uint32_field_once = true;
 	self->ui32 = count;
 
 	return ret;
@@ -368,7 +368,7 @@ tlibc_error_code_t tlibc_xml_read_field_end(tlibc_abstract_reader_t *super, cons
 
 	if(self->pre_read_uint32_field_once)
 	{
-		self->pre_read_uint32_field_once = FALSE;
+		self->pre_read_uint32_field_once = false;
 		goto done;
 	}
 	token = tlibc_xml_reader_get_token(self);
@@ -459,7 +459,7 @@ tlibc_error_code_t tlibc_xml_read_int32(tlibc_abstract_reader_t *super, int32_t 
 	tlibc_xml_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_reader_t, super);
 	if(self->ignore_int32_once)
 	{
-		self->ignore_int32_once = FALSE;
+		self->ignore_int32_once = false;
 		ret = E_TLIBC_PLEASE_READ_ENUM_NAME;
 		goto done;
 	}

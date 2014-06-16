@@ -124,11 +124,11 @@ tlibc_error_code_t tlibc_xlsx_reader_init(tlibc_xlsx_reader_t *self, const char 
 	self->super.read_double = tlibc_xlsx_read_double;
 	self->super.read_char = tlibc_xlsx_read_char;
 	self->super.read_string = tlibc_xlsx_read_string;
-	self->super.enable_name = TRUE;
-	self->use_cache = TRUE;
+	self->super.enable_name = true;
+	self->use_cache = true;
 	self->hash_cache = NULL;
 	self->row_index = 0;
-	self->pre_read_uint32 = FALSE;
+	self->pre_read_uint32 = false;
 	
 	tlibc_hash_init(&self->name2index, self->hash_bucket, TLIBC_XLSX_HASH_BUCKET);
 	
@@ -228,7 +228,7 @@ void tlibc_xlsx_reader_row_seek(tlibc_xlsx_reader_t *self, uint32_t offset)
 {
 	self->super.name_ptr = self->super.name;
 	self->curr_cell = NULL;
-	self->read_enum_name_once = FALSE;
+	self->read_enum_name_once = false;
 	self->row_index = 0;
 	self->curr_row = self->cell_matrix + (offset - self->cell_min_pos.row) * self->cell_col_size;	
 }
@@ -289,7 +289,7 @@ static void tlibc_xlsx_locate(tlibc_xlsx_reader_t *self)
 	if((self->use_cache) && (self->hash_cache) && (self->hash_cache[self->row_index]))
 	{
 		cell = self->hash_cache[self->row_index];
-		self->super.enable_name = FALSE;
+		self->super.enable_name = false;
 	}
 	else
 	{	
@@ -322,7 +322,7 @@ tlibc_error_code_t tlibc_xlsx_read_vector_begin(tlibc_abstract_reader_t *super, 
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	tlibc_xlsx_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_xlsx_reader_t, super);
 	TLIBC_UNUSED(vec_name);
-	self->pre_read_uint32 = TRUE;
+	self->pre_read_uint32 = true;
 	
 	tlibc_xlsx_locate(self);
 	if(self->curr_cell == NULL)
@@ -407,7 +407,7 @@ tlibc_error_code_t tlibc_xlsx_read_enum_begin(tlibc_abstract_reader_t *super, co
 	tlibc_xlsx_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_xlsx_reader_t, super);
 	TLIBC_UNUSED(enum_name);
 
-	self->read_enum_name_once = TRUE;
+	self->read_enum_name_once = true;
 
 	return E_TLIBC_NOERROR;
 }
@@ -455,7 +455,7 @@ tlibc_error_code_t tlibc_xlsx_read_int32(tlibc_abstract_reader_t *super, int32_t
 	tlibc_error_code_t ret;
 	if(self->read_enum_name_once)
 	{
-		self->read_enum_name_once = FALSE;
+		self->read_enum_name_once = false;
 		ret = E_TLIBC_PLEASE_READ_ENUM_NAME;
 		goto done;
 	}
@@ -544,7 +544,7 @@ tlibc_error_code_t tlibc_xlsx_read_uint32(tlibc_abstract_reader_t *super, uint32
 	uint64_t ui64;
 	if(self->pre_read_uint32)
 	{
-		self->pre_read_uint32 = FALSE;
+		self->pre_read_uint32 = false;
 		*val = self->pre_u32;
 		goto done;
 	}

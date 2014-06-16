@@ -11,6 +11,7 @@ extern "C" {
 #include "core/tlibc_error_code.h"
 
 #include <stdio.h>
+#include <stdbool.h>
 
 
 typedef struct tlibc_xml_writer_s
@@ -21,9 +22,8 @@ typedef struct tlibc_xml_writer_s
 	char *cur;
 	char *limit;
 
-	int skip_uint32_field_once;
-
-	int ignore_int32_once;
+	bool skip_uint32_field_once;
+	bool ignore_int32_once;
 }tlibc_xml_writer_t;
 
 void tlibc_xml_writer_init(tlibc_xml_writer_t *self, char *start, char*limit);

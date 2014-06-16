@@ -11,6 +11,7 @@ extern "C" {
 #include "core/tlibc_error_code.h"
 #include "core/tlibc_unzip.h"
 #include "core/tlibc_hash.h"
+#include <stdbool.h>
 
 typedef struct tlibc_xlsx_reader_scanner_s
 {
@@ -29,7 +30,7 @@ typedef struct _tlibc_xlsx_pos
 typedef struct _tlibc_xlsx_cell_s
 {
 	tlibc_hash_head_t name2index;
-	int empty;
+	bool empty;
 	const char* xpos;
 
 	const char* val_start;

@@ -25,6 +25,8 @@
 #include <netinet/tcp.h>
 #include <inttypes.h>
 
+#include <stdbool.h>
+
 
 void tcond_socket_construct(tconnd_socket_t* self)
 {
@@ -40,8 +42,8 @@ void tcond_socket_construct(tconnd_socket_t* self)
     tlibc_list_init(&self->g_package_socket_list);
     tlibc_list_init(&self->g_pending_socket_list);    
     
-    self->writable = FALSE;
-    self->readable = FALSE;
+    self->writable = false;
+    self->readable = false;
 }
 
 tconnd_socket_t *tconnd_socket_new()

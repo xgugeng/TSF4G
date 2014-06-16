@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include <sys/time.h>
+#include <stdbool.h>
 
 #define HASH_KEY_LENGTH 128
 typedef struct _test_hash_data_t
@@ -142,12 +143,12 @@ static void test_timer()
 	for(;;)
 	{
 		time_t current_ms = get_current_ms() - start_ms;
-		int busy = FALSE;
+		bool busy = false;
 		while(tlibc_timer_jiffies(&timer) <= current_ms)
 		{
 			if(tlibc_timer_tick(&timer) == E_TLIBC_NOERROR)
 			{
-				busy = TRUE;
+				busy = true;
 			}
 		}
 		

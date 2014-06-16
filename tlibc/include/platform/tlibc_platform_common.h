@@ -1,24 +1,7 @@
 #ifndef _H_TLIBC_PLATFORM_COMMON
 #define _H_TLIBC_PLATFORM_COMMON
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
-
 #include <stdint.h>
-
-#ifndef NULL
-#define NULL				0
-#endif
-
-#ifndef TRUE
-#define TRUE				1
-#endif
-
-#ifndef FALSE
-#define FALSE				0
-#endif
 
 
 #ifndef TLIBC_IN

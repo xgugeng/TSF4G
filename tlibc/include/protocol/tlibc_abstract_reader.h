@@ -7,6 +7,7 @@ extern "C" {
 
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "core/tlibc_error_code.h"
 
 #define TLIBC_READER_NAME_LENGTH 65536
@@ -14,7 +15,7 @@ extern "C" {
 typedef struct tlibc_abstract_reader_s tlibc_abstract_reader_t;
 struct tlibc_abstract_reader_s
 {
-	int enable_name;
+	bool enable_name;
 	char name[TLIBC_READER_NAME_LENGTH];
 	char *name_ptr;
 

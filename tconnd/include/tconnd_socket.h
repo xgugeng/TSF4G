@@ -11,6 +11,8 @@
 #include "core/tlibc_mempool.h"
 #include "bscp_types.h"
 
+#include <stdbool.h>
+
 
 
 #pragma pack(push,1)
@@ -53,8 +55,8 @@ typedef struct _tconnd_socket_t
     
     tlibc_list_head_t readable_list;
     tlibc_list_head_t writable_list;
-    int writable;
-    int readable;
+    bool writable;
+    bool readable;
 
 
     size_t iov_total_size;

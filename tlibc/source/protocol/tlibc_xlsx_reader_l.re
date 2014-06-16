@@ -1,6 +1,7 @@
 #include "protocol/tlibc_xlsx_reader.h"
 #include "tlibc_xlsx_reader_l.h"
 #include <errno.h>
+#include <stdbool.h>
 
 #define YYGETCONDITION()  self->scanner.state
 #define YYSETCONDITION(s) self->scanner.state = s
@@ -38,7 +39,7 @@ tlibc_error_code_t tlibc_xlsx_reader_loadsheet(tlibc_xlsx_reader_t *self, uint32
 tlibc_error_code_t tlibc_xlsx_reader_loadsheet(tlibc_xlsx_reader_t *self, uint32_t bindinfo_row)
 {
 	tlibc_xlsx_cell_s *cell = NULL;
-	int is_sharedstring = FALSE;
+	bool is_sharedstring = false;
 	tlibc_xlsx_cell_s *current_row = NULL;
 
 	self->scanner.cursor = self->sheet_buff;
@@ -96,7 +97,7 @@ restart:
 	}
 	for(i = 0; i < self->cell_row_size * self->cell_col_size; ++i)
 	{
-		self->cell_matrix[i].empty = TRUE;
+		self->cell_matrix[i].empty = true;
 	}
 	goto restart;
 }
@@ -105,7 +106,7 @@ restart:
 {
 	const char *r = YYCURSOR;
 	uint32_t row;
-	int is_single = FALSE;
+	bool is_single = false;
 	while(*YYCURSOR != '"')
 	{
 		++YYCURSOR;
@@ -123,7 +124,7 @@ restart:
 	{
 		if(*YYCURSOR == '/')
 		{
-			is_single = TRUE;
+			is_single = true;
 		}
 		++YYCURSOR;
 	}
@@ -144,7 +145,7 @@ restart:
 <IN_ROW>"<c"
 {
 	cell = NULL;
-	is_sharedstring = FALSE;
+	is_sharedstring = false;
 
 	BEGIN(IN_COL);	
 	goto restart;
@@ -162,7 +163,7 @@ restart:
 
 	xpos2pos(&pos, xpos);
 	cell = current_row + (pos.col - self->cell_min_pos.col);
-	cell->empty = FALSE;
+	cell->empty = false;
 	cell->xpos = xpos;
 		
 	goto restart;
@@ -171,7 +172,7 @@ restart:
 {
 	if((*YYCURSOR == 's') && (*(YYCURSOR + 1) == '"'))
 	{
-		is_sharedstring = TRUE;
+		is_sharedstring = true;
 	}	
 	
 	while(*YYCURSOR != '>')

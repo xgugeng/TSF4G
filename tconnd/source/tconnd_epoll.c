@@ -84,7 +84,7 @@ TERROR_CODE tconnd_epool_proc()
                 ret = E_TS_ERROR;
                 goto done;
             }
-            socket->readable = TRUE;
+            socket->readable = true;
             tlibc_list_init(&socket->readable_list);
             tlibc_list_add_tail(&socket->readable_list, &readable_list);
 	    }
@@ -127,7 +127,7 @@ TERROR_CODE tconnd_epool_proc()
             switch(errno)
             {
                 case EAGAIN:
-                    socket->readable = FALSE;
+                    socket->readable = false;
                     tlibc_list_del(iter);
                     break;
                 case EINTR:

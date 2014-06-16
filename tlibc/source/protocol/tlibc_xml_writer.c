@@ -7,6 +7,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 
 void tlibc_xml_writer_init(tlibc_xml_writer_t *self, char *start, char*limit)
@@ -48,8 +49,8 @@ void tlibc_xml_writer_init(tlibc_xml_writer_t *self, char *start, char*limit)
 	self->super.write_char = tlibc_xml_write_char;
 
 
-	self->skip_uint32_field_once = FALSE;
-	self->ignore_int32_once = FALSE;
+	self->skip_uint32_field_once = false;
+	self->ignore_int32_once = false;
 }
 
 tlibc_error_code_t tlibc_xml_write_struct_begin(tlibc_abstract_writer_t *super, const char *struct_name)
@@ -105,7 +106,7 @@ tlibc_error_code_t tlibc_xml_write_enum_begin(tlibc_abstract_writer_t *super, co
 {
 	tlibc_xml_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_writer_t, super);
 	TLIBC_UNUSED(enum_name);
-	self->ignore_int32_once = TRUE;
+	self->ignore_int32_once = true;
 	return E_TLIBC_NOERROR;
 }
 
@@ -113,7 +114,7 @@ tlibc_error_code_t tlibc_xml_write_vector_begin(tlibc_abstract_writer_t *super, 
 {
 	tlibc_xml_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_writer_t, super);	
 	tlibc_error_code_t ret = tlibc_xml_write_field_begin(super, vec_name);
-	self->skip_uint32_field_once = TRUE;
+	self->skip_uint32_field_once = true;
 	return ret;
 }
 
@@ -157,7 +158,7 @@ tlibc_error_code_t tlibc_xml_write_field_end(tlibc_abstract_writer_t *super, con
 	size_t len, slen;
 	if(self->skip_uint32_field_once)
 	{
-		self->skip_uint32_field_once = FALSE;
+		self->skip_uint32_field_once = false;
 		goto done;
 	}
 
@@ -238,7 +239,7 @@ tlibc_error_code_t tlibc_xml_write_int32(tlibc_abstract_writer_t *super, const i
 	tlibc_xml_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_writer_t, super);
 	if(self->ignore_int32_once)
 	{
-		self->ignore_int32_once = FALSE;
+		self->ignore_int32_once = false;
 		ret = E_TLIBC_PLEASE_READ_ENUM_NAME;
 		goto done;
 	}

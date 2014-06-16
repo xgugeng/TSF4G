@@ -20,6 +20,8 @@
 #include <math.h>
 #include "bscp_types.h"
 
+#include <stdbool.h>
+
 
 
 #include "tlog_log.h"
@@ -51,7 +53,7 @@ typedef union packet_buff_u
 	bscp_head_t packet_head;
 }packet_buff_t;
 
-volatile int g_working;
+volatile bool g_working;
 
 typedef struct robot_s
 {
@@ -325,7 +327,7 @@ static void init()
 {
 	int i;
 	g_prog_starting_ms = get_current_ms();
-	g_working = TRUE;
+	g_working = true;
 	for(i = 0; i < g_config.robot_num; ++i)
 	{
 		robot_init(&g_robot[i], i);
@@ -409,7 +411,7 @@ static void fini()
     uint32_t lose_connection;
 	uint64_t testing_time;
 
-	g_working = FALSE;
+	g_working = false;
     
 
 	for(i = 0; i < g_config.robot_num; ++i)
