@@ -1,7 +1,7 @@
 #ifndef _H_TCONND_LISTEN_H
 #define _H_TCONND_LISTEN_H
 
-#include "terrno.h"
+#include "tlibc_error_code.h"
 
 #include "tconnd_socket.h"
 

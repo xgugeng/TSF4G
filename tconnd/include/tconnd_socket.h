@@ -2,7 +2,7 @@
 #define _H_TCONND_SOCKET_H
 
 #include <netinet/in.h>
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "sip.h"
 #include <sys/uio.h>
 #include <limits.h>

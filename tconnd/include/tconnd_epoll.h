@@ -1,7 +1,7 @@
 #ifndef _H_TCONND_EPOLL_H
 #define _H_TCONND_EPOLL_H
 
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "core/tlibc_list.h"
 
 extern int                  g_epollfd;

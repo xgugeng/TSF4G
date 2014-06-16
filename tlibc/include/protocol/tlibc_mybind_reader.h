@@ -8,7 +8,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "protocol/tlibc_abstract_reader.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 
 #include "mysql.h"
 typedef struct tlibc_mybind_reader_s

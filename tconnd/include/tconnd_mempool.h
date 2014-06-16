@@ -1,7 +1,7 @@
 #ifndef _H_TCONND_MEMPOOL_H
 #define _H_TCONND_MEMPOOL_H
 
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "core/tlibc_mempool.h"
 
 extern tlibc_mempool_t g_package_pool;

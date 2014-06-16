@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "protocol/tlibc_abstract_reader.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 #include <stddef.h>
 #include "tlibcdef.h"
 

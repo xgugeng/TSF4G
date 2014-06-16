@@ -1,6 +1,6 @@
 #include "tapp.h"
 #include "tconnd_proto.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 #include "tconnd_robot_config_types.h"
 #include "tconnd_robot_config_reader.h"
 

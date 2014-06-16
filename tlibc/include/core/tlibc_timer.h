@@ -7,7 +7,7 @@ extern "C" {
 
 
 #include "core/tlibc_list.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 
 #include <stdint.h>
 typedef struct _tlibc_timer_entry_t tlibc_timer_entry_t;

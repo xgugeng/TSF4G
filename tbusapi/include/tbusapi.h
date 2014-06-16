@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "tbus.h"
 
 #include <sys/uio.h>

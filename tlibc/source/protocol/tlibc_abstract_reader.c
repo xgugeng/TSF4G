@@ -1,5 +1,5 @@
 #include "protocol/tlibc_abstract_reader.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 
 #include <stdint.h>
 #include <stdio.h>

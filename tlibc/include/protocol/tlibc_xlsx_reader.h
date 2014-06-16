@@ -7,7 +7,7 @@ extern "C" {
 
 
 #include "protocol/tlibc_abstract_reader.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 #include "core/tlibc_unzip.h"
 #include "core/tlibc_hash.h"
 

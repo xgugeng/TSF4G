@@ -1,6 +1,6 @@
 #include "tlogd.h"
 #include "tapp.h"
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "tlog_print.h"
 #include "tbus.h"
 

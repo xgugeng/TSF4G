@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "tbus.h"
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "tlog_config_types.h"
 
 typedef struct tlog_appender_shm_s

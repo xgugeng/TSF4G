@@ -13,7 +13,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "terrno.h"
+#include "tlibc_error_code.h"
 
 #define TLOG_VERSION "0.0.1"
 typedef union tlog_appender_body_u

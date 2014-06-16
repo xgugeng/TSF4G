@@ -1,5 +1,5 @@
 #include "tconnd_listen.h"
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include "tconnd_socket.h"
 #include "tbus.h"
 #include "protocol/tlibc_binary_writer.h"

@@ -7,7 +7,7 @@ extern "C" {
 
 
 #include "protocol/tlibc_abstract_writer.h"
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 
 #include <stdbool.h>
 #include <stdint.h>

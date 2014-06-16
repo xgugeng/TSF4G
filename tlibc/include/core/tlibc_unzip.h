@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 
 #include "zlib.h"
 #include <stdint.h>

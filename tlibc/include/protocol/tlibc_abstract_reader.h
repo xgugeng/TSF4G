@@ -8,7 +8,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 
 #define TLIBC_READER_NAME_LENGTH 65536
 

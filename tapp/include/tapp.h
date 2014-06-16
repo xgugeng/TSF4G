@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "protocol/tlibc_xml_reader.h"
-#include "terrno.h"
+#include "tlibc_error_code.h"
 #include <unistd.h>
 
 

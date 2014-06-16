@@ -1,5 +1,5 @@
 #include "tbus.h"
-#include "terrno.h"
+#include "tlibc_error_code.h"
 
 
 #include <string.h>

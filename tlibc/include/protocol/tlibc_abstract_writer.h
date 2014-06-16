@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "core/tlibc_error_code.h"
+#include "tlibc_error_code.h"
 #include <stdint.h>
 
 typedef struct tlibc_abstract_writer_s tlibc_abstract_writer_t;
