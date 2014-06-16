@@ -9,6 +9,7 @@ extern "C" {
 #include "platform/tlibc_platform.h"
 #include "protocol/tlibc_abstract_reader.h"
 #include "core/tlibc_error_code.h"
+#include <stddef.h>
 
 typedef struct tlibc_xml_reader_yyltype_s
 {

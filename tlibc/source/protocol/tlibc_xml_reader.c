@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
 
 tlibc_error_code_t tlibc_xml_reader_push_file(tlibc_xml_reader_t *self, const char *file_name)
 {

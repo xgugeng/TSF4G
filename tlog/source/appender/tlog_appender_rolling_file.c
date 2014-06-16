@@ -1,6 +1,6 @@
 #include "appender/tlog_appender_rolling_file.h"
 #include <string.h>
-
+#include <sys/stat.h>
 
 void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config)
 {

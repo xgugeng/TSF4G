@@ -5,6 +5,7 @@
 #include "tconnd.h"
 #include "tlog_log.h"
 #include "tconnd_timer.h"
+#include <stdlib.h>
 
 tlibc_mempool_t g_socket_pool;
 tlibc_mempool_t g_package_pool;

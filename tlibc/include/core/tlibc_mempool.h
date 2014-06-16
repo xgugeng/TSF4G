@@ -9,6 +9,7 @@ extern "C" {
 #include "platform/tlibc_platform.h"
 #include "core/tlibc_list.h"
 #include "tlibc_error_code.h"
+#include <stddef.h>
 typedef struct _tlibc_mempool_entry_t
 {
 	uint64_t          sn;

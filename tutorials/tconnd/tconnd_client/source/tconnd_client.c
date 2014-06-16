@@ -18,6 +18,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 #include "bscp_types.h"
 
 #include <stdbool.h>

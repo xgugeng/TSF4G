@@ -1,6 +1,7 @@
 #include "tbusapi.h"
 #include "tapp.h"
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #define SHM_KEY 123456

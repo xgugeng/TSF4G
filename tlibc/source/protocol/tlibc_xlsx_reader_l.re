@@ -2,6 +2,7 @@
 #include "tlibc_xlsx_reader_l.h"
 #include <errno.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #define YYGETCONDITION()  self->scanner.state
 #define YYSETCONDITION(s) self->scanner.state = s

@@ -23,6 +23,7 @@
 #include <netinet/tcp.h>
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 
 tconnd_socket_t g_listen;
 

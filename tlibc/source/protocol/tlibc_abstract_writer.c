@@ -1,6 +1,8 @@
 #include "protocol/tlibc_abstract_writer.h"
 #include "core/tlibc_error_code.h"
 
+#include <stddef.h>
+
 void tlibc_abstract_writer_init(tlibc_abstract_writer_t *self)
 {
 	self->write_struct_begin = NULL;

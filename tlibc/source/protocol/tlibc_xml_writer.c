@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdbool.h>
-
+#include <inttypes.h>
 
 void tlibc_xml_writer_init(tlibc_xml_writer_t *self, char *start, char*limit)
 {

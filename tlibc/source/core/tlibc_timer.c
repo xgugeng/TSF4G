@@ -4,6 +4,7 @@
 #include "core/tlibc_error_code.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 void tlibc_timer_init(tlibc_timer_t *self)
 {
