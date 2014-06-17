@@ -1,5 +1,5 @@
-#ifndef _H_TERRNO_H
-#define _H_TERRNO_H
+#ifndef _H_TLIBC_ERROR_CODE_H
+#define _H_TLIBC_ERROR_CODE_H
 
 typedef enum tlibc_error_code_e
 {
@@ -28,6 +28,5 @@ typedef enum tlibc_error_code_e
 	E_TLIBC_MYSQL_ERROR = 21,
 }tlibc_error_code_t;
 
-#endif
-
+#endif//_H_TLIBC_ERROR_CODE_H
 
