@@ -98,6 +98,8 @@ tlibc_error_code_t tlibc_xml_read_vector_element_begin(tlibc_abstract_reader_t *
 
 tlibc_error_code_t tlibc_xml_read_vector_element_end(tlibc_abstract_reader_t *self, const char *var_name, uint32_t index);
 
+tlibc_error_code_t tlibc_xml_read_bool(tlibc_abstract_reader_t *super, bool *val);
+
 tlibc_error_code_t tlibc_xml_read_char(tlibc_abstract_reader_t *super, char *val);
 
 tlibc_error_code_t tlibc_xml_read_double(tlibc_abstract_reader_t *super, double *val);

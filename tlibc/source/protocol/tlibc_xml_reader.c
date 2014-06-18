@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 tlibc_error_code_t tlibc_xml_reader_push_file(tlibc_xml_reader_t *self, const char *file_name)
 {
@@ -168,6 +169,7 @@ void tlibc_xml_reader_init(tlibc_xml_reader_t *self)
 	self->super.read_double = tlibc_xml_read_double;
 	self->super.read_string = tlibc_xml_read_string;
 	self->super.read_char = tlibc_xml_read_char;
+	self->super.read_bool = tlibc_xml_read_bool;
 
 	self->pre_read_uint32_field_once = false;
 	self->ignore_int32_once = false;
@@ -645,6 +647,32 @@ const char* tlibc_xml_str2c(const char* curr, const char* limit, char *ch)
 	return curr;
 ERROR_RET:
 	return NULL;
+}
+
+tlibc_error_code_t tlibc_xml_read_bool(tlibc_abstract_reader_t *super, bool *val)
+{
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
+	tlibc_xml_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_xml_reader_t, super);
+	const char* curr = self->scanner_context_stack[self->scanner_context_stack_num - 1].content_begin;
+	const char* limit = self->scanner_context_stack[self->scanner_context_stack_num - 1].yy_limit;
+
+	if((limit - curr >= 4) && (*(curr + 0) == 't') && (*(curr + 1) == 'r') && (*(curr + 2) == 'u')&& (*(curr + 3) == 'e'))
+	{
+		*val = true;
+	}
+	else if((limit - curr >= 5) && (*(curr + 0) == 'f') && (*(curr + 1) == 'a') && (*(curr + 2) == 'l') && (*(curr + 3) == 's') && (*(curr + 4) == 'e'))
+	{
+		*val = false;
+	}
+	else
+	{
+		ret =  E_TLIBC_MISMATCH;
+		goto ERROR_RET;
+	}
+
+	return E_TLIBC_NOERROR;
+ERROR_RET:
+	return ret;
 }
 
 tlibc_error_code_t tlibc_xml_read_char(tlibc_abstract_reader_t *super, char *val)
