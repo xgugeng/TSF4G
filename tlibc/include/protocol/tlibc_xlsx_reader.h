@@ -128,6 +128,8 @@ tlibc_error_code_t tlibc_xlsx_read_enum_begin(tlibc_abstract_reader_t *super, co
 
 tlibc_error_code_t tlibc_xlsx_read_char(tlibc_abstract_reader_t *super, char *val);
 
+tlibc_error_code_t tlibc_xlsx_read_bool(tlibc_abstract_reader_t *super, bool *val);
+
 tlibc_error_code_t tlibc_xlsx_read_double(tlibc_abstract_reader_t *super, double *val);
 
 tlibc_error_code_t tlibc_xlsx_read_int8(tlibc_abstract_reader_t *super, int8_t *val);

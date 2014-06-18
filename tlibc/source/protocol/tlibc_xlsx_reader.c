@@ -124,6 +124,7 @@ tlibc_error_code_t tlibc_xlsx_reader_init(tlibc_xlsx_reader_t *self, const char 
 
 	self->super.read_double = tlibc_xlsx_read_double;
 	self->super.read_char = tlibc_xlsx_read_char;
+	self->super.read_bool = tlibc_xlsx_read_bool;
 	self->super.read_string = tlibc_xlsx_read_string;
 	self->super.enable_name = true;
 	self->use_cache = true;
@@ -616,6 +617,44 @@ tlibc_error_code_t tlibc_xlsx_read_double(tlibc_abstract_reader_t *super, double
 	}
 
 	return E_TLIBC_NOERROR;
+done:
+	return ret;
+}
+
+tlibc_error_code_t tlibc_xlsx_read_bool(tlibc_abstract_reader_t *super, bool *val)
+{
+	tlibc_xlsx_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_xlsx_reader_t, super);
+	const char* curr = NULL;
+	const char* limit = NULL;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
+	if(self->curr_cell == NULL)
+	{
+		ret = E_TLIBC_NOT_FOUND;
+		goto done;
+	}
+	if(self->curr_cell->empty)
+	{
+		*val = 0;
+		goto done;
+	}
+
+	curr = self->curr_cell->val_begin;
+	limit = self->curr_cell->val_end;
+
+	if((limit - curr >= 4) && (*(curr + 0) == 't') && (*(curr + 1) == 'r') && (*(curr + 2) == 'u')&& (*(curr + 3) == 'e'))
+	{
+		*val = true;
+	}
+	else if((limit - curr >= 5) && (*(curr + 0) == 'f') && (*(curr + 1) == 'a') && (*(curr + 2) == 'l') && (*(curr + 3) == 's') && (*(curr + 4) == 'e'))
+	{
+		*val = false;
+	}
+	else
+	{
+		ret =  E_TLIBC_MISMATCH;
+		goto done;
+	}
+
 done:
 	return ret;
 }
