@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <endian.h>
+#include <stdbool.h>
 
 
 void tlibc_binary_reader_init(tlibc_binary_reader_t *self, const char *addr, uint32_t size)
@@ -13,6 +14,7 @@ void tlibc_binary_reader_init(tlibc_binary_reader_t *self, const char *addr, uin
 	tlibc_abstract_reader_init(&self->super);
 
 	self->super.read_char = tlibc_binary_read_char;
+	self->super.read_bool = tlibc_binary_read_bool;
 	self->super.read_double = tlibc_binary_read_double;
 	self->super.read_int8 = tlibc_binary_read_int8;
 	self->super.read_int16 = tlibc_binary_read_int16;
@@ -170,6 +172,21 @@ tlibc_error_code_t tlibc_binary_read_char(tlibc_abstract_reader_t *super, char *
 	}
 	*val = *(const char*)READER_PTR(self);
 	self->offset += (uint32_t)sizeof(char);
+
+	return E_TLIBC_NOERROR;
+not_enough_bytebuff_size:
+	return E_TLIBC_OUT_OF_MEMORY;
+}
+
+tlibc_error_code_t tlibc_binary_read_bool(tlibc_abstract_reader_t *super, bool *val)
+{
+	tlibc_binary_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_binary_reader_t, super);
+	if(READER_CAPACITY(self) < sizeof(bool))
+	{
+		goto not_enough_bytebuff_size;
+	}
+	*val = *(const bool*)READER_PTR(self);
+	self->offset += (uint32_t)sizeof(bool);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:

@@ -40,6 +40,8 @@ tlibc_error_code_t tlibc_compact_write_uint32(tlibc_abstract_writer_t *super, co
 
 tlibc_error_code_t tlibc_compact_write_uint64(tlibc_abstract_writer_t *super, const uint64_t *val);
 
+tlibc_error_code_t tlibc_compact_write_bool(tlibc_abstract_writer_t *super, const bool *val);
+
 tlibc_error_code_t tlibc_compact_write_char(tlibc_abstract_writer_t *super, const char *val);
 
 tlibc_error_code_t tlibc_compact_write_double(tlibc_abstract_writer_t *super, const double *val);

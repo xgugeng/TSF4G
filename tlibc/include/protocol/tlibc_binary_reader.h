@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 
+#include <stdint.h>
+#include <stdbool.h>
 #include "protocol/tlibc_abstract_reader.h"
 
 typedef struct tlibc_binary_reader_s
@@ -36,6 +38,8 @@ tlibc_error_code_t tlibc_binary_read_uint32(tlibc_abstract_reader_t *super, uint
 tlibc_error_code_t tlibc_binary_read_uint64(tlibc_abstract_reader_t *super, uint64_t *val);
 
 tlibc_error_code_t tlibc_binary_read_char(tlibc_abstract_reader_t *super, char *val);
+
+tlibc_error_code_t tlibc_binary_read_bool(tlibc_abstract_reader_t *super, bool *val);
 
 tlibc_error_code_t tlibc_binary_read_double(tlibc_abstract_reader_t *super, double *val);
 

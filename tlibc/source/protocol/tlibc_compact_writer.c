@@ -301,6 +301,7 @@ void tlibc_compact_writer_init(tlibc_compact_writer_t *self, char *addr, uint32_
 {
 	tlibc_abstract_writer_init(&self->super);
 
+	self->super.write_bool = tlibc_compact_write_bool;
 	self->super.write_char = tlibc_compact_write_char;
 	self->super.write_double = tlibc_compact_write_double;
 	self->super.write_int8 = tlibc_compact_write_int8;
@@ -458,6 +459,21 @@ tlibc_error_code_t tlibc_compact_write_uint64(tlibc_abstract_writer_t *super, co
 
 done:
 	return ret;
+}
+
+tlibc_error_code_t tlibc_compact_write_bool(tlibc_abstract_writer_t *super, const bool *val)
+{
+	tlibc_compact_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_compact_writer_t, super);
+	if(COMPACT_WRITER_CAPACITY(self) < sizeof(bool))
+	{
+		goto not_enough_bytebuff_size;
+	}
+	*(bool*)COMPACT_WRITER_PTR(self) = *val;
+	self->offset += (uint32_t)sizeof(bool);
+
+	return E_TLIBC_NOERROR;
+not_enough_bytebuff_size:
+	return E_TLIBC_OUT_OF_MEMORY;
 }
 
 tlibc_error_code_t tlibc_compact_write_char(tlibc_abstract_writer_t *super, const char *val)

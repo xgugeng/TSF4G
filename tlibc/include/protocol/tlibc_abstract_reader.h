@@ -40,6 +40,7 @@ struct tlibc_abstract_reader_s
 	tlibc_error_code_t (*read_uint16)(tlibc_abstract_reader_t *self, uint16_t *val);
 	tlibc_error_code_t (*read_uint32)(tlibc_abstract_reader_t *self, uint32_t *val);
 	tlibc_error_code_t (*read_uint64)(tlibc_abstract_reader_t *self, uint64_t *val);
+	tlibc_error_code_t (*read_bool)(tlibc_abstract_reader_t *self, bool *val);
 	tlibc_error_code_t (*read_char)(tlibc_abstract_reader_t *self, char *val);
 	tlibc_error_code_t (*read_double)(tlibc_abstract_reader_t *self, double *val);
 	tlibc_error_code_t (*read_string)(tlibc_abstract_reader_t *self, char* str, uint32_t str_length);
@@ -69,6 +70,7 @@ tlibc_error_code_t tlibc_read_uint16(tlibc_abstract_reader_t *self, uint16_t *va
 tlibc_error_code_t tlibc_read_uint32(tlibc_abstract_reader_t *self, uint32_t *val);
 tlibc_error_code_t tlibc_read_uint64(tlibc_abstract_reader_t *self, uint64_t *val);
 tlibc_error_code_t tlibc_read_char(tlibc_abstract_reader_t *self, char *val);
+tlibc_error_code_t tlibc_read_bool(tlibc_abstract_reader_t *self, bool *val);
 tlibc_error_code_t tlibc_read_double(tlibc_abstract_reader_t *self, double *val);
 tlibc_error_code_t tlibc_read_string(tlibc_abstract_reader_t *self, char* str, uint32_t str_length);
 

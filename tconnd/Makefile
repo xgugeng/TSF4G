@@ -19,3 +19,5 @@ dep:
 install:
 	mkdir -p $(PREFIX)
 	cp -rf bin $(PREFIX)
+	cp -rf tdr $(PREFIX)
+	find $(PREFIX) -name "*.d" -or -name "*.o" | xargs rm -f

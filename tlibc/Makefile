@@ -25,3 +25,5 @@ install:
 	mkdir -p $(PREFIX)
 	cp -rf lib $(PREFIX)
 	cp -rf include $(PREFIX)
+	cp -rf tdr $(PREFIX)
+	find $(PREFIX) -name "*.d" -or -name "*.o" | xargs rm -f

@@ -41,6 +41,8 @@ tlibc_error_code_t tlibc_compact_read_uint64(tlibc_abstract_reader_t *super, uin
 
 tlibc_error_code_t tlibc_compact_read_char(tlibc_abstract_reader_t *super, char *val);
 
+tlibc_error_code_t tlibc_compact_read_bool(tlibc_abstract_reader_t *super, bool *val);
+
 tlibc_error_code_t tlibc_compact_read_double(tlibc_abstract_reader_t *super, double *val);
 
 tlibc_error_code_t tlibc_compact_read_string(tlibc_abstract_reader_t *super, char* str, uint32_t str_length);

@@ -7,6 +7,7 @@ extern "C" {
 
 #include "tlibc_error_code.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct tlibc_abstract_writer_s tlibc_abstract_writer_t;
 struct tlibc_abstract_writer_s
@@ -33,6 +34,7 @@ struct tlibc_abstract_writer_s
 	tlibc_error_code_t (*write_uint32)(tlibc_abstract_writer_t *self, const uint32_t *val);
 	tlibc_error_code_t (*write_uint64)(tlibc_abstract_writer_t *self, const uint64_t *val);
 	tlibc_error_code_t (*write_char)(tlibc_abstract_writer_t *self, const char *val);
+	tlibc_error_code_t (*write_bool)(tlibc_abstract_writer_t *self, const bool *val);
 	tlibc_error_code_t (*write_double)(tlibc_abstract_writer_t *self, const double *val);
 	tlibc_error_code_t (*write_string)(tlibc_abstract_writer_t *self, const char* str, uint32_t str_length);
 };
@@ -61,6 +63,7 @@ tlibc_error_code_t tlibc_write_uint16(tlibc_abstract_writer_t *self, const uint1
 tlibc_error_code_t tlibc_write_uint32(tlibc_abstract_writer_t *self, const uint32_t *val);
 tlibc_error_code_t tlibc_write_uint64(tlibc_abstract_writer_t *self, const uint64_t *val);
 tlibc_error_code_t tlibc_write_char(tlibc_abstract_writer_t *self, const char *val);	
+tlibc_error_code_t tlibc_write_bool(tlibc_abstract_writer_t *self, const bool *val);	
 tlibc_error_code_t tlibc_write_double(tlibc_abstract_writer_t *self, const double *val);
 tlibc_error_code_t tlibc_write_string(tlibc_abstract_writer_t *self, const char *str, uint32_t str_length);
 

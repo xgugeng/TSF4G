@@ -6,13 +6,15 @@
 #include <string.h>
 #include <assert.h>
 #include <endian.h>
-
+#include <stdint.h>
+#include <stdbool.h>
 
 void tlibc_binary_writer_init(tlibc_binary_writer_t *self, char *addr, uint32_t size)
 {
 	tlibc_abstract_writer_init(&self->super);
 
 	self->super.write_char = tlibc_binary_write_char;
+	self->super.write_bool = tlibc_binary_write_bool;
 	self->super.write_double = tlibc_binary_write_double;
 	self->super.write_int8 = tlibc_binary_write_int8;
 	self->super.write_int16 = tlibc_binary_write_int16;
@@ -163,6 +165,21 @@ tlibc_error_code_t tlibc_binary_write_char(tlibc_abstract_writer_t *super, const
 	}
 	*(char*)WRITER_PTR(self) = *val;
 	self->offset += (uint32_t)sizeof(char);
+
+	return E_TLIBC_NOERROR;
+not_enough_bytebuff_size:
+	return E_TLIBC_OUT_OF_MEMORY;
+}
+
+tlibc_error_code_t tlibc_binary_write_bool(tlibc_abstract_writer_t *super, const bool *val)
+{
+	tlibc_binary_writer_t *self = TLIBC_CONTAINER_OF(super, tlibc_binary_writer_t, super);
+	if(WRITER_CAPACITY(self) < sizeof(bool))
+	{
+		goto not_enough_bytebuff_size;
+	}
+	*(bool*)WRITER_PTR(self) = *val;
+	self->offset += (uint32_t)sizeof(bool);
 
 	return E_TLIBC_NOERROR;
 not_enough_bytebuff_size:

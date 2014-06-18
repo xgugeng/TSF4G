@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "protocol/tlibc_abstract_writer.h"
 
 typedef struct tlibc_binary_writer_s
@@ -36,6 +37,8 @@ tlibc_error_code_t tlibc_binary_write_uint32(tlibc_abstract_writer_t *super, con
 tlibc_error_code_t tlibc_binary_write_uint64(tlibc_abstract_writer_t *super, const uint64_t *val);
 
 tlibc_error_code_t tlibc_binary_write_char(tlibc_abstract_writer_t *super, const char *val);
+
+tlibc_error_code_t tlibc_binary_write_bool(tlibc_abstract_writer_t *super, const bool *val);
 
 tlibc_error_code_t tlibc_binary_write_double(tlibc_abstract_writer_t *super, const double *val);
 

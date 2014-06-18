@@ -272,6 +272,7 @@ void tlibc_compact_reader_init(tlibc_compact_reader_t *self, const char *addr, u
 {
 	tlibc_abstract_reader_init(&self->super);
 
+	self->super.read_bool = tlibc_compact_read_bool;
 	self->super.read_char = tlibc_compact_read_char;
 	self->super.read_double = tlibc_compact_read_double;
 	self->super.read_int8 = tlibc_compact_read_int8;
@@ -420,6 +421,22 @@ tlibc_error_code_t tlibc_compact_read_uint64(tlibc_abstract_reader_t *super, uin
 done:
 	return ret;
 }
+
+tlibc_error_code_t tlibc_compact_read_bool(tlibc_abstract_reader_t *super, bool *val)
+{
+	tlibc_compact_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_compact_reader_t, super);
+	if(COMPACT_READER_CAPACITY(self) < sizeof(bool))
+	{
+		goto not_enough_bytebuff_size;
+	}
+	*val = *(const bool*)COMPACT_READER_PTR(self);
+	self->offset += (uint32_t)sizeof(bool);
+
+	return E_TLIBC_NOERROR;
+not_enough_bytebuff_size:
+	return E_TLIBC_OUT_OF_MEMORY;
+}
+
 
 tlibc_error_code_t tlibc_compact_read_char(tlibc_abstract_reader_t *super, char *val)
 {
