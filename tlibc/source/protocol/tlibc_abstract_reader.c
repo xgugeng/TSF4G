@@ -35,6 +35,7 @@ void tlibc_abstract_reader_init(tlibc_abstract_reader_t *self)
 	self->read_char = NULL;
 	self->read_double = NULL;
 	self->read_string = NULL;
+	self->read_bool = NULL;
 }
 
 tlibc_error_code_t tlibc_read_struct_begin(tlibc_abstract_reader_t *self, const char *struct_name)
@@ -331,3 +332,11 @@ tlibc_error_code_t tlibc_read_string(tlibc_abstract_reader_t *self, char* str, u
 	return self->read_string(self, str, str_length);
 }
 
+tlibc_error_code_t tlibc_read_bool(tlibc_abstract_reader_t *self, bool *val)
+{
+	if(self->read_bool == NULL)
+	{
+		return E_TLIBC_NOERROR;
+	}
+	return self->read_bool(self, val);
+}

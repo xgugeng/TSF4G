@@ -29,6 +29,7 @@ void tlibc_abstract_writer_init(tlibc_abstract_writer_t *self)
 	self->write_char = NULL;
 	self->write_double = NULL;
 	self->write_string = NULL;
+	self->write_bool = NULL;
 
 }
 
@@ -238,4 +239,13 @@ tlibc_error_code_t tlibc_write_string(tlibc_abstract_writer_t *self, const char*
 		return E_TLIBC_NOERROR;
 	}
 	return self->write_string(self, str, str_length);
+}
+
+tlibc_error_code_t tlibc_write_bool(tlibc_abstract_writer_t *self, const bool *val)
+{
+	if(self->write_bool == NULL)
+	{
+		return E_TLIBC_NOERROR;
+	}
+	return self->write_bool(self, val);
 }
