@@ -2,7 +2,7 @@ The Service Framework For Game
 ==============================
 **TSF4G**
 
-- TCommon 公共的定义， 以及对bscp和sip协议的处理函数。
+- TLibC 定义常用的数据结构以及协议。
 - TLog 日志工具, 支持写log到文件和共享内存。
 - TLogD 日志进程， 支持把共享内存中的Log存入mysql数据库。
 - TBus 共享内存通信模块。
@@ -14,9 +14,10 @@ The Service Framework For Game
 ========
 
 - 1.[MySQL](http://www.mysql.com)
-- 2.[RE2C](http://www.re2c.org)
-- 3.[Bison](http://www.gnu.org/software/bison)
-- 4.[TDR](http://github.com/randyliu/TDR)
+- 2.[ZLIB](http://www.zlib.net)
+- 3.[RE2C](http://www.re2c.org)
+- 4.[Bison](http://www.gnu.org/software/bison)
+- 5.[TDR](http://github.com/randyliu/TDR)
 
 安装
 ====
