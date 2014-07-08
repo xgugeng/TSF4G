@@ -379,6 +379,9 @@ tlibc_error_code_t tconnd_socket_recv(tconnd_socket_t *self)
                 break;
             }
             remain_size = *(bscp_head_t*)iter;
+			#ifdef BE16
+			remain_size = be16toh(remain_size);
+			#endif
 
 
             DEBUG_LOG("receive a pakcage with length [%u]", remain_size);
