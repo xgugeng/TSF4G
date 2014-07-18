@@ -18,12 +18,17 @@
 
 tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config)
 {
-    uint32_t i = 0;
+    int32_t i = 0;
     memcpy(&self->config, config, sizeof(tlog_config_t));
     
     self->instance.appender_vec_num = self->config.appender_vec_num;
     for(i = 0; i < self->instance.appender_vec_num; ++i)
     {
+		if(i >= TLOG_MAX_APPENDER_NUM)
+		{
+			break;
+		}
+
         switch(self->config.appender_vec[i].type)
         {
         case e_tlog_appender_rolling_file:
@@ -41,7 +46,7 @@ tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config)
     }
     return E_TLIBC_NOERROR;
 roll_back:
-    for(--i; i > 0; --i)
+    for(--i; i >= 0; --i)
     {
         switch(self->config.appender_vec[i].type)
         {
@@ -59,9 +64,15 @@ roll_back:
 void tlog_write(tlog_t *self, const tlog_message_t *message)
 {
 	uint32_t i;
+
+	if(message->level > self->config.level)
+	{
+		goto done;
+	}
 	
 	for(i = 0; i < self->config.appender_vec_num; ++i)	
 	{
+
 		switch(self->config.appender_vec[i].type)
 		{
 			case e_tlog_appender_rolling_file:
@@ -76,13 +87,20 @@ void tlog_write(tlog_t *self, const tlog_message_t *message)
 			    break;
 		}
 	}
+done:
+	return;
 }
 
 void tlog_fini(tlog_t *self)
 {
-	uint32_t i;
+	int32_t i;
+	i = (int32_t)self->config.appender_vec_num;
+	if(TLOG_MAX_APPENDER_NUM < i)
+	{
+		i = TLOG_MAX_APPENDER_NUM;
+	}
 	
-	for(i = 0; i < self->config.appender_vec_num; ++i)	
+    for(; i >= 0; --i)
 	{
 		switch(self->config.appender_vec[i].type)
 		{

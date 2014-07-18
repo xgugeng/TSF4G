@@ -1,25 +1,13 @@
 import "tcommon.tdr"
+import "tlog_message.tdr"
 
 const uint16 TLOG_MAX_APPENDER_NUM = 32;
-
-enum tlog_level
-{
-	e_tlog_error = 1,
-	e_tlog_warn = 2,
-	e_tlog_info = 3,
-	e_tlog_debug = 4,
-};
 
 enum tlog_appender_type
 {
 	e_tlog_appender_rolling_file = 0,
     e_tlog_appender_shm = 1,
 };
-
-
-
-
-
 
 struct tlog_config_appender_rolling_file
 {

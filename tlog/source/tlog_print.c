@@ -17,6 +17,7 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     size_t len;
     ssize_t r;
     char *fmt;
+	message->level = level;
     
     switch(level)
     {

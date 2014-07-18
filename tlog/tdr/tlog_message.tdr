@@ -1,8 +1,15 @@
-/*此文件用于定义数据库存储*/
 const uint16 TLOG_MESSAGE_LENGTH = 0xffff;
 
+enum tlog_level
+{
+	e_tlog_error = 1,
+	e_tlog_warn = 2,
+	e_tlog_info = 3,
+	e_tlog_debug = 4,
+};
 
 struct tlog_message
 {
+	tlog_level					level;
     string<TLOG_MESSAGE_LENGTH> msg;
 };
