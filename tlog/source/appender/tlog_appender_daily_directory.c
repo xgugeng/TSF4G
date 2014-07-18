@@ -1,8 +1,8 @@
-#include "appender/tlog_appender_rolling_file.h"
+#include "appender/tlog_appender_daily_directory.h"
 #include <string.h>
 #include <sys/stat.h>
 
-void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config)
+void tlog_appender_daily_directory_init(tlog_appener_daily_directory_t *self, const tlog_config_appender_daily_directory_t *config)
 {
 	uint32_t i;	
 	char file_name[TSERVER_FILE_NAME_LENGH];
@@ -23,7 +23,7 @@ void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tl
 	self->index = 0;
 }
 
-void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config, const tlog_message_t *message)
+void tlog_appender_daily_directory_log(tlog_appener_daily_directory_t *self, const tlog_config_appender_daily_directory_t *config, const tlog_message_t *message)
 {
 	size_t file_size;
 	long ft;
@@ -51,12 +51,12 @@ void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlo
 	}
 
 	msg_len = strlen(message->msg);
-	if(file_size + msg_len > config->max_file_size)
+	//if(file_size + msg_len > config->max_file_size)
 	{
 		char file_name[TSERVER_FILE_NAME_LENGH];
 		snprintf(file_name, TSERVER_FILE_NAME_LENGH, "%s.%u", config->file_name, self->index);
 		++self->index;
-		if(self->index > config->max_backup_index)
+		//if(self->index > config->max_backup_index)
 		{
 			self->index = 0;
 		}
@@ -82,7 +82,7 @@ done:
 	return;
 }
 
-void tlog_appender_rolling_file_fini(tlog_appener_rolling_file_t *self)
+void tlog_appender_daily_directory_fini(tlog_appener_daily_directory_t *self)
 {
 	if(self->fout != NULL)
 	{

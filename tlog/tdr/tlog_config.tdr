@@ -7,6 +7,7 @@ enum tlog_appender_type
 {
 	e_tlog_appender_rolling_file = 0,
     e_tlog_appender_shm = 1,
+    e_tlog_appender_daily_directory = 2,
 };
 
 struct tlog_config_appender_rolling_file
@@ -21,10 +22,17 @@ struct tlog_config_appender_shm
 	int32                           output_tbuskey;
 };
 
+struct tlog_config_appender_daily_directory
+{
+	string<TSERVER_DIRECTORY_NAME_LENGH> directory;
+	string<TSERVER_FILE_NAME_LENGH> file_name;
+};
+
 union tlog_config_appender_body(tlog_appender_type selector)
 {
 e_tlog_appender_rolling_file: tlog_config_appender_rolling_file rolling_file;
 e_tlog_appender_shm: tlog_config_appender_shm shm;
+e_tlog_appender_daily_directory: tlog_config_appender_daily_directory daily_directory;
 };
 
 struct tlog_config_appender

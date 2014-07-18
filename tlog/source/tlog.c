@@ -42,6 +42,8 @@ tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config)
                 goto roll_back;
             }
             break;
+		case e_tlog_appender_daily_directory:
+			break;
         }   
     }
     return E_TLIBC_NOERROR;
@@ -56,6 +58,8 @@ roll_back:
         case e_tlog_appender_shm:
             tlog_appender_shm_fini(&self->instance.appender_vec[i].appender.shm);            
             break;
+		case e_tlog_appender_daily_directory:
+			break;
         }   
     }
     return E_TLIBC_ERROR;
@@ -85,6 +89,8 @@ void tlog_write(tlog_t *self, const tlog_message_t *message)
                 , &self->config.appender_vec[i].appender.shm
                 , message);
 			    break;
+			case e_tlog_appender_daily_directory:
+				break;
 		}
 	}
 done:
@@ -111,6 +117,8 @@ void tlog_fini(tlog_t *self)
             case e_tlog_appender_shm:
                 tlog_appender_shm_fini(&self->instance.appender_vec[i].appender.shm);
                 break;
+			case e_tlog_appender_daily_directory:
+				break;
 		}
 	}
 }
