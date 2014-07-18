@@ -33,36 +33,30 @@ tbusapi_t				 g_tbusapi;
 tlog_t					 g_tlog;
 
 
-static bool on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
+static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 {
-	bool ret = false;
-	uint32_t i;
+	tlibc_error_code_t r;
 
-	for(i = 0;i < iov_num;++i)
+	g_binary_reader.offset = 0;
+	g_binary_reader.size = (uint32_t)buf_len;
+	g_binary_reader.addr = buf;
+	r = tlibc_read_tlog_message(&g_binary_reader.super, &g_message);
+
+	if(r != E_TLIBC_NOERROR)
 	{
-    	tlibc_error_code_t    r;
+		ERROR_PRINT("tlibc_read_tlog_message(), errno %d.", r);
+		goto done;
+	}
 
-		g_binary_reader.offset = 0;
-		g_binary_reader.size = (uint32_t)iov[i].iov_len;
-		g_binary_reader.addr = iov[i].iov_base;
-		r = tlibc_read_tlog_message(&g_binary_reader.super, &g_message);
-    
-        if(r != E_TLIBC_NOERROR)
-		{
-			ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
-			goto done;
-		}
-		tlog_write(&g_tlog, &g_message);
-    }
+	tlog_write(&g_tlog, &g_message);
 
-	ret = true;
 done:
-	return ret;
+	return;
 }
 
 static tlibc_error_code_t init()
 {
-	if(tbusapi_init(&g_tbusapi, g_config.input_tbuskey, TLOGD_IOV_NUM, 0) != E_TLIBC_NOERROR)
+	if(tbusapi_init(&g_tbusapi, g_config.input_tbuskey, 0) != E_TLIBC_NOERROR)
 	{
 		ERROR_PRINT("tbusapi_init failed.");
 		goto error_ret;
@@ -75,7 +69,7 @@ static tlibc_error_code_t init()
 	}
 
     tlibc_binary_reader_init(&g_binary_reader, NULL, 0);
-	g_tbusapi.on_recviov = on_recviov;
+	g_tbusapi.on_recv = on_recv;
 
 	return E_TLIBC_NOERROR;
 error_ret:

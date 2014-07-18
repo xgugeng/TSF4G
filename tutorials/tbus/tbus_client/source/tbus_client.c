@@ -19,7 +19,7 @@ int main()
 {
 	uint32_t i;
 
-	if(tbusapi_init(&g_tbusapi, 0, 0, SHM_KEY) != E_TLIBC_NOERROR)
+	if(tbusapi_init(&g_tbusapi, 0, SHM_KEY) != E_TLIBC_NOERROR)
 	{
 		fprintf(stderr, "tbusapi_init failed.\n");
 		exit(1);

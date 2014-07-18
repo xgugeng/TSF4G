@@ -5,20 +5,6 @@
 #include <sys/uio.h>
 #include <errno.h>
 #include <string.h>
-#include <stdbool.h>
-
-static bool on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
-{
-	uint32_t i;
-	for(i = 0;i < iov_num;++i)
-	{
-		if(!self->on_recv(self, iov[i].iov_base, iov[i].iov_len))
-		{
-			return false;
-		}
-	}
-	return true;
-}
 
 static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, size_t src_len)
 {
@@ -30,7 +16,7 @@ static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, siz
 	return (tbus_atomic_size_t)src_len;
 }
 
-tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t iov_num, key_t output_tbuskey)
+tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, key_t output_tbuskey)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
@@ -53,13 +39,6 @@ tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t i
             ret = E_TLIBC_ERRNO;
             goto done;
 		}
-		
-		if(iov_num <= 0)
-		{
-			ret = E_TLIBC_ERRNO;
-			goto done;
-		}
-		self->iov_num = iov_num;
 	}
 
 	if(output_tbuskey == 0)
@@ -85,7 +64,6 @@ tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, uint16_t i
 	}
 
 	self->encode = encode;
-	self->on_recviov = on_recviov;
 	self->on_recv = NULL;
 done:
 	return ret;
@@ -100,8 +78,9 @@ shmdt_itb:
 tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
-	size_t iov_num = self->iov_num;
-	tbus_atomic_size_t tbus_head = tbus_read_begin(self->itb, self->iov, &iov_num);
+	struct iovec iov[1];
+	size_t iov_num = 1; 
+	tbus_atomic_size_t tbus_head = tbus_read_begin(self->itb, iov, &iov_num);
 	if(iov_num == 0)
 	{
 		if(tbus_head != self->itb->head_offset)
@@ -115,14 +94,9 @@ tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 		}
 	}
 
-	if(self->on_recviov)
+	if(self->on_recv)
 	{
-		if(!self->on_recviov(self, self->iov, (uint32_t)iov_num))
-		{
-			//处理失败则不删除tbus中的内容, 并且返回空闲
-			ret = E_TLIBC_WOULD_BLOCK;
-			goto done;
-		}
+		self->on_recv(self, iov[0].iov_base, iov[0].iov_len);
 	}
 
 read_end:

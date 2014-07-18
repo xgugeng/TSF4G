@@ -7,10 +7,9 @@
 
 #define SHM_KEY 123456
 
-static bool on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
+static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 {
 	printf("recv %zu bytes, message:%s\n", buf_len, buf);
-	return true;
 }
 
 tbusapi_t g_tbusapi;
@@ -19,7 +18,7 @@ int main(int argc, char *argv[])
 {
     tlibc_error_code_t ret;
 
-	if(tbusapi_init(&g_tbusapi, SHM_KEY, 1, 0) != E_TLIBC_NOERROR)
+	if(tbusapi_init(&g_tbusapi, SHM_KEY, 0) != E_TLIBC_NOERROR)
 	{
 		fprintf(stderr, "tbusapi_init failed.\n");
 		exit(1);

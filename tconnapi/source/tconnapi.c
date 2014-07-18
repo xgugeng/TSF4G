@@ -84,7 +84,7 @@ void tconnapi_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_ve
 	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
 }
 
-static bool tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
+static void tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 {
     tconnapi_t *self = TLIBC_CONTAINER_OF(super, tconnapi_t, tbusapi);
     const sip_req_t *req = (const sip_req_t *)buf;
@@ -150,7 +150,7 @@ static bool tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 	}
 	
 done:
-    return true;
+    return;
 }
 
 tlibc_error_code_t tconnapi_process(tconnapi_t *self)
@@ -162,7 +162,7 @@ tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encod
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 
-	ret = tbusapi_init(&self->tbusapi, ikey, 1, okey);
+	ret = tbusapi_init(&self->tbusapi, ikey, okey);
 	if(ret != E_TLIBC_NOERROR)
 	{
 	    goto done;
