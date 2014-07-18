@@ -38,6 +38,7 @@ void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlo
 			goto done;
 		}
 		fseek(self->fout, 0, SEEK_END);		
+		setvbuf(self->fout, self->buff, _IOFBF, TLOG_APPENDER_ROLLING_FILE_BUFF_SIZE);
 	}
 	
 	ft = ftell(self->fout);

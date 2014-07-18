@@ -8,10 +8,13 @@ extern "C" {
 #include "tlog_config_reader.h"
 #include <stdio.h>
 
+#define TLOG_APPENDER_ROLLING_FILE_BUFF_SIZE 65535
+
 typedef struct tlog_appender_rolling_file_s
 {
 	FILE *fout;
 	uint32_t index;
+	char buff[TLOG_APPENDER_ROLLING_FILE_BUFF_SIZE];
 }tlog_appener_rolling_file_t;
 
 
