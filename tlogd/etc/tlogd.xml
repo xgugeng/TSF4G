@@ -4,6 +4,6 @@
 	<port>7001</port>
 	<dbname>logdb</dbname>
 	<user>randyliu</user>
-	<password></password>
+	<password>123456</password>
 	<sql>insert into tlog_message value(?)</sql>
 </tconnd_config>

@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
 	for(i = 0;;++i)
 	{
-		uint64_t start_ms = get_current_ms();
+		uint64_t start_ms;
 		uint64_t end_ms = 0;
 		uint64_t diff_ms = 0;
 /*
@@ -41,7 +41,10 @@ int main(int argc, char *argv[])
 	    INFO_PRINT("hello info printf, %u", i);
         DEBUG_PRINT("hello debug printf, %u", i);
 */
+
+		start_ms = get_current_ms();
 		DEBUG_LOG("hello debug, %u", i);
+		ERROR_LOG("hello error, %u", i);
 		end_ms = get_current_ms();
 		diff_ms = end_ms - start_ms;
 		if(diff_ms > max_log_ms)
@@ -49,8 +52,7 @@ int main(int argc, char *argv[])
 			max_log_ms = diff_ms;
 			printf("max_log_ms: %lu\n", max_log_ms);
 		}
-//		ERROR_LOG("hello error, %u", i);
-		//usleep(10000);
+//		usleep(10000);
 //		sleep(1);
 	}
 	tlog_fini(&g_tlog_instance);

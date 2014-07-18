@@ -2,7 +2,7 @@
 #include "tapp.h"
 #include "tlibc_error_code.h"
 #include "tlog_print.h"
-#include "tbus.h"
+#include "tbusapi.h"
 
 #include "tlogd_config_types.h"
 #include "tlogd_config_reader.h"
@@ -25,7 +25,9 @@
 #include <stdbool.h>
 #include <time.h>
 
-#define TLOGD_IOV_NUM 65536
+//不可以超过TBUSAPI_IOV_NUM
+#define TLOGD_IOV_NUM 10000
+
 #define MAX_BIND_NUM 65536
 #define MYINIT_INTERVAL_S 5
 
@@ -35,27 +37,21 @@ MYSQL                   *g_conn = NULL;
 MYSQL_STMT              *g_stmt = NULL;
 MYSQL_BIND               g_bind[MAX_BIND_NUM]; 
 tlog_message_t           g_message;
-int                      g_input_tbus_id;
-tbus_t                  *g_input_tbus;
 tlibc_binary_reader_t    g_binary_reader;
 tlibc_mybind_reader_t    g_mybind_reader;
 
 bool					 g_myinited;
 time_t					 g_last_myinit;
 
+
+tbusapi_t				 g_tbusapi;
+
 static tlibc_error_code_t init()
 {
-    g_input_tbus_id = shmget(g_config.input_tbuskey, 0, 0666);
-    if(g_input_tbus_id == -1)
-    {
-        ERROR_PRINT("shmget returned an errno[%d], %s.", errno, strerror(errno));
-        goto ERROR_RET;
-    }
-	g_input_tbus = shmat(g_input_tbus_id, NULL, 0);
-	if(g_input_tbus == NULL)
+	if(tbusapi_init(&g_tbusapi, g_config.input_tbuskey, TLOGD_IOV_NUM, 0) != E_TLIBC_NOERROR)
 	{
-        ERROR_PRINT("shmat returned an errno[%d], %s.", errno, strerror(errno));
-        goto ERROR_RET;
+		fprintf(stderr, "tbusapi_init failed.\n");
+		goto error_ret;
 	}
 
     tlibc_binary_reader_init(&g_binary_reader, NULL, 0);
@@ -64,13 +60,13 @@ static tlibc_error_code_t init()
 	g_myinited = false;
 	g_last_myinit = 0;
 	return E_TLIBC_NOERROR;
-ERROR_RET:
+error_ret:
 	return E_TLIBC_ERROR;
 }
 
 static void fini()
 {
-	shmdt(g_input_tbus);
+	tbusapi_fini(&g_tbusapi);
 }
 
 
@@ -147,42 +143,10 @@ static void myfini()
     return;
 }
 
-
-static tlibc_error_code_t process(void *arg)
+static bool on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
 {
-    tlibc_error_code_t ret = E_TLIBC_NOERROR;
-	tbus_atomic_size_t tbus_head;
-	struct iovec iov[TLOGD_IOV_NUM];
-	size_t iov_num;
-	size_t i;
-
-	if(!g_myinited)
-	{
-		if(myinit() == E_TLIBC_NOERROR)
-		{
-			g_myinited = true;
-		}
-		else
-		{
-			ret =  E_TLIBC_WOULD_BLOCK;
-			goto done;
-		}
-	}
-
-	iov_num = TLOGD_IOV_NUM;
-	tbus_head = tbus_read_begin(g_input_tbus, iov, &iov_num);	
-	if(iov_num == 0)
-	{
-	    if(tbus_head != g_input_tbus->head_offset)
-	    {
-	        goto read_end;
-	    }
-	    else
-	    {
-	        ret = E_TLIBC_WOULD_BLOCK;
-	        goto done;
-	    }
-	}
+	bool ret = false;
+	uint32_t i;
 
 	for(i = 0;i < iov_num;++i)
 	{
@@ -196,7 +160,7 @@ static tlibc_error_code_t process(void *arg)
         if(r != E_TLIBC_NOERROR)
 		{
 			ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
-			goto commit;
+			goto done;
 		}
 
 		g_mybind_reader.idx = 0;
@@ -204,7 +168,7 @@ static tlibc_error_code_t process(void *arg)
 		if(r != E_TLIBC_NOERROR)
 		{
 			ERROR_PRINT("tlibc_read_tlog_message(), errno %d", r);
-			goto commit;
+			goto done;
 		}
 
 		if(mysql_stmt_bind_param(g_stmt, g_bind))
@@ -220,25 +184,40 @@ static tlibc_error_code_t process(void *arg)
             ERROR_PRINT("mysql_stmt_execute(), error %s", mysql_stmt_error(g_stmt));
 			myfini();
 			g_myinited = false;
-            goto read_end;
+            goto done;
         }
     }
 
-commit:
 	if(mysql_commit(g_conn))
 	{
 		ERROR_PRINT("mysql_commit failed.");
 		myfini();
 		g_myinited = false;
-		goto read_end;
+		goto done;
 	}
 
-read_end:
-    tbus_read_end(g_input_tbus, tbus_head);
+	ret = true;
 done:
 	return ret;
 }
 
+
+static tlibc_error_code_t process(void *arg)
+{
+    tlibc_error_code_t ret = E_TLIBC_WOULD_BLOCK;
+
+	if(!g_myinited)
+	{
+		if(myinit() == E_TLIBC_NOERROR)
+		{
+			g_myinited = true;
+			ret = E_TLIBC_NOERROR;
+			goto done;
+		}
+	}
+done:
+	return ret;
+}
 
 int main(int argc, char **argv)
 {
@@ -251,8 +230,11 @@ int main(int argc, char **argv)
 		goto done;
 	}
 
+	g_tbusapi.on_recviov = on_recviov;
+
 	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
 	             , process, NULL
+				 , tbusapi_process, &g_tbusapi
 	             , NULL, NULL) != E_TLIBC_NOERROR)
 	{
 		ret = 1;

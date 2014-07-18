@@ -3,12 +3,14 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #define SHM_KEY 123456
 
-static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
+static bool on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 {
 	printf("recv %zu bytes, message:%s\n", buf_len, buf);
+	return true;
 }
 
 tbusapi_t g_tbusapi;

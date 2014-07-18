@@ -5,14 +5,19 @@
 #include <sys/uio.h>
 #include <errno.h>
 #include <string.h>
+#include <stdbool.h>
 
-static void on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
+static bool on_recviov(tbusapi_t *self, struct iovec *iov, uint32_t iov_num)
 {
 	uint32_t i;
 	for(i = 0;i < iov_num;++i)
 	{
-		self->on_recv(self, iov[i].iov_base, iov[i].iov_len);
+		if(!self->on_recv(self, iov[i].iov_base, iov[i].iov_len))
+		{
+			return false;
+		}
 	}
+	return true;
 }
 
 static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, size_t src_len)
@@ -112,7 +117,12 @@ tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 
 	if(self->on_recviov)
 	{
-		self->on_recviov(self, self->iov, (uint32_t)iov_num);
+		if(!self->on_recviov(self, self->iov, (uint32_t)iov_num))
+		{
+			//处理失败则不删除tbus中的内容, 并且返回空闲
+			ret = E_TLIBC_WOULD_BLOCK;
+			goto done;
+		}
 	}
 
 read_end:
