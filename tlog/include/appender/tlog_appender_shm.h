@@ -8,6 +8,7 @@ extern "C" {
 #include "tbus.h"
 #include "tlibc_error_code.h"
 #include "tlog_config_types.h"
+#include "tlog_message_types.h"
 
 typedef struct tlog_appender_shm_s
 {

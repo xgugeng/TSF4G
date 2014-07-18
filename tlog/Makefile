@@ -7,7 +7,7 @@ CFILE=$(wildcard source/*.c)
 CFILE+=$(wildcard source/appender/*.c)
 
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
-WRITER_TDR_FILE=tdr/tlog_sql.tdr
+WRITER_TDR_FILE=tdr/tlog_message.tdr
 READER_TDR_FILE=$(wildcard tdr/*.tdr)
 
 include $(HOME)/build.mk
@@ -20,5 +20,4 @@ install:
 	cp -rf lib $(PREFIX)
 	cp -rf include $(PREFIX)
 	cp -rf tdr $(PREFIX)
-	cp -rf sql $(PREFIX)
 	find $(PREFIX) -name "*.d" -or -name "*.o" | xargs rm -f

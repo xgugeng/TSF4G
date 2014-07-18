@@ -1,5 +1,4 @@
 import "tcommon.tdr"
-import "tlog_sql.tdr"
 
 const uint16 TLOG_MAX_APPENDER_NUM = 32;
 

@@ -1,9 +1,18 @@
 <tlogd_config>
 	<input_tbuskey>20001</input_tbuskey>
-	<ip>localhost</ip>
-	<port>7001</port>
-	<dbname>logdb</dbname>
-	<user>randyliu</user>
-	<password>123456</password>
-	<sql>insert into tlog_message value(?)</sql>
+	<tlog_config>
+		<level>e_tlog_error</level>
+		<appender_vec>
+		<element>
+			<type>e_tlog_appender_rolling_file</type>
+			<appender>
+					<rolling_file>
+						<file_name>logs/tlog_example.log</file_name>
+						<max_file_size>1000000</max_file_size>
+						<max_backup_index>10</max_backup_index>
+					</rolling_file>
+			</appender>
+		</element>
+		</appender_vec>
+	</tlog_config>
 </tconnd_config>

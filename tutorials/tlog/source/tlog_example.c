@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 			max_log_ms = diff_ms;
 			printf("max_log_ms: %lu\n", max_log_ms);
 		}
-//		usleep(10000);
+		usleep(10000);
 //		sleep(1);
 	}
 	tlog_fini(&g_tlog_instance);

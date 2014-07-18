@@ -1,6 +1,6 @@
 #include "appender/tlog_appender_shm.h"
 
-#include "tlog_sql_writer.h"
+#include "tlog_message_writer.h"
 #include "protocol/tlibc_binary_writer.h"
 
 #include <stdio.h>

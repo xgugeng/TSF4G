@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "tlog_config_types.h"
+#include "tlog_message_types.h"
 
 #include <stdarg.h>
 #include <unistd.h>

@@ -6,6 +6,8 @@ extern "C" {
 #endif
 
 #include "tlog_config_reader.h"
+#include "tlog_message_types.h"
+
 #include <stdio.h>
 
 #define TLOG_APPENDER_ROLLING_FILE_BUFF_SIZE 65535
