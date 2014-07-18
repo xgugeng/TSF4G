@@ -14,6 +14,7 @@ typedef struct tlog_appender_daily_directory_s
 {
 	FILE *fout;
 	uint32_t index;
+	char file_name[TSERVER_FILE_NAME_LENGH];
 }tlog_appener_daily_directory_t;
 
 

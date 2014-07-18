@@ -4,18 +4,18 @@
 
 void tlog_appender_rolling_file_init(tlog_appener_rolling_file_t *self, const tlog_config_appender_rolling_file_t *config)
 {
-	uint32_t i;	
 	char file_name[TSERVER_FILE_NAME_LENGH];
-	size_t file_name_len = strlen(config->file_name);
-	strncpy(file_name, config->file_name, file_name_len);
+	char *ch;
+
+	strncpy(file_name, config->file_name, TSERVER_FILE_NAME_LENGH);
 	file_name[TSERVER_FILE_NAME_LENGH - 1] = 0;
-	for(i = 0; i < file_name_len; ++i)
+	for(ch = file_name; ch; ++ch)
 	{
-		if(file_name[i] == '/')
+		if(*ch == '/')
 		{
-			file_name[i] = 0;
+			*ch = 0;
 			mkdir(file_name, 0755);
-			file_name[i] = '/';
+			*ch = '/';
 		}
 	}	
 

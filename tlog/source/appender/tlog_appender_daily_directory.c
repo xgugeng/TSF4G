@@ -7,7 +7,7 @@ void tlog_appender_daily_directory_init(tlog_appener_daily_directory_t *self, co
 	uint32_t i;	
 	char file_name[TSERVER_FILE_NAME_LENGH];
 	size_t file_name_len = strlen(config->file_name);
-	strncpy(file_name, config->file_name, file_name_len);
+	strncpy(file_name, config->file_name, TSERVER_FILE_NAME_LENGH);
 	file_name[TSERVER_FILE_NAME_LENGH - 1] = 0;
 	for(i = 0; i < file_name_len; ++i)
 	{

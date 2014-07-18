@@ -11,5 +11,6 @@ enum tlog_level
 struct tlog_message
 {
 	tlog_level					level;
+	uint64						utc;
     string<TLOG_MESSAGE_LENGTH> msg;
 };
