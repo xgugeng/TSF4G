@@ -7,6 +7,7 @@
 #include "tlog_config_reader.h"
 #include "appender/tlog_appender_rolling_file.h"
 #include "appender/tlog_appender_shm.h"
+#include "appender/tlog_appender_daily_directory.h"
 
 
 #include <stdio.h>
@@ -43,6 +44,8 @@ tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config)
             }
             break;
 		case e_tlog_appender_daily_directory:
+            tlog_appender_daily_directory_init(&self->instance.appender_vec[i].appender.daily_directory
+                , &self->config.appender_vec[i].appender.daily_directory);            
 			break;
         }   
     }
@@ -90,6 +93,9 @@ void tlog_write(tlog_t *self, const tlog_message_t *message)
                 , message);
 			    break;
 			case e_tlog_appender_daily_directory:
+			    tlog_appender_daily_directory_log(&self->instance.appender_vec[i].appender.daily_directory
+                , &self->config.appender_vec[i].appender.daily_directory
+                , message);
 				break;
 		}
 	}
@@ -101,7 +107,7 @@ void tlog_fini(tlog_t *self)
 {
 	int32_t i;
 	i = (int32_t)self->config.appender_vec_num;
-	if(TLOG_MAX_APPENDER_NUM < i)
+	if(i > TLOG_MAX_APPENDER_NUM)
 	{
 		i = TLOG_MAX_APPENDER_NUM;
 	}
@@ -113,11 +119,11 @@ void tlog_fini(tlog_t *self)
 			case e_tlog_appender_rolling_file:
 				tlog_appender_rolling_file_fini(&self->instance.appender_vec[i].appender.rolling_file);
 				break;
-				
             case e_tlog_appender_shm:
                 tlog_appender_shm_fini(&self->instance.appender_vec[i].appender.shm);
                 break;
 			case e_tlog_appender_daily_directory:
+                tlog_appender_daily_directory_fini(&self->instance.appender_vec[i].appender.daily_directory);
 				break;
 		}
 	}

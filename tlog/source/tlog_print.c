@@ -38,10 +38,17 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     gettimeofday(&timestamp, NULL);    
     localtime_r(&timestamp.tv_sec, &tm);
 
+	message->year = tm.tm_year + 1900;
+	message->month = tm.tm_mon + 1;
+	message->day = tm.tm_mday;
+	message->hour = tm.tm_hour;
+	message->min = tm.tm_min;
+	message->sec = tm.tm_sec;
+
     len = 0;
     r = snprintf(msg, TLOG_MESSAGE_LENGTH - len,
         "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u : ",
-        tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+        message->year, message->month, message->day,
         tm.tm_hour, tm.tm_min, tm.tm_sec
         ,level_name, file, line);
 

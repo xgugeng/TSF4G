@@ -12,6 +12,16 @@
 			</appender>
 		</element>
 		<element>
+			<type>e_tlog_appender_daily_directory</type>
+			<appender>
+					<daily_directory>
+						<directory>daily_logs</directory>
+						<file_name>tlog_example.log</file_name>
+					</daily_directory>
+			</appender>
+		</element>
+		<!--
+		<element>
 			<type>e_tlog_appender_shm</type>
 			<appender>
 					<shm>
@@ -19,5 +29,6 @@
 					</shm>
 			</appender>
 		</element>
+		-->
 	</appender_vec>
 </tlog_config>

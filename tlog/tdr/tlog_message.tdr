@@ -11,6 +11,11 @@ enum tlog_level
 struct tlog_message
 {
 	tlog_level					level;
-	uint64						utc;
+	int32						year;
+	int32						month;
+	int32						day;
+	int32						hour;
+	int32						min;
+	int32						sec;
     string<TLOG_MESSAGE_LENGTH> msg;
 };

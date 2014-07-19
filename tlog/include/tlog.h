@@ -8,6 +8,7 @@ extern "C" {
 #include "tlog_config_types.h"
 #include "appender/tlog_appender_rolling_file.h"
 #include "appender/tlog_appender_shm.h"
+#include "appender/tlog_appender_daily_directory.h"
 
 
 #include <stdio.h>
@@ -20,6 +21,7 @@ typedef union tlog_appender_body_u
 {
 	tlog_appener_rolling_file_t rolling_file;
 	tlog_appender_shm_t shm;
+	tlog_appener_daily_directory_t daily_directory;
 }tlog_appender_body_t;
 
 typedef struct tlog_appender_s

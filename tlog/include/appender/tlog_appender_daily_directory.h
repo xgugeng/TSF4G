@@ -13,7 +13,12 @@ extern "C" {
 typedef struct tlog_appender_daily_directory_s
 {
 	FILE *fout;
-	uint32_t index;
+	int32_t year;
+	int32_t month;
+	int32_t day;
+	int32_t hour;
+	int32_t min;
+	int32_t sec;
 	char file_name[TSERVER_FILE_NAME_LENGH];
 }tlog_appener_daily_directory_t;
 
