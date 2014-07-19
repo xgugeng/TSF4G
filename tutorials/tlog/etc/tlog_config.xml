@@ -20,7 +20,6 @@
 					</daily_directory>
 			</appender>
 		</element>
-		<!--
 		<element>
 			<type>e_tlog_appender_shm</type>
 			<appender>
@@ -29,6 +28,5 @@
 					</shm>
 			</appender>
 		</element>
-		-->
 	</appender_vec>
 </tlog_config>

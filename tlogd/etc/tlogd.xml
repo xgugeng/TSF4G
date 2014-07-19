@@ -1,7 +1,7 @@
 <tlogd_config>
 	<input_tbuskey>20001</input_tbuskey>
 	<tlog_config>
-		<level>e_tlog_error</level>
+		<level>e_tlog_debug</level>
 		<appender_vec>
 			<element>
 				<type>e_tlog_appender_rolling_file</type>
@@ -11,6 +11,15 @@
 							<max_file_size>1000000</max_file_size>
 							<max_backup_index>10</max_backup_index>
 						</rolling_file>
+				</appender>
+			</element>
+			<element>
+				<type>e_tlog_appender_daily_directory</type>
+				<appender>
+						<daily_directory>
+							<directory>daily_logs</directory>
+							<file_name>tlog_example.log</file_name>
+						</daily_directory>
 				</appender>
 			</element>
 		</appender_vec>

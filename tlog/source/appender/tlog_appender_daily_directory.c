@@ -49,13 +49,6 @@ void tlog_appender_daily_directory_log(tlog_appener_daily_directory_t *self, con
 		}	
 
 		rename(self->file_name, path);
-
-		self->year = message->year;
-		self->month = message->month;
-		self->day = message->day;
-		self->hour = message->hour;
-		self->min = message->min;
-		self->sec = message->sec;
 	}
 
 	if(self->fout == NULL)
@@ -67,12 +60,19 @@ void tlog_appender_daily_directory_log(tlog_appener_daily_directory_t *self, con
 			goto done;
 		}
 		fseek(self->fout, 0, SEEK_END);		
+
+		self->year = message->year;
+		self->month = message->month;
+		self->day = message->day;
+		self->hour = message->hour;
+		self->min = message->min;
+		self->sec = message->sec;
 	}
 	
+
 	fwrite(message->msg, 1, strlen(message->msg), self->fout);
 	fputc('\n', self->fout);
 	fflush(self->fout);
-	
 done:
 	return;
 }
