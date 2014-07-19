@@ -63,7 +63,7 @@ void tlog_appender_daily_directory_log(tlog_appener_daily_directory_t *self, con
 		self->fout = fopen(self->file_name, "wb+");
 		if(self->fout == NULL)
 		{
-			fprintf(stderr, "daily_directory_log[%s] throw the log: %s\n", config->file_name, message->msg);
+			fprintf(stderr, "daily_directory_log[%s] throw the log: %s\n", self->file_name, message->msg);
 			goto done;
 		}
 		fseek(self->fout, 0, SEEK_END);		

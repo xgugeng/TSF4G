@@ -61,7 +61,7 @@ void tlog_appender_rolling_file_log(tlog_appener_rolling_file_t *self, const tlo
 		self->fout = fopen(self->file_name, "wb+");
 		if(self->fout == NULL)
 		{
-			fprintf(stderr, "rolling_file_log[%s] throw the log: %s\n", config->file_name, message->msg);
+			fprintf(stderr, "rolling_file_log[%s] throw the log: %s\n", self->file_name, message->msg);
 			goto done;
 		}
 		fseek(self->fout, 0, SEEK_END);		
