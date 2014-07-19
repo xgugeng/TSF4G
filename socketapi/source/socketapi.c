@@ -169,6 +169,7 @@ tlibc_error_code_t socketapi_send(socketapi_t *self, char *packet, uint16_t pack
 	iov[1].iov_base = (char*)packet;
 	iov[1].iov_len = package_size;
 	
+	//可以加入缓存降低系统调用次数。
     send_size = writev(self->socket_fd, iov, 2);
 	if(send_size != iov[0].iov_len + iov[1].iov_len)
 	{
