@@ -72,7 +72,7 @@ void tlog_write(tlog_t *self, const tlog_message_t *message)
 {
 	uint32_t i;
 
-	if(message->level > self->config.level)
+	if(!tlog_enable(self, message->level))
 	{
 		goto done;
 	}
