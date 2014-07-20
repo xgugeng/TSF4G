@@ -9,6 +9,7 @@
 #include "core/tlibc_list.h"
 #include "core/tlibc_mempool.h"
 #include "bscp_types.h"
+#include "tconnd_epoll.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -39,6 +40,7 @@ typedef enum _tconnd_socket_status_t
 typedef struct _tconnd_socket_t
 {
     tlibc_mempool_entry_t mempool_entry;
+	tconnd_epoll_data_type_t etype;
 
     uint32_t id;
 

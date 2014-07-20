@@ -154,7 +154,8 @@ tlibc_error_code_t tconnd_listen_init()
 
     memset(&ev, 0, sizeof(ev));
     ev.events = (uint32_t)(EPOLLIN | EPOLLET);
-    ev.data.ptr = &g_listen;  
+	g_listen.etype = e_ted_socket;
+    ev.data.ptr = &g_listen.etype;  
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, socketfd, &ev) == -1)
     {
         DEBUG_LOG("epoll_ctl errno [%d], %s", errno, strerror(errno));

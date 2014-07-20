@@ -220,9 +220,11 @@ static tlibc_error_code_t tconnd_socket_on_cmd_accept(tconnd_socket_t *self)
     }
     tlibc_list_del(&self->g_pending_socket_list);
 
+	self->etype = e_ted_socket;
     memset(&ev, 0, sizeof(ev));
     ev.events = (uint32_t)(EPOLLIN | EPOLLET);
-    ev.data.ptr = self;  
+    ev.data.ptr = &self->etype;  
+
     
     if(epoll_ctl(g_epollfd, EPOLL_CTL_ADD, self->socketfd, &ev) == -1)
     {

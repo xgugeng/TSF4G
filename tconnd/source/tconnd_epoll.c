@@ -78,17 +78,21 @@ tlibc_error_code_t tconnd_epool_proc()
 
 	    for(i = 0; i < events_num; ++i)
 	    {
-            tconnd_socket_t *socket = events[i].data.ptr;
-            if(socket->readable)
-            {
-                ERROR_LOG("socket [%u, %"PRIu64"] already readable.", socket->id, socket->mempool_entry.sn);
-                assert(0);
-                ret = E_TLIBC_ERROR;
-                goto done;
-            }
-            socket->readable = true;
-            tlibc_list_init(&socket->readable_list);
-            tlibc_list_add_tail(&socket->readable_list, &readable_list);
+			tconnd_epoll_data_type_t *etype = events[i].data.ptr;
+			if(*etype == e_ted_socket)
+			{
+				tconnd_socket_t *socket = TLIBC_CONTAINER_OF(etype, tconnd_socket_t, etype);
+				if(socket->readable)
+				{
+					ERROR_LOG("socket [%u, %"PRIu64"] already readable.", socket->id, socket->mempool_entry.sn);
+					assert(0);
+					ret = E_TLIBC_ERROR;
+					goto done;
+				}
+				socket->readable = true;
+				tlibc_list_init(&socket->readable_list);
+				tlibc_list_add_tail(&socket->readable_list, &readable_list);
+			}
 	    }
 	}
 

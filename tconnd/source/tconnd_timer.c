@@ -17,6 +17,7 @@ uint64_t       g_cur_ticks;
 static void tconnd_timer_signal_handler(int signo)
 {
     ++g_cur_ticks;
+	printf("haha\n");
 }
 
 tlibc_error_code_t tconnd_timer_init()
