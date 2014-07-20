@@ -26,11 +26,6 @@ tconnd_config_t g_config;
 static tlibc_error_code_t init()
 {
     tlog_init(&g_tlog_instance, &g_config.log_config);
-
-    if(tconnd_timer_init() != E_TLIBC_NOERROR)
-    {
-        goto tlog_fini;
-    }
     
     if(tconnd_mempool_init() != E_TLIBC_NOERROR)
     {
@@ -45,6 +40,11 @@ static tlibc_error_code_t init()
     if(tconnd_epoll_init() != E_TLIBC_NOERROR)
     {
         goto tbus_fini;
+    }
+
+    if(tconnd_timer_init() != E_TLIBC_NOERROR)
+    {
+        goto tlog_fini;
     }
 
     if(tconnd_listen_init() != E_TLIBC_NOERROR)
@@ -105,6 +105,7 @@ done:
 
 static void fini()
 {
+	tconnd_timer_fini();
     tconnd_listen_fini();
     tconnd_epoll_fini();
     tconnd_tbus_fini();

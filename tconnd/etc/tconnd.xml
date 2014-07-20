@@ -4,16 +4,16 @@
 	</log_config>
 	<ip>127.0.0.1</ip>
 	<port>7001</port>
-	<interval>2000</interval>
+	<tick_size>5</tick_size>
 	<package_size>10240</package_size>
 	<package_connections>10000</package_connections>
-	<package_ticks_limit>5</package_ticks_limit>
+	<package_ticks_limit>2</package_ticks_limit>
 	<connections>32767</connections>
 
 	<input_tbuskey>10001</input_tbuskey>
 	<output_tbuskey>10002</output_tbuskey>
 	<backlog>128</backlog>
-	<accept_ticks_limit>5</accept_ticks_limit>
+	<accept_ticks_limit>2</accept_ticks_limit>
 
 	<defer_accept>1</defer_accept>
 	<sndbuf>10000000</sndbuf>

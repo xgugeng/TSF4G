@@ -6,6 +6,7 @@
 #include "tlog_log.h"
 #include "tconnd_listen.h"
 #include "tlibcdef.h"
+#include "tconnd_timer.h"
 
 #include <unistd.h>
 #include <assert.h>
@@ -69,8 +70,7 @@ tlibc_error_code_t tconnd_epool_proc()
 		        ret = E_TLIBC_NOERROR;
 		        goto done;
 		    }
-		    
-	    
+
             ERROR_LOG("epoll_wait errno[%d], %s.", errno, strerror(errno));
 	        ret = E_TLIBC_ERRNO;
 			goto done;
@@ -92,6 +92,11 @@ tlibc_error_code_t tconnd_epool_proc()
 				socket->readable = true;
 				tlibc_list_init(&socket->readable_list);
 				tlibc_list_add_tail(&socket->readable_list, &readable_list);
+			}
+			else if(*etype == e_ted_timer)
+			{
+				tconnd_timer_on_tick();
+				ret = E_TLIBC_NOERROR;
 			}
 	    }
 	}
