@@ -126,7 +126,6 @@ tlibc_error_code_t tconnd_socket_flush(tconnd_socket_t *self)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
     ssize_t send_size;
-    uint64_t cur_tick;
 
 
     if(self->status != e_tconnd_socket_status_established)
@@ -142,14 +141,11 @@ tlibc_error_code_t tconnd_socket_flush(tconnd_socket_t *self)
     }
     
 again:
-    cur_tick = g_cur_ticks;
-
     send_size = writev(self->socketfd, self->iov, self->iov_num);
-
     
     if(send_size < 0)
     {
-        if((errno == EINTR) && ((g_cur_ticks != cur_tick)))
+        if(errno == EINTR)
         {
             goto again;
         }
@@ -331,23 +327,32 @@ tlibc_error_code_t tconnd_socket_recv(tconnd_socket_t *self)
         goto done;
     }
     
+again:
     r = recv(self->socketfd, body_ptr, (size_t)body_size, 0);
 
-    if((r < 0) && ((errno == EAGAIN) || (errno == EINTR)))
-    {
-        ret = E_TLIBC_ERRNO;
-        goto done;
-    }
+	if(r < 0)
+	{
+		if(errno == EINTR)
+		{
+			goto again;
+		}
+
+		if(errno == EAGAIN)
+		{
+			ret = E_TLIBC_ERRNO;
+			goto done;
+		}
+	}
 
     if(r <= 0)
-    {        
-        pkg->cmd = e_sip_req_cmd_recv;
-        pkg->cid.id = self->id;
-        pkg->cid.sn = self->mempool_entry.sn;
-        pkg->size = 0;
-        tbus_send_end(g_output_tbus, header_size);
-        ret = E_TLIBC_CLOSE;
-        DEBUG_LOG("socket [%u, %"PRIu64"] closed by client.", self->id, self->mempool_entry.sn);
+	{
+		pkg->cmd = e_sip_req_cmd_recv;
+		pkg->cid.id = self->id;
+		pkg->cid.sn = self->mempool_entry.sn;
+		pkg->size = 0;
+		tbus_send_end(g_output_tbus, header_size);
+		ret = E_TLIBC_CLOSE;
+		DEBUG_LOG("socket [%u, %"PRIu64"] closed by client.", self->id, self->mempool_entry.sn);
         goto done;
     }
     

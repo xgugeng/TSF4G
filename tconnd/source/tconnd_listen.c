@@ -216,6 +216,7 @@ tlibc_error_code_t tconnd_listen()
     memset(&sockaddr, 0, sizeof(struct sockaddr_in));
     cnt_len = sizeof(struct sockaddr_in);
 
+again:
     socketfd = accept(g_listen.socketfd, (struct sockaddr *)&sockaddr, &cnt_len);
 
     if(socketfd == -1)
@@ -223,8 +224,9 @@ tlibc_error_code_t tconnd_listen()
         switch(errno)
         {
             case EAGAIN:
+				break;
             case EINTR:
-                break;
+				goto again;
             default:
                 ERROR_LOG("accept errno[%d], %s.", errno, strerror(errno));
                 break;

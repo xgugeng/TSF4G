@@ -125,15 +125,15 @@ tlibc_error_code_t tconnd_epool_proc()
             break;
         case E_TLIBC_WOULD_BLOCK:
             break;
-        case E_TLIBC_ERRNO:
+        case E_TLIBC_ERRNO:
             switch(errno)
             {
                 case EAGAIN:
                     socket->readable = false;
                     tlibc_list_del(iter);
                     break;
-                case EINTR:
-                    break;
+				case EINTR:
+					break;
                 default:
                     ret = E_TLIBC_ERRNO;
                     goto done;

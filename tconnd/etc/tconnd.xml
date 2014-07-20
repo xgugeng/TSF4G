@@ -2,7 +2,7 @@
 	<log_config>
 	<!include file = "etc/tconnd_log.xml"/>
 	</log_config>
-	<ip>192.168.0.70</ip>
+	<ip>127.0.0.1</ip>
 	<port>7001</port>
 	<interval>2000</interval>
 	<package_size>10240</package_size>
