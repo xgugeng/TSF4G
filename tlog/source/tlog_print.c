@@ -47,7 +47,7 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
 
     len = 0;
     r = snprintf(msg, TLOG_MESSAGE_LENGTH - len,
-        "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u : ",
+        "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u | ",
         message->year, message->month, message->day,
         tm.tm_hour, tm.tm_min, tm.tm_sec
         ,level_name, file, line);
