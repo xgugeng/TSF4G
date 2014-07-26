@@ -38,6 +38,7 @@ typedef struct tbus_s
 }tbus_t;
 
 
+#define tbus_size(packet_size, packet_num) (TLIBC_OFFSET_OF(tbus_t, buff) + (packet_size + sizeof(tbus_header_t)) * packet_num)
 void tbus_init(tbus_t *tb, size_t size, size_t number);
 
 tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf);

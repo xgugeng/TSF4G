@@ -111,7 +111,7 @@ int main(int argc, char**argv)
 					fprintf(stderr, "strtoull(\"%s\", &endptr, 10) return %zu, first invalid character[%c].\n", arg, shm_size, *endptr);
 					exit(1);
 				}
-				shm_size = TLIBC_OFFSET_OF(tbus_t, buff) + (size + sizeof(tbus_header_t)) * number;
+				shm_size = tbus_size(size, number);
 
 				errno = 0;
 				shm_id = shmget(shm_key, shm_size, 0664 | IPC_CREAT|IPC_EXCL);
