@@ -3,6 +3,8 @@
 
 
 #include <string.h>
+#include <sys/types.h>
+#include <sys/shm.h>
 
 
 void tbus_init(tbus_t *tb, size_t size, size_t number)
@@ -11,6 +13,27 @@ void tbus_init(tbus_t *tb, size_t size, size_t number)
 	tb->tail_offset = 0;
 	tb->packet_size = (tbus_atomic_size_t)(size + sizeof(tbus_header_t));
 	tb->size = (tbus_atomic_size_t)(tb->packet_size * number);
+}
+
+tbus_t *tbus_at(key_t key)
+{
+	tbus_t *ret = NULL;
+	int id = shmget(key, 0, 0666);
+	if(id == -1)
+	{
+		return NULL;
+	}
+	ret = shmat(id, NULL, 0);
+	if((ssize_t)ret == -1)
+	{
+		return NULL;
+	}
+	return ret;
+}
+
+void tbus_dt(tbus_t *tb)
+{
+	shmdt(tb);
 }
 
 tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf)

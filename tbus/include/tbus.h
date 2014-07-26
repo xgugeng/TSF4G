@@ -9,6 +9,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <sys/uio.h>
+#include <sys/types.h>
 
 
 #define TBUS_VERSION "0.0.1"
@@ -40,6 +41,9 @@ typedef struct tbus_s
 
 #define tbus_size(packet_size, packet_num) (TLIBC_OFFSET_OF(tbus_t, buff) + (packet_size + sizeof(tbus_header_t)) * packet_num)
 void tbus_init(tbus_t *tb, size_t size, size_t number);
+
+tbus_t *tbus_at(key_t key);
+void tbus_dt(tbus_t *tb);
 
 tbus_atomic_size_t tbus_send_begin(tbus_t *tb, char** buf);
 void tbus_send_end(tbus_t *tb, tbus_atomic_size_t len);

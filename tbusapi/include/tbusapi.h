@@ -18,10 +18,7 @@ typedef void (*tbusapi_on_recviov_func)(tbusapi_t *self, struct iovec *iov, uint
 typedef tbus_atomic_size_t (*tbusapi_encode_func)(char *dst, size_t dst_len, const char *src, size_t src_len);
 struct tbusapi_s
 {
-	int itb_id;
 	tbus_t *itb;
-
-	int otb_id;
 	tbus_t *otb;
 
 	tbusapi_on_recviov_func on_recviov;
@@ -32,9 +29,7 @@ struct tbusapi_s
 	size_t iov_num;
 };
 
-tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, key_t output_tbuskey);
-
-void tbusapi_fini(tbusapi_t *self);
+void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb);
 
 void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len);
 

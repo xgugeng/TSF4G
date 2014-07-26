@@ -14,16 +14,19 @@
 #define MAX_MESSAGE_LENGTH 1024
 
 tbusapi_t g_tbusapi;
+tbus_t    *g_otb;
 
 int main()
 {
 	uint32_t i;
 
-	if(tbusapi_init(&g_tbusapi, 0, SHM_KEY) != E_TLIBC_NOERROR)
+	g_otb = tbus_at(SHM_KEY);
+	if(g_otb == NULL)
 	{
 		fprintf(stderr, "tbusapi_init failed.\n");
 		exit(1);
 	}
+	tbusapi_init(&g_tbusapi, 0, g_otb);
 	
 	for(i = 0;i < 10;++i)
 	{
@@ -39,6 +42,7 @@ int main()
 		//任何时刻都不能让tbus堆满消息！
 //		sleep(1);
 	}
+	tbus_dt(g_otb);
 	return 0;
 }
 

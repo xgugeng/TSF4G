@@ -161,12 +161,20 @@ tlibc_error_code_t tconnapi_process(tconnapi_t *self)
 tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
-
-	ret = tbusapi_init(&self->tbusapi, ikey, okey);
-	if(ret != E_TLIBC_NOERROR)
+	self->itb = tbus_at(ikey);
+	self->otb = tbus_at(okey);
+	if(self->itb == NULL)
 	{
-	    goto done;
+		ret = E_TLIBC_ERRNO;
+		goto done;
 	}
+	if(self->itb == NULL)
+	{
+		ret = E_TLIBC_ERRNO;
+		goto done;
+	}
+
+	tbusapi_init(&self->tbusapi, self->itb, self->otb);
 	
 	self->tbusapi.on_recv = tconnapi_on_recv;
 	self->tbusapi.encode = tconnapi_encode;
@@ -178,5 +186,11 @@ tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encod
 
 done:
 	return ret;
+}
+
+void tconnapi_fini(tconnapi_t *self)
+{
+	tbus_dt(self->itb);
+	tbus_dt(self->otb);
 }
 

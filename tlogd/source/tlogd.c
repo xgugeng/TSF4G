@@ -30,6 +30,7 @@ tlogd_config_t           g_config;
 tlog_message_t           g_message;
 tlibc_binary_reader_t    g_binary_reader;
 tbusapi_t				 g_tbusapi;
+tbus_t					 *g_itb = NULL;
 tlog_t					 g_tlog;
 
 
@@ -56,11 +57,14 @@ done:
 
 static tlibc_error_code_t init()
 {
-	if(tbusapi_init(&g_tbusapi, g_config.input_tbuskey, 0) != E_TLIBC_NOERROR)
+	g_itb = tbus_at(g_config.input_tbuskey);
+	if(g_itb == NULL)
 	{
-		ERROR_PRINT("tbusapi_init failed.");
+		ERROR_PRINT("tbus_at failed.");
 		goto error_ret;
 	}
+
+	tbusapi_init(&g_tbusapi, g_itb, NULL);
 
 	if(tlog_init(&g_tlog, &g_config.tlog_config) != E_TLIBC_NOERROR)
 	{
@@ -78,7 +82,7 @@ error_ret:
 
 static void fini()
 {
-	tbusapi_fini(&g_tbusapi);
+	tbus_dt(g_itb);
 	tlog_fini(&g_tlog);
 }
 

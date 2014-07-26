@@ -16,65 +16,15 @@ static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, siz
 	return (tbus_atomic_size_t)src_len;
 }
 
-tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, key_t output_tbuskey)
+
+void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb)
 {
-	tlibc_error_code_t ret = E_TLIBC_NOERROR;
-
-	if(input_tbuskey == 0)
-	{
-		self->itb_id = 0;
-		self->itb = NULL;
-	}
-	else
-	{
-		self->itb_id = shmget(input_tbuskey, 0, 0666);
-		if(self->itb_id == -1)
-		{
-    		ret = E_TLIBC_ERRNO;
-		    goto done;
-		}
-		self->itb = shmat(self->itb_id, NULL, 0);
-		if((ssize_t)self->itb == -1)
-		{
-            ret = E_TLIBC_ERRNO;
-            goto done;
-		}
-	}
-
-	if(output_tbuskey == 0)
-	{
-		self->otb_id = 0;
-		self->otb = NULL;
-	}
-	else
-	{
-		self->otb_id = shmget(output_tbuskey, 0, 0666);
-		if(self->otb_id == -1)
-		{
-    		ret = E_TLIBC_ERRNO;
-		    goto shmdt_itb;
-		}
-		
-		self->otb = shmat(self->otb_id, NULL, 0);
-		if((ssize_t)self->otb == -1)
-		{
-            ret = E_TLIBC_ERRNO;
-            goto shmdt_itb;
-		}
-	}
-
+	self->itb = itb;
+	self->otb = otb;
 	self->encode = encode;
 	self->on_recv = NULL;
 	self->on_recviov = NULL;
 	self->iov_num = 1;
-done:
-	return ret;
-shmdt_itb:
-    if(self->itb)
-    {
-        shmdt(self->itb);
-    }
-	return ret;
 }
 
 tlibc_error_code_t tbusapi_process(tbusapi_t *self)
@@ -128,16 +78,3 @@ void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
 		tbus_send_end(self->otb, code_size);
 	}
 }
-
-void tbusapi_fini(tbusapi_t *self)
-{
-    if(self->itb)
-    {
-        shmdt(self->itb);
-    }
-    if(self->otb)
-    {
-        shmdt(self->otb);
-    }
-}
-

@@ -13,23 +13,27 @@ static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 }
 
 tbusapi_t g_tbusapi;
+tbus_t *g_itb;
 
 int main(int argc, char *argv[])
 {
     tlibc_error_code_t ret;
 
-	if(tbusapi_init(&g_tbusapi, SHM_KEY, 0) != E_TLIBC_NOERROR)
+	g_itb = tbus_at(SHM_KEY);
+	if(g_itb == NULL)
 	{
 		fprintf(stderr, "tbusapi_init failed.\n");
 		exit(1);
 	}
+
+	tbusapi_init(&g_tbusapi, g_itb, 0);
 
 	g_tbusapi.on_recv = on_recv;
     ret = tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
                      , tbusapi_process, &g_tbusapi
                      , NULL, NULL);
 
-    tbusapi_fini(&g_tbusapi);
+	tbus_dt(g_itb);
     
     if(ret == E_TLIBC_NOERROR)
     {

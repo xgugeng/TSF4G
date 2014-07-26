@@ -17,6 +17,8 @@ typedef void (*tconnapi_on_recv_func)(tconnapi_t *self, const sip_cid_t *cid, co
 
 struct tconnapi_s
 {
+	tbus_t *itb;
+	tbus_t *otb;
     tbusapi_t tbusapi;
 
 	encode_t encode;
@@ -37,6 +39,8 @@ void tconnapi_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_
 void tconnapi_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num);
 
 tlibc_error_code_t tconnapi_process(tconnapi_t *self);
+
+void tconnapi_fini(tconnapi_t *self);
 
 #ifdef  __cplusplus
 }
