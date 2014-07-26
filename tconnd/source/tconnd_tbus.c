@@ -82,15 +82,11 @@ tlibc_error_code_t process_input_tbus()
     tbus_head = tbus_read_begin(g_input_tbus, iov, &iov_num);
     if(iov_num == 0)
     {
-        if(tbus_head != g_input_tbus->head_offset)
-        {
-            goto read_end;
-        }
-        else
+        if(tbus_head == g_input_tbus->head_offset)
         {
             ret = E_TLIBC_WOULD_BLOCK;
-            goto done;
         }
+        goto read_end;
     }
 
 
@@ -184,7 +180,6 @@ flush_socket:
     
 read_end:
     tbus_read_end(g_input_tbus, tbus_head);
-done:
     return ret;
 }
 
