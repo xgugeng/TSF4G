@@ -65,6 +65,8 @@ tlibc_error_code_t tbusapi_init(tbusapi_t *self, key_t input_tbuskey, key_t outp
 
 	self->encode = encode;
 	self->on_recv = NULL;
+	self->on_recviov = NULL;
+	self->iov_num = 1;
 done:
 	return ret;
 shmdt_itb:
@@ -78,9 +80,9 @@ shmdt_itb:
 tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
-	struct iovec iov[1];
-	size_t iov_num = 1; 
-	tbus_atomic_size_t tbus_head = tbus_read_begin(self->itb, iov, &iov_num);
+	size_t iov_num = self->iov_num; 
+	size_t i;
+	tbus_atomic_size_t tbus_head = tbus_read_begin(self->itb, self->iov, &iov_num);
 	if(iov_num == 0)
 	{
 		if(tbus_head != self->itb->head_offset)
@@ -94,9 +96,17 @@ tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 		}
 	}
 
+	if(self->on_recviov)
+	{
+		self->on_recviov(self, self->iov, (uint16_t)iov_num);
+	}
+
 	if(self->on_recv)
 	{
-		self->on_recv(self, iov[0].iov_base, iov[0].iov_len);
+		for(i = 0; i < iov_num; ++i)
+		{
+			self->on_recv(self, self->iov[i].iov_base, self->iov[i].iov_len);
+		}
 	}
 
 read_end:
