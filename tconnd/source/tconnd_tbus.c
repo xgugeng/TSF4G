@@ -133,14 +133,14 @@ tlibc_error_code_t process_input_tbus()
             
             if(!tlibc_mempool_id_test(&g_socket_pool, head->cid_list[i].id))
             {
-                WARN_LOG("head->cmd = %d [%u, %"PRIu64"] , head->cid_list[i].id[%u] > g_socket_pool->unit_num[%zu]."
+                DEBUG_LOG("head->cmd = %d [%u, %"PRIu64"] , head->cid_list[i].id[%u] > g_socket_pool->unit_num[%zu]."
                    , head->cmd, head->cid_list[i].id, head->cid_list[i].sn, head->cid_list[i].id, g_socket_pool.unit_num);
                 continue;
             }
             socket = (tconnd_socket_t*)tlibc_mempool_id2ptr(&g_socket_pool, head->cid_list[i].id);
             if(!tlibc_mempool_ptr_test(socket, mempool_entry, head->cid_list[i].sn))
             {
-                WARN_LOG("socket [%u, %"PRIu64"] head->cmd = %d [%u, %"PRIu64"] mismatch."
+                DEBUG_LOG("socket [%u, %"PRIu64"] head->cmd = %d [%u, %"PRIu64"] mismatch."
                     , head->cid_list[i].id, socket->mempool_entry.sn, head->cmd, head->cid_list[i].id, head->cid_list[i].sn);
                 continue;
             }
