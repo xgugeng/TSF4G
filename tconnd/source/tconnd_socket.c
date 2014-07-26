@@ -255,6 +255,10 @@ tlibc_error_code_t tconnd_socket_push_pkg(tconnd_socket_t *self, const sip_rsp_t
         return tconnd_socket_on_cmd_accept(self);
     case e_sip_rsp_cmd_close:
         {
+			if(self->status == e_tconnd_socket_status_established)
+			{
+				tconnd_socket_flush(self);
+			}
             DEBUG_LOG("socket [%"PRIu64"] closing.", self->mempool_entry.sn);
             ret = E_TLIBC_CLOSE;
             goto done;
