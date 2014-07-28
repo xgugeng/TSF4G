@@ -17,11 +17,12 @@ static void version()
 static void help() 
 {
 	fprintf(stdout, "tbusmgr ([-s size] && [-n number] && [-w shmkey] | --help | --version)\n");
-	fprintf(stdout, "--help, -v                Print the help.\n");
-	fprintf(stdout, "--version, -h             Print the version.\n");
+	fprintf(stdout, "--help, -h                Print the help.\n");
+	fprintf(stdout, "--version, -v             Print the version.\n");
 	fprintf(stdout, "--size, -s size           Set the maximum packet size.\n");
 	fprintf(stdout, "--number, -n number       Set the maxinum packet number.\n");
 	fprintf(stdout, "--write, -w tbuskey       Create shared memory segments with shmkey, and initialize the memory for tbus.\n");
+	fprintf(stdout, "--dashboard, -d tbuskey   Show dashboard of the tbus channel.\n");
 }
 
 const char* const short_options = "vhs:n:w:";
@@ -33,6 +34,7 @@ const struct option long_options[] =
 	{ "size"   ,   1, NULL, 's' },
 	{ "number" ,   1, NULL, 'n' },
 	{ "write"  ,   1, NULL, 'w' },
+	{ "dashboard", 1, NULL, 'd' },
 	{ NULL     ,   0, NULL,  0  },  
 };
 
@@ -45,7 +47,7 @@ int main(int argc, char**argv)
 
 	size_t shm_size = 0;
 	key_t shm_key = 0;
-	int shm_id;
+	int shm_id = 0;
 	void *shm_ptr = NULL;
 	tbus_t *tbus_ptr = NULL;
 	char *endptr;
@@ -60,6 +62,42 @@ int main(int argc, char**argv)
 		case 'v':
 			version();
 			exit(0);
+		case 'd':
+			{
+				tbus_t *tb = NULL;
+				arg = optarg;
+				uint32_t head, tail, size;
+
+
+				errno = 0;
+				shm_key = (key_t)strtol(arg, &endptr, 10);
+				if(errno != 0)
+				{
+					fprintf(stderr, "strtol(\"%s\", &endptr, 10) returned an errno[%d], %s.\n", arg, errno, strerror(errno));
+					exit(1);
+				}
+
+				tb = tbus_at(shm_key);
+				if(tb == NULL)
+				{
+					fprintf(stderr, "tbus_at(%d) failed, errno(%d), %s.\n", shm_key, errno, strerror(errno));
+					goto error_free_memory;
+				}
+				head = tb->head_offset;
+				tail = tb->tail_offset;
+				if(head <= tail)
+				{
+					size = tail - head;
+				}
+				else
+				{
+					size = head - tail;
+					size = tb->size - size;
+				}
+
+				fprintf(stdout, "used : %u, total : %u, percent : %.2lf%%.\n", size, tb->size, (double)size / (double)tb->size);
+				exit(0);
+			}
 		case 's':
 			{
 				arg = optarg;
