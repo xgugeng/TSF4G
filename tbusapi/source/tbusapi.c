@@ -42,7 +42,6 @@ tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	size_t iov_num = self->iov_num; 
-	size_t i;
 	tbus_atomic_size_t tbus_head = tbus_read_begin(self->itb, self->iov, &iov_num);
 	if(iov_num == 0)
 	{
