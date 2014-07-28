@@ -95,7 +95,7 @@ int main(int argc, char**argv)
 					size = tb->size - size;
 				}
 
-				fprintf(stdout, "used : %u, total : %u, percent : %.2lf%%.\n", size, tb->size, (double)size / (double)tb->size);
+				fprintf(stdout, "used : %u, total : %u, percent : %.2lf%%.\n", size, tb->size, (double)size * 100 / (double)tb->size);
 				exit(0);
 			}
 		case 's':
