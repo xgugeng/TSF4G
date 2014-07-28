@@ -35,7 +35,7 @@ void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb)
 	self->encode = encode;
 	self->on_recv = NULL;
 	self->on_recviov = tbusapi_on_recviov;
-	self->iov_num = 1;
+	self->iov_num = TBUSAPI_IOV_NUM;
 }
 
 tlibc_error_code_t tbusapi_process(tbusapi_t *self)

@@ -175,7 +175,7 @@ tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encod
 	}
 
 	tbusapi_init(&self->tbusapi, self->itb, self->otb);
-	
+	self->tbusapi.iov_num = TBUSAPI_IOV_NUM;
 	self->tbusapi.on_recv = tconnapi_on_recv;
 	self->tbusapi.encode = tconnapi_encode;
 
