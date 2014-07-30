@@ -117,6 +117,11 @@ int main(int argc, char **argv)
 {
     int ret = 0;
     
+	if(tapp_sigaction() != E_TLIBC_NOERROR)
+	{
+    	ERROR_PRINT("tapp_sigaction failed.");
+		goto ERROR_RET;
+	}
     tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tconnd_config);
 
     
@@ -125,12 +130,7 @@ int main(int argc, char **argv)
 		goto ERROR_RET;
 	}   
 
-	if(tapp_sigaction() != E_TLIBC_NOERROR)
-	{
-		goto ERROR_RET;
-	}
-
-    if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+    if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT
                 , process, NULL
                 , NULL, NULL) == E_TLIBC_NOERROR)
     {

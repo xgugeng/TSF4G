@@ -78,15 +78,15 @@ done:
 
 int main()
 {
-	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, (encode_t)robot_proto_encode) != E_TLIBC_NOERROR)
-	{
-		ERROR_PRINT("tconnapi_init failed.");
-		return 1;
-	}
-
 	if(tapp_sigaction() != E_TLIBC_NOERROR)
 	{
 		ERROR_PRINT("tapp_sigaction failed.");
+		return 1;
+	}
+
+	if(tconnapi_init(&g_tconn, iSHM_KEY, oSHM_KEY, (encode_t)robot_proto_encode) != E_TLIBC_NOERROR)
+	{
+		ERROR_PRINT("tconnapi_init failed.");
 		return 1;
 	}
 
@@ -94,7 +94,7 @@ int main()
 	g_tconn.on_recv = on_recv;
 	g_tconn.on_close = on_close;
 
-    return tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+    return tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT
                      , tconnapi_process, &g_tconn
                      , NULL, NULL);
 }

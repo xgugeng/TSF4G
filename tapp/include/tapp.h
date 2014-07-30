@@ -45,8 +45,6 @@ typedef tlibc_error_code_t (*tapp_func_t)(void *arg);
 
 */
 tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
-                        tapp_func_t sigusr1, void* usr1_arg,
-                        tapp_func_t sigusr2, void* usr2_arg,
                         ...);
 
 

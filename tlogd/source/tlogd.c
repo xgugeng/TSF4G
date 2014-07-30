@@ -90,13 +90,6 @@ int main(int argc, char **argv)
 {
     int ret = 0;
     
-    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config);
-	if(init() != E_TLIBC_NOERROR)
-	{
-		ret = 1;
-		goto done;
-	}
-
 	if(tapp_sigaction() != E_TLIBC_NOERROR)
 	{
 		ret = 1;
@@ -104,7 +97,15 @@ int main(int argc, char **argv)
 		goto done;
 	}
 
-	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+    tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tlogd_config);
+	if(init() != E_TLIBC_NOERROR)
+	{
+		ret = 1;
+		goto done;
+	}
+
+
+	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT
 				 , tbusapi_process, &g_tbusapi
 	             , NULL, NULL) != E_TLIBC_NOERROR)
 	{

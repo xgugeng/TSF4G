@@ -208,10 +208,7 @@ done:
 	return ret;
 }
 
-tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
-                        tapp_func_t sigusr1, void* usr1_arg,
-                        tapp_func_t sigusr2, void* usr2_arg,
-                        ...)
+tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit, ...)
 {
 	tlibc_error_code_t proc_ret;
     tlibc_error_code_t ret = E_TLIBC_NOERROR;
@@ -219,41 +216,10 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
     uint32_t idle_count = 0;
     va_list valist;
 
-    g_tapp_sigterm = false;
     for(;!g_tapp_sigterm;)
     {
-        if(g_tapp_sigusr1)
-        {
-            g_tapp_sigusr1 = false;            
-            if(sigusr1)
-            {
-                r = sigusr1(usr1_arg);
-                if(r != E_TLIBC_NOERROR)
-                {
-					ret = r;
-                    goto done;
-                }
-            }
-            idle_count = 0;
-        }
-
-        if(g_tapp_sigusr2)
-        {
-            g_tapp_sigusr2 = false;            
-            if(sigusr2)
-            {
-                r = sigusr2(usr2_arg);
-                if(r != E_TLIBC_NOERROR)
-                {
-					ret = r;
-                    goto done;
-                }
-            }
-            idle_count = 0;
-        }
-
         proc_ret = E_TLIBC_WOULD_BLOCK;
-        va_start(valist, usr2_arg);
+        va_start(valist, idle_limit);
         for(;;)
         {
             tapp_func_t func = NULL;

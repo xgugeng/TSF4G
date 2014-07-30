@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	tbusapi_init(&g_tbusapi, g_itb, 0);
 
 	g_tbusapi.on_recv = on_recv;
-    ret = tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+    ret = tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT
                      , tbusapi_process, &g_tbusapi
                      , NULL, NULL);
 

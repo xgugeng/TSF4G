@@ -470,16 +470,14 @@ int main(int argc, char *argv[])
 {
 	int ret;
 	tapp_load_config(&g_config, argc, argv, (tapp_xml_reader_t)tlibc_read_tconnd_robot_config);
-
-	init();
-
 	if(tapp_sigaction() != E_TLIBC_NOERROR)
 	{
 		ret = 1;
 		goto done;
 	}
 
-	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
+	init();
+	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT
 	            , process, NULL
 	            , NULL, NULL) == E_TLIBC_NOERROR)
 	{
