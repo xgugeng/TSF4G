@@ -7,6 +7,8 @@ extern "C" {
 
 #include "protocol/tlibc_xml_reader.h"
 #include "tlibc_error_code.h"
+
+#include <stdbool.h>
 #include <unistd.h>
 
 
@@ -48,7 +50,11 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
                         ...);
 
 
+extern bool g_tapp_sigterm;
+extern bool g_tapp_sigusr1;
+extern bool g_tapp_sigusr2;
 
+tlibc_error_code_t tapp_sigaction();
 
 #ifdef  __cplusplus
 }

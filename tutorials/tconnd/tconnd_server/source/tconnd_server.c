@@ -84,6 +84,12 @@ int main()
 		return 1;
 	}
 
+	if(tapp_sigaction() != E_TLIBC_NOERROR)
+	{
+		ERROR_PRINT("tapp_sigaction failed.");
+		return 1;
+	}
+
 	g_tconn.on_connect = on_connect;
 	g_tconn.on_recv = on_recv;
 	g_tconn.on_close = on_close;

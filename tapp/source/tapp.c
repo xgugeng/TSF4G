@@ -147,9 +147,9 @@ ERROR_RET:
     exit(1);
 }
 
-static bool g_sigterm = false;
-static bool g_sigusr1 = false;
-static bool g_sigusr2 = false;
+bool g_tapp_sigterm = false;
+bool g_tapp_sigusr1 = false;
+bool g_tapp_sigusr2 = false;
 
 
 static void on_signal(int sig)
@@ -158,28 +158,21 @@ static void on_signal(int sig)
     {
         case SIGINT:
         case SIGTERM:
-            g_sigterm = true;
+            g_tapp_sigterm = true;
             break;
         case SIGUSR1:
-            g_sigusr1 = true;
+            g_tapp_sigusr1 = true;
             break;
         case SIGUSR2:
-            g_sigusr2 = true;
+            g_tapp_sigusr2 = true;
             break;
     }
 }
 
-tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
-                        tapp_func_t sigusr1, void* usr1_arg,
-                        tapp_func_t sigusr2, void* usr2_arg,
-                        ...)
+tlibc_error_code_t tapp_sigaction()
 {
-	tlibc_error_code_t proc_ret;
     tlibc_error_code_t ret = E_TLIBC_NOERROR;
-	tlibc_error_code_t r;
-    uint32_t idle_count = 0;
     struct sigaction  sa;
-    va_list valist;
 
 	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = on_signal;
@@ -199,20 +192,39 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
 	}
 
 	
+	memset(&sa, 0, sizeof(struct sigaction));
 	sa.sa_handler = SIG_IGN;
+	if(sigemptyset(&sa.sa_mask) != 0)
+	{
+	    ret = E_TLIBC_ERRNO;
+        goto done;
+	}
     if(sigaction(SIGPIPE, &sa, NULL) != 0)
     {
     	ret = E_TLIBC_ERRNO;
         goto done;
     }
+done:
+	return ret;
+}
 
+tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
+                        tapp_func_t sigusr1, void* usr1_arg,
+                        tapp_func_t sigusr2, void* usr2_arg,
+                        ...)
+{
+	tlibc_error_code_t proc_ret;
+    tlibc_error_code_t ret = E_TLIBC_NOERROR;
+	tlibc_error_code_t r;
+    uint32_t idle_count = 0;
+    va_list valist;
 
-    g_sigterm = false;
-    for(;!g_sigterm;)
+    g_tapp_sigterm = false;
+    for(;!g_tapp_sigterm;)
     {
-        if(g_sigusr1)
+        if(g_tapp_sigusr1)
         {
-            g_sigusr1 = false;            
+            g_tapp_sigusr1 = false;            
             if(sigusr1)
             {
                 r = sigusr1(usr1_arg);
@@ -225,9 +237,9 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit,
             idle_count = 0;
         }
 
-        if(g_sigusr2)
+        if(g_tapp_sigusr2)
         {
-            g_sigusr2 = false;            
+            g_tapp_sigusr2 = false;            
             if(sigusr2)
             {
                 r = sigusr2(usr2_arg);

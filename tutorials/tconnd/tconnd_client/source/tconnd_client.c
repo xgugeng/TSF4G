@@ -473,6 +473,12 @@ int main(int argc, char *argv[])
 
 	init();
 
+	if(tapp_sigaction() != E_TLIBC_NOERROR)
+	{
+		ret = 1;
+		goto done;
+	}
+
 	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
 	            , process, NULL
 	            , NULL, NULL) == E_TLIBC_NOERROR)
@@ -484,6 +490,7 @@ int main(int argc, char *argv[])
 		ret = 1;
 	}
 	fini();
-	return 0;
+done:
+	return ret;
 }
 

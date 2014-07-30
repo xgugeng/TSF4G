@@ -97,6 +97,13 @@ int main(int argc, char **argv)
 		goto done;
 	}
 
+	if(tapp_sigaction() != E_TLIBC_NOERROR)
+	{
+		ret = 1;
+		ERROR_PRINT("tapp_sigaction(), errno %d.", errno);
+		goto done;
+	}
+
 	if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
 				 , tbusapi_process, &g_tbusapi
 	             , NULL, NULL) != E_TLIBC_NOERROR)

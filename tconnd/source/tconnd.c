@@ -125,6 +125,11 @@ int main(int argc, char **argv)
 		goto ERROR_RET;
 	}   
 
+	if(tapp_sigaction() != E_TLIBC_NOERROR)
+	{
+		goto ERROR_RET;
+	}
+
     if(tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT, NULL, NULL, NULL, NULL
                 , process, NULL
                 , NULL, NULL) == E_TLIBC_NOERROR)

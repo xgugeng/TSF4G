@@ -19,6 +19,12 @@ int main(int argc, char *argv[])
 {
     tlibc_error_code_t ret;
 
+	if(tapp_sigaction() != E_TLIBC_NOERROR)
+	{
+		fprintf(stderr, "tapp_sigaction failed.\n");
+		exit(1);
+	}
+
 	g_itb = tbus_at(SHM_KEY);
 	if(g_itb == NULL)
 	{
