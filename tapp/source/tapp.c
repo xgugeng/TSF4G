@@ -217,7 +217,6 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit, ...)
     uint32_t idle_count = 0;
     va_list valist;
 
-	g_tapp_sigterm = false;
     for(;!g_tapp_sigterm;)
     {
         proc_ret = E_TLIBC_WOULD_BLOCK;
@@ -301,7 +300,6 @@ tlibc_error_code_t tapp_spawn(uint32_t threads, tapp_spawn_fun_t func)
 	tapp_worker_arg_t tid_arg[TAPP_THREADS];
 	uint16_t tid_vec_num = 0;
 
-	g_tapp_sigterm = false;
 	if(threads >= TAPP_THREADS)
 	{
 		ret =  E_TLIBC_OUT_OF_MEMORY;
@@ -326,6 +324,7 @@ tlibc_error_code_t tapp_spawn(uint32_t threads, tapp_spawn_fun_t func)
 		pthread_join(tid_vec[i], (void*)&r);
 		if(r != E_TLIBC_NOERROR)
 		{
+			g_tapp_sigterm = true;
 			ret = r;
 		}
 	}
@@ -339,7 +338,6 @@ cancel_thread:
 		pthread_join(tid_vec[i], &status);
 	}
 error_ret:
-	g_tapp_sigterm = true;
 	return ret;
 }
 
