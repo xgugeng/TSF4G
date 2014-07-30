@@ -20,6 +20,8 @@
 tlibc_error_code_t tlog_init(tlog_t *self, const tlog_config_t *config)
 {
     int32_t i = 0;
+	pthread_mutex_init(&self->mutex, NULL);
+
     memcpy(&self->config, config, sizeof(tlog_config_t));
     
     self->instance.appender_vec_num = self->config.appender_vec_num;
@@ -71,6 +73,7 @@ roll_back:
 void tlog_write(tlog_t *self, const tlog_message_t *message)
 {
 	uint32_t i;
+	pthread_mutex_lock(&self->mutex);
 
 	if(!tlog_enable(self, message->level))
 	{
@@ -100,6 +103,7 @@ void tlog_write(tlog_t *self, const tlog_message_t *message)
 		}
 	}
 done:
+	pthread_mutex_unlock(&self->mutex);
 	return;
 }
 
@@ -127,6 +131,7 @@ void tlog_fini(tlog_t *self)
 				break;
 		}
 	}
+	pthread_mutex_destroy(&self->mutex);
 }
 
 

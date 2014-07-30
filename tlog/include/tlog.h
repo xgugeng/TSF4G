@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "tlog_config_types.h"
+#include "tlibc_error_code.h"
 #include "appender/tlog_appender_rolling_file.h"
 #include "appender/tlog_appender_shm.h"
 #include "appender/tlog_appender_daily_directory.h"
@@ -14,7 +15,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "tlibc_error_code.h"
+#include <pthread.h>
 
 #define TLOG_VERSION "0.0.1"
 typedef union tlog_appender_body_u
@@ -40,6 +41,7 @@ typedef struct tlog_s
 {
 	tlog_config_t config;
 	tlog_instance_t instance;
+	pthread_mutex_t mutex;
 }tlog_t;
 
 

@@ -6,6 +6,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/types.h>
+#include <pthread.h>
 
 void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* file, uint32_t line, va_list arglist)
@@ -17,6 +19,8 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     size_t len;
     ssize_t r;
     char *fmt;
+	pthread_t tid = pthread_self();
+
 	message->level = level;
     
     switch(level)
@@ -47,10 +51,10 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
 
     len = 0;
     r = snprintf(msg, TLOG_MESSAGE_LENGTH - len,
-        "%04d-%02d-%02d %02d:%02d:%02d [%s] %s:%u | ",
+        "%04d-%02d-%02d %02d:%02d:%02d [%s] [%lu] %s:%u | ",
         message->year, message->month, message->day,
         tm.tm_hour, tm.tm_min, tm.tm_sec
-        ,level_name, file, line);
+        ,level_name, tid, file, line);
 
         
     if(r > 0)
