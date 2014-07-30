@@ -54,6 +54,11 @@ extern bool g_tapp_sigusr2;
 
 tlibc_error_code_t tapp_sigaction();
 
+#define TAPP_THREADS 65535
+
+typedef tlibc_error_code_t (*tapp_spawn_fun_t)(uint32_t id);
+tlibc_error_code_t tapp_spawn(uint32_t threads, tapp_spawn_fun_t func);
+
 #ifdef  __cplusplus
 }
 #endif

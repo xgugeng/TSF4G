@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <stdarg.h>
+#include <pthread.h>
 
 
 static void version()
@@ -216,6 +217,7 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit, ...)
     uint32_t idle_count = 0;
     va_list valist;
 
+	g_tapp_sigterm = false;
     for(;!g_tapp_sigterm;)
     {
         proc_ret = E_TLIBC_WOULD_BLOCK;
@@ -268,9 +270,76 @@ tlibc_error_code_t tapp_loop(useconds_t idle_usec, size_t idle_limit, ...)
 			ret = proc_ret;
             goto done;
         }
-    }   
+    } 
 
 done:
+	g_tapp_sigterm = true;
     return ret;
+}
+
+
+typedef struct tapp_worker_arg_s
+{
+	uint32_t id;
+	tapp_spawn_fun_t func;
+}tapp_worker_arg_t;
+
+static void* worker(void *arg)
+{
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
+	tapp_worker_arg_t *worker_arg = (tapp_worker_arg_t*)arg;
+
+	ret = worker_arg->func(worker_arg->id);
+	return (void*)ret;
+}
+
+tlibc_error_code_t tapp_spawn(uint32_t threads, tapp_spawn_fun_t func)
+{
+	size_t i;
+	tlibc_error_code_t ret = E_TLIBC_NOERROR;
+	pthread_t tid_vec[TAPP_THREADS];
+	tapp_worker_arg_t tid_arg[TAPP_THREADS];
+	uint16_t tid_vec_num = 0;
+
+	g_tapp_sigterm = false;
+	if(threads >= TAPP_THREADS)
+	{
+		ret =  E_TLIBC_OUT_OF_MEMORY;
+		goto error_ret;
+	}
+
+	for(i = 0; i < threads; ++i)
+	{
+		++tid_vec_num;
+		tid_arg[i].id = (uint32_t)i;
+		tid_arg[i].func = func;
+		if(pthread_create(&tid_vec[i], NULL, worker, &tid_arg[i]) != 0)
+		{
+			ret = E_TLIBC_ERRNO;
+			goto cancel_thread;
+		}
+	}
+
+	for(i = 0; i < tid_vec_num; ++i)
+	{
+		tlibc_error_code_t r;
+		pthread_join(tid_vec[i], (void*)&r);
+		if(r != E_TLIBC_NOERROR)
+		{
+			ret = r;
+		}
+	}
+
+    return ret;
+cancel_thread:
+	g_tapp_sigterm = true;
+	for(i = 0; i < tid_vec_num; ++i)
+	{
+		void *status = NULL;
+		pthread_join(tid_vec[i], &status);
+	}
+error_ret:
+	g_tapp_sigterm = true;
+	return ret;
 }
 

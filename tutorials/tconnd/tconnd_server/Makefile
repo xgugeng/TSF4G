@@ -3,7 +3,7 @@ TARGET= $(BINARY)
 HOME=../../../
 CINC=-Iinclude -Itdr -I$(HOME)/tlibc/include -I$(HOME)/tlibc/tdr -I$(HOME)/tlog/include -I$(HOME)/tlog/tdr/ -I$(HOME)/tbus/include/ -I$(HOME)/tbusapi/include -I$(HOME)/tapp/include -I$(HOME)/tconnapi/include/ -I../tconnd_proto/include/
 LDPATH=
-DEPLIBS=
+DEPLIBS=-lpthread
 DEPOFILE=$(HOME)/tlog/lib/libtlog.a $(HOME)/tapp/lib/libtapp.a $(HOME)/tconnapi/lib/libtconnapi.a $(HOME)/tbusapi/lib/libtbusapi.a $(HOME)/tbus/lib/libtbus.a $(HOME)/tlibc/lib/libtlibc.a
 
 TDRINC=-I$(HOME)/tlibc/tdr/
