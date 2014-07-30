@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <pthread.h>
+#include <sys/syscall.h>
 
 void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* file, uint32_t line, va_list arglist)
@@ -19,7 +20,7 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     size_t len;
     ssize_t r;
     char *fmt;
-	pthread_t tid = pthread_self();
+	long int tid = syscall(SYS_gettid);
 
 	message->level = level;
     
