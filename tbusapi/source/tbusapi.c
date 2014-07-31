@@ -1,20 +1,11 @@
 #include "tbusapi.h"
+#include "tlibcdef.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/uio.h>
 #include <errno.h>
 #include <string.h>
-
-static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, size_t src_len)
-{
-	if(src_len > dst_len)
-	{
-		return 0;
-	}
-	memcpy(dst, src, src_len);
-	return (tbus_atomic_size_t)src_len;
-}
 
 static uint16_t tbusapi_on_recviov(tbusapi_t *self, struct iovec *iov, uint16_t iov_num)
 {
@@ -33,7 +24,7 @@ done:
 	return i;
 }
 
-void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb)
+void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb, tlibc_encode_t encode)
 {
 	self->itb = itb;
 	self->otb = otb;
@@ -80,14 +71,14 @@ done:
 	return ret;
 }
 
-bool tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
+bool tbusapi_send(tbusapi_t *self, const void *data)
 {
 	char *buf = NULL;
 	tbus_atomic_size_t buf_size;
 	tbus_atomic_size_t code_size;
 
 	buf_size = tbus_send_begin(self->otb, &buf);
-	code_size = self->encode(buf, buf_size, packet, packet_len);
+	code_size = (tbus_atomic_size_t)self->encode(data, buf, buf + buf_size);
 	if(code_size > 0)
 	{
 		tbus_send_end(self->otb, code_size);

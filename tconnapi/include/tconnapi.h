@@ -7,10 +7,10 @@ extern "C" {
 
 #include "tbusapi.h"
 #include "sip.h"
+#include "tlibcdef.h"
 
 typedef struct tconnapi_s tconnapi_t;
 
-typedef sip_size_t (*encode_t)(const void *self, char *start, char *limit);
 typedef void (*tconnapi_on_connect_func)(tconnapi_t *self, const sip_cid_t *cid);
 typedef void (*tconnapi_on_close_func)(tconnapi_t *self, const sip_cid_t *cid);
 typedef void (*tconnapi_on_recv_func)(tconnapi_t *self, const sip_cid_t *cid, const char *packet, sip_size_t packet_size);
@@ -21,7 +21,7 @@ struct tconnapi_s
 	tbus_t *otb;
     tbusapi_t tbusapi;
 
-	encode_t encode;
+	tlibc_encode_t encode;
 	tconnapi_on_connect_func on_connect;
 	tconnapi_on_close_func on_close;
 	tconnapi_on_recv_func on_recv;
@@ -30,7 +30,7 @@ struct tconnapi_s
 
 
 
-tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode);
+tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, tlibc_encode_t encode);
 
 void tconnapi_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num);
 

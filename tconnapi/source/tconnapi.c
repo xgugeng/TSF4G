@@ -10,26 +10,25 @@ typedef struct tconnapi_rsp_s
 {
     sip_rsp_t head;
     const char* body;
-   	encode_t encode;
+   	tlibc_encode_t encode;
 }tconnapi_rsp_t;
 
-static tbus_atomic_size_t tconnapi_encode(char *dst, size_t dst_len, const char *src, size_t src_len)
+static tbus_atomic_size_t tconnapi_encode(const tconnapi_rsp_t *rsp, char *start, char *limit)
 {
-    const tconnapi_rsp_t *rsp = (const tconnapi_rsp_t *)src;
     tbus_atomic_size_t head_size = (tbus_atomic_size_t)SIZEOF_SIP_RSP_T(&rsp->head);
     sip_rsp_t *head = NULL;
    
-    if(dst_len < head_size)
+    if(limit - start < head_size)
     {
         goto error;
     }
 
-    memcpy(dst, &rsp->head, head_size);
-    head = (sip_rsp_t*)dst;
+    memcpy(start, &rsp->head, head_size);
+    head = (sip_rsp_t*)start;
     
     if(rsp->body)
     {
-        head->size = rsp->encode(rsp->body, dst + head_size, dst + dst_len);
+        head->size = (sip_size_t)rsp->encode(rsp->body, start + head_size, limit);
         if(head->size == 0)
         {
             goto error;
@@ -56,7 +55,7 @@ void tconnapi_send(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_
 	rsp.head.cmd = e_sip_rsp_cmd_send;
     rsp.head.cid_list_num = cid_vec_num;
 	memcpy(rsp.head.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
+	tbusapi_send(&self->tbusapi, &rsp);
 }
 
 void tconnapi_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num)
@@ -68,7 +67,7 @@ void tconnapi_close(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec
     rsp.head.cmd = e_sip_rsp_cmd_close;
     rsp.head.cid_list_num = cid_vec_num;
 	memcpy(rsp.head.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
+	tbusapi_send(&self->tbusapi, &rsp);
 }
 
 void tconnapi_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_vec_num)
@@ -81,7 +80,7 @@ void tconnapi_accept(tconnapi_t *self, const sip_cid_t *cid_vec, uint16_t cid_ve
     rsp.head.cmd = e_sip_rsp_cmd_accept;
     rsp.head.cid_list_num = cid_vec_num;
 	memcpy(rsp.head.cid_list, cid_vec, sizeof(sip_cid_t) * cid_vec_num);
-	tbusapi_send(&self->tbusapi, (const char*)&rsp, sizeof(tconnapi_rsp_t));
+	tbusapi_send(&self->tbusapi, &rsp);
 }
 
 static bool tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
@@ -158,7 +157,7 @@ tlibc_error_code_t tconnapi_process(tconnapi_t *self)
     return tbusapi_process(&self->tbusapi);
 }
 
-tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encode_t encode)
+tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, tlibc_encode_t encode)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	self->itb = tbus_at(ikey);
@@ -174,10 +173,9 @@ tlibc_error_code_t tconnapi_init(tconnapi_t *self, key_t ikey, key_t okey, encod
 		goto done;
 	}
 
-	tbusapi_init(&self->tbusapi, self->itb, self->otb);
+	tbusapi_init(&self->tbusapi, self->itb, self->otb, (tlibc_encode_t)tconnapi_encode);
 	self->tbusapi.iov_num = TBUSAPI_IOV_NUM;
 	self->tbusapi.on_recv = tconnapi_on_recv;
-	self->tbusapi.encode = tconnapi_encode;
 
 	self->encode = encode;
 	self->on_connect = NULL;

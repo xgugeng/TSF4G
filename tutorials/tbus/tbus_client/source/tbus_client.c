@@ -16,6 +16,17 @@
 tbusapi_t g_tbusapi;
 tbus_t    *g_otb;
 
+static tbus_atomic_size_t encode(const char *data, char *start, char *limit)
+{
+	size_t len = strlen(data) + 1;
+	if(limit - start < len)
+	{
+		return 0;
+	}
+	memcpy(start, data, len);
+	return (tbus_atomic_size_t)len;
+}
+
 int main()
 {
 	uint32_t i;
@@ -26,19 +37,16 @@ int main()
 		fprintf(stderr, "tbusapi_init failed.\n");
 		exit(1);
 	}
-	tbusapi_init(&g_tbusapi, 0, g_otb);
+	tbusapi_init(&g_tbusapi, 0, g_otb, (tlibc_encode_t)encode);
 	
 	for(i = 0;i < 10;++i)
 	{
 		char data[MAX_MESSAGE_LENGTH];
-		tbus_atomic_size_t data_size;
 		
 		snprintf(data, MAX_MESSAGE_LENGTH, "hello %d", i);
 		data[MAX_MESSAGE_LENGTH - 1] = 0;
 
-		data_size = (tbus_atomic_size_t)(strlen(data) + 1);
-
-		tbusapi_send(&g_tbusapi, data, data_size);
+		tbusapi_send(&g_tbusapi, data);
 		//任何时刻都不能让tbus堆满消息！
 //		sleep(1);
 	}

@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	tbusapi_init(&g_tbusapi, g_itb, 0);
+	tbusapi_init(&g_tbusapi, g_itb, 0, NULL);
 
 	g_tbusapi.on_recv = on_recv;
     ret = tapp_loop(TAPP_IDLE_USEC, TAPP_IDLE_LIMIT

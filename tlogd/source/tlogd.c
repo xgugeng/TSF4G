@@ -64,7 +64,7 @@ static tlibc_error_code_t init()
 		goto error_ret;
 	}
 
-	tbusapi_init(&g_tbusapi, g_itb, NULL);
+	tbusapi_init(&g_tbusapi, g_itb, NULL, NULL);
 
 	if(tlog_init(&g_tlog, &g_config.tlog_config) != E_TLIBC_NOERROR)
 	{
