@@ -13,7 +13,7 @@ CFILE+=$(wildcard source/core/*.c)
 
 REFILE=$(wildcard source/protocol/*.re)
 
-CFLAGS?=-Wall -Wconversion -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
+CFLAGS?=-Wall -Wconversion -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -fPIC
 #由于MYBIND结构里面的指针缺少const， 所以取消-Wcast-qual编译选项
 
 include $(HOME)/build.mk
