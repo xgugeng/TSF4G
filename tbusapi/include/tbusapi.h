@@ -32,7 +32,7 @@ struct tbusapi_s
 
 void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb);
 
-void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len);
+bool tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len);
 
 tlibc_error_code_t tbusapi_process(tbusapi_t *self);
 

@@ -80,7 +80,7 @@ done:
 	return ret;
 }
 
-void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
+bool tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
 {
 	char *buf = NULL;
 	tbus_atomic_size_t buf_size;
@@ -91,5 +91,10 @@ void tbusapi_send(tbusapi_t *self, const char *packet, size_t packet_len)
 	if(code_size > 0)
 	{
 		tbus_send_end(self->otb, code_size);
+		return true;
+	}
+	else
+	{
+		return false;
 	}
 }
