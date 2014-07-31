@@ -4,7 +4,7 @@ HOME=../../
 
 CINC=-Iinclude
 
-CFLAGS=-Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe
+CFLAGS=-Wall -Wcast-qual -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -fno-common
 
 CFILE=$(wildcard source/*.c)
 
