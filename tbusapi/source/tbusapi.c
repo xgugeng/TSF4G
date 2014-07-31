@@ -16,16 +16,21 @@ static tbus_atomic_size_t encode(char *dst, size_t dst_len, const char *src, siz
 	return (tbus_atomic_size_t)src_len;
 }
 
-static void tbusapi_on_recviov(tbusapi_t *self, struct iovec *iov, uint16_t iov_num)
+static uint16_t tbusapi_on_recviov(tbusapi_t *self, struct iovec *iov, uint16_t iov_num)
 {
-	size_t i;
+	uint16_t i;
 	for(i = 0; i < iov_num; ++i)
 	{
 		if(self->on_recv)
 		{
-			self->on_recv(self, self->iov[i].iov_base, self->iov[i].iov_len);
+			if(!self->on_recv(self, self->iov[i].iov_base, self->iov[i].iov_len))
+			{
+				goto done;
+			}
 		}
 	}
+done:
+	return i;
 }
 
 void tbusapi_init(tbusapi_t *self, tbus_t *itb, tbus_t *otb)
@@ -58,7 +63,15 @@ tlibc_error_code_t tbusapi_process(tbusapi_t *self)
 
 	if(self->on_recviov)
 	{
-		self->on_recviov(self, self->iov, (uint16_t)iov_num);
+		uint16_t pos = self->on_recviov(self, self->iov, (uint16_t)iov_num);
+		if(pos < iov_num)
+		{
+			tbus_head = tbus_packet2offset(self->itb, self->iov[pos].iov_base);
+		}
+		if(pos == 0)
+		{
+			ret = E_TLIBC_WOULD_BLOCK;
+		}
 	}
 
 read_end:

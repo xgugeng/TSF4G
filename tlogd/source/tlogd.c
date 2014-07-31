@@ -34,7 +34,7 @@ tbus_t					 *g_itb = NULL;
 tlog_t					 g_tlog;
 
 
-static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
+static bool on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 {
 	tlibc_error_code_t r;
 
@@ -52,7 +52,7 @@ static void on_recv(tbusapi_t *self, const char *buf, size_t buf_len)
 	tlog_write(&g_tlog, &g_message);
 
 done:
-	return;
+	return true;
 }
 
 static tlibc_error_code_t init()
