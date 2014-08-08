@@ -240,8 +240,8 @@ tlibc_error_code_t tlibc_mybind_write_string(tlibc_abstract_writer_t *super, con
 	}
 
 	self->bind_vec[self->idx].buffer_type = MYSQL_TYPE_STRING;
-	self->bind_vec[self->idx].buffer = (void*)str;
-	self->bind_vec[self->idx].buffer_length = str_length;
+	self->bind_vec[self->idx].buffer = (void*)str;	
+	self->bind_vec[self->idx].buffer_length = strlen(str) + 1;
 
 	++(self->idx);
 

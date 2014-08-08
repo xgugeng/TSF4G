@@ -229,11 +229,10 @@ done:
 	return ret;
 }
 
-tlibc_error_code_t tlibc_mybind_read_string(tlibc_abstract_reader_t *super, char *str, uint32_t str_len)
+tlibc_error_code_t tlibc_mybind_read_string(tlibc_abstract_reader_t *super, char *str, uint32_t str_length)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
 	tlibc_mybind_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_mybind_reader_t, super);
-	TLIBC_UNUSED(str_len);
 
 	if(self->idx >= self->bind_vec_num)
 	{
@@ -243,8 +242,8 @@ tlibc_error_code_t tlibc_mybind_read_string(tlibc_abstract_reader_t *super, char
 
 
 	self->bind_vec[self->idx].buffer_type = MYSQL_TYPE_STRING;
-	self->bind_vec[self->idx].buffer = (void*)str;	
-	self->bind_vec[self->idx].buffer_length = strlen(str) + 1;
+	self->bind_vec[self->idx].buffer = (void*)str;
+	self->bind_vec[self->idx].buffer_length = str_length;
 	++(self->idx);
 
 	return E_TLIBC_NOERROR;

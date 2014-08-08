@@ -41,7 +41,7 @@ tlibc_error_code_t tlibc_mybind_read_double(tlibc_abstract_reader_t *super, doub
 
 tlibc_error_code_t tlibc_mybind_read_char(tlibc_abstract_reader_t *super, char *val);
 
-tlibc_error_code_t tlibc_mybind_read_string(tlibc_abstract_reader_t *super, char *str, uint32_t str_len);
+tlibc_error_code_t tlibc_mybind_read_string(tlibc_abstract_reader_t *super, char *str, uint32_t str_length);
 
 #ifdef  __cplusplus
 }
