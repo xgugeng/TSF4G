@@ -451,18 +451,18 @@ static void fini()
 	WARN_PRINT("Summary:");
 	INFO_PRINT("    robot_num : %u", g_config.robot_num);
     INFO_PRINT("    lose_connection : %u", lose_connection);
-	INFO_PRINT("    packet_len : %ubyte", sizeof(robot_proto_t));
-	INFO_PRINT("    testing_time : %llus", testing_time / 1000);
+	INFO_PRINT("    packet_len : %lubyte", sizeof(robot_proto_t));
+	INFO_PRINT("    testing_time : %lus", testing_time / 1000);
     INFO_PRINT("    totl_send : %.2lfmb", (double)total_send / (double)(1024 * 1024));
-	INFO_PRINT("    total speed : %llukb/s", (total_send / 1024) / (testing_time / 1000));
-	INFO_PRINT("    speed : %llukb/s", (total_send / 1024) / (testing_time / 1000) / g_config.robot_num );
+	INFO_PRINT("    total speed : %lukb/s", (total_send / 1024) / (testing_time / 1000));
+	INFO_PRINT("    speed : %lukb/s", (total_send / 1024) / (testing_time / 1000) / g_config.robot_num );
     INFO_PRINT("    total_recv : %.2lfmb", (double)total_recv / (double)(1024 * 1024));
 	if(rtt_count == 0)
 	{
 		rtt_total = 0;
 		rtt_count = 1;
 	}
-    INFO_PRINT("    rtt(min, max, avg) : %ums %ums %llums", rtt_min, rtt_max, rtt_total / rtt_count);
+    INFO_PRINT("    rtt(min, max, avg) : %ums %ums %lums", rtt_min, rtt_max, rtt_total / rtt_count);
 }
 
 

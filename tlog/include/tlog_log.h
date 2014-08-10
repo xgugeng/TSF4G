@@ -37,7 +37,7 @@ extern "C" {
 
 extern tlog_t g_tlog_instance;
 
-void tlog_log(tlog_t *self, tlog_level_t level, const char* file, uint32_t line, ...);
+void tlog_log(tlog_t *self, tlog_level_t level, const char* file, uint32_t line, const char* fmt, ...) __attribute__((format(printf, 5,6)));;
 
 #ifdef  __cplusplus
 }

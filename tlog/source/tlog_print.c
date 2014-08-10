@@ -11,7 +11,7 @@
 #include <sys/syscall.h>
 
 void tlog_make_message(tlog_message_t *message, tlog_level_t level,
-    const char* file, uint32_t line, va_list arglist)
+    const char* file, uint32_t line, const char* fmt, va_list arglist)
 {
     char* msg = message->msg;
     struct timeval timestamp;
@@ -19,7 +19,6 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     const char* level_name = "";
     size_t len;
     ssize_t r;
-    char *fmt;
 	long int tid = syscall(SYS_gettid);
 
 	message->level = level;
@@ -64,8 +63,6 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
         msg += r;
     }
 
-    fmt = va_arg(arglist, char*);
-
     if(TLOG_MESSAGE_LENGTH >= len)
     {
         r = vsnprintf(msg, TLOG_MESSAGE_LENGTH - len, fmt, arglist);
@@ -77,14 +74,14 @@ void tlog_make_message(tlog_message_t *message, tlog_level_t level,
     }
 }
 
-void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...)
+void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, const char* fmt, ...)
 {
     struct iovec iov[4];
     tlog_message_t message;
 
     va_list arglist;
-    va_start(arglist, line);
-    tlog_make_message(&message, level, file, line, arglist);
+    va_start(arglist, fmt);
+    tlog_make_message(&message, level, file, line, fmt, arglist);
     va_end(arglist);
 
     switch(level)

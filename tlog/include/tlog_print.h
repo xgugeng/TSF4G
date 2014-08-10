@@ -48,10 +48,10 @@ extern "C" {
 
 
 void tlog_make_message(tlog_message_t *message, tlog_level_t level,
-    const char* file, uint32_t line, va_list arglist);
+    const char* file, uint32_t line, const char* fmt, va_list arglist);
 
 
-void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, ...);
+void tlog_print(int fd, tlog_level_t level, const char* file, uint32_t line, const char* fmt, ...) __attribute__((format(printf, 5,6)));;
 
 #ifdef  __cplusplus
 }
