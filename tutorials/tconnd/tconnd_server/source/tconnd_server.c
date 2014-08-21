@@ -46,12 +46,12 @@ static sip_size_t robot_proto_encode(const robot_proto_t *self, char *start, cha
 static void on_connect(tconnapi_t *self, const sip_cid_t *cid)
 {
 	tconnapi_accept(self, cid, 1);
-    INFO_PRINT("[%u, %llu] accept.", cid->id, cid->sn);
+    INFO_PRINT("[%u, %lu] accept.", cid->id, cid->sn);
 }
 
 static void on_close(tconnapi_t *self, const sip_cid_t *cid)
 {
-	INFO_PRINT("[%u, %llu] client close.", cid->id, cid->sn);
+	INFO_PRINT("[%u, %lu] client close.", cid->id, cid->sn);
 }
 
 static void on_recv(tconnapi_t *self, const sip_cid_t *cid, const char *packet, sip_size_t packet_size)
