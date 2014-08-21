@@ -8,7 +8,6 @@
 #include <limits.h>
 #include "core/tlibc_list.h"
 #include "core/tlibc_mempool.h"
-#include "bscp_types.h"
 #include "tconnd_epoll.h"
 
 #include <stdbool.h>
@@ -22,7 +21,7 @@ typedef struct _package_buff_t
     tlibc_mempool_entry_t mempool_entry;
     
     size_t size;
-    char head[sizeof(bscp_head_t)];    
+    char head[sizeof(uint16_t)];    
     char body[1];
 }package_buff_t;
 #pragma pack(pop)

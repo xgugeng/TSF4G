@@ -19,7 +19,6 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
-#include "bscp_types.h"
 
 #include <stdbool.h>
 
@@ -41,7 +40,7 @@ static int sndbuf = 10000000;
 static int rcvbuf = 10000000;
 static tconnd_robot_config_t g_config;
 
-#define PACKET_HEAD_LENGTH sizeof(bscp_head_t)
+#define PACKET_HEAD_LENGTH sizeof(uint16_t)
 #define PACKET_BODY_LENGTH sizeof(robot_proto_t)
 #define PACKET_LENGTH PACKET_HEAD_LENGTH + PACKET_BODY_LENGTH
 
@@ -51,7 +50,7 @@ static tconnd_robot_config_t g_config;
 typedef union packet_buff_u
 {
 	char packet[PACKET_LENGTH];
-	bscp_head_t packet_head;
+	uint16_t packet_head;
 }packet_buff_t;
 
 volatile bool g_working;

@@ -1,6 +1,5 @@
 #include "tconnapi.h"
 #include "tbus.h"
-#include "bscp_types.h"
 #include "tlibcdef.h"
 
 #include <sys/shm.h>
@@ -123,14 +122,14 @@ static bool tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 			for(; iter < limit; iter = next)
 			{
 				const char *packet;
-				bscp_head_t packet_size;
-				packet = iter + sizeof(bscp_head_t);
+				uint16_t packet_size;
+				packet = iter + sizeof(uint16_t);
 
 			   	if(packet > limit)
 				{
 					goto done;
 				}
-				packet_size = *(const bscp_head_t*)iter;
+				packet_size = *(const uint16_t*)iter;
 
 				next = packet + packet_size;
 				if(next > limit)

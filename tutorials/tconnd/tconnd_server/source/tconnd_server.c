@@ -9,7 +9,6 @@
 #define INFO_PRINT_OFF
 #endif
 #include "tlog_print.h"
-#include "bscp_types.h"
 #include "tconnapi.h"
 
 

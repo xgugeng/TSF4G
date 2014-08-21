@@ -374,48 +374,51 @@ again:
     }
     limit_ptr = body_ptr + r;
     
-    if(limit_ptr < package_ptr + sizeof(bscp_head_t))
-    {
-        remain_ptr = package_ptr;
-    }
-    else
-    {
-
-        for(iter = package_ptr; iter <= limit_ptr;)
-        {        
-            bscp_head_t remain_size;
-            remain_ptr = iter;
-            if((size_t)(limit_ptr - iter) < sizeof(bscp_head_t))
-            {
-                break;
-            }
-            remain_size = *(bscp_head_t*)iter;
-            remain_size = le16toh(remain_size);
+	for(iter = package_ptr; iter <= limit_ptr;)
+	{        
+		uint16_t remain_size;
+		remain_ptr = iter;
+		//break packet
+		if((size_t)(limit_ptr - iter) < sizeof(uint16_t))
+		{
+			break;
+		}
+		remain_size = *(uint16_t *)iter;
+#ifndef TSF4G_BIGENDIAN
+		remain_size = le16toh(remain_size);
+#else
+		remain_size = be16toh(remain_size);
+#endif //TSF4G_BIGENDIAN
 
 
-            DEBUG_LOG("receive a pakcage with length [%u]", remain_size);
-            if(remain_size > g_config.package_size)
-            {
-                DEBUG_LOG("package length [%u] > g_config.package_size[%u]"
-                    , remain_size, g_config.package_size);
-                ret = E_TLIBC_CLOSE;
-                goto done;            
-            }
+		DEBUG_LOG("receive a pakcage with length [%u]", remain_size);
+		if(remain_size > g_config.package_size)
+		{
+			DEBUG_LOG("package length [%u] > g_config.package_size[%u]"
+				, remain_size, g_config.package_size);
+			ret = E_TLIBC_CLOSE;
+			goto done;            
+		}
 
-            iter += sizeof(bscp_head_t) + remain_size;
-        }
+		iter += sizeof(uint16_t) + remain_size;
     }
     
     if(limit_ptr - remain_ptr > 0)
     {
-        tlibc_mempool_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
+		if(limit_ptr - remain_ptr > g_config.package_size)
+		{
+			DEBUG_LOG("package length [%lu] > g_config.package_size[%u]"
+				, limit_ptr - remain_ptr, g_config.package_size);
+			ret = E_TLIBC_CLOSE;
+			goto done;            
+		}
 
+        tlibc_mempool_alloc(&g_package_pool, package_buff_t, mempool_entry, package_buff);
         package_buff->size = (size_t)(limit_ptr - remain_ptr);
         memcpy(package_buff->head, remain_ptr, package_buff->size);
         self->package_buff = package_buff;
         self->package_ticks = g_cur_ticks + g_config.package_ticks_limit;
         tlibc_list_add_tail(&self->g_package_socket_list, &g_package_socket_list);
-
         
         DEBUG_LOG("socket [%u, %"PRIu64"] need to cache package buff, size = [%zu].", self->id, self->mempool_entry.sn, self->package_buff->size);
     }
