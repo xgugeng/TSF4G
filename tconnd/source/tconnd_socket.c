@@ -384,10 +384,9 @@ again:
 			break;
 		}
 		remain_size = *(uint16_t *)iter;
-#ifndef TSF4G_BIGENDIAN
-		remain_size = le16toh(remain_size);
-#else
+#ifdef TSF4G_BIGENDIAN
 		remain_size = be16toh(remain_size);
+		*(uint16_t *)iter = remain_size;
 #endif //TSF4G_BIGENDIAN
 
 

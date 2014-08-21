@@ -129,6 +129,7 @@ static bool tconnapi_on_recv(tbusapi_t *super, const char *buf, size_t buf_len)
 				{
 					goto done;
 				}
+				//tconnd会把包头转换为本地字节序
 				packet_size = *(const uint16_t*)iter;
 
 				next = packet + packet_size;
