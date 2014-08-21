@@ -125,7 +125,9 @@ tlibc_error_code_t socketapi_process(socketapi_t *self)
 		}
 
 		packet_size = *(uint16_t*)iter;
-		packet_size = le16toh(packet_size);
+#ifdef TSF4G_BIGENDIAN
+		packet_size = be16toh(packet_size);
+#endif//TSF4G_BIGENDIAN
 		next = iter + sizeof(uint16_t) + packet_size;
 		if(next <= limit)
 		{
@@ -163,11 +165,13 @@ tlibc_error_code_t socketapi_send(socketapi_t *self, char *packet, uint16_t pack
 			goto done;
 		}
 	}
-	package_size = htole16(package_size);
+#ifdef TSF4G_BIGENDIAN
+	package_size = htobe16(package_size);
+#endif
 	iov[0].iov_base = &package_size;
 	iov[0].iov_len = sizeof(package_size);
 	iov[1].iov_base = (char*)packet;
-	iov[1].iov_len = package_size;
+	iov[1].iov_len = packet_len;
 	
 	//可以加入缓存降低系统调用次数。
     send_size = writev(self->socket_fd, iov, 2);
