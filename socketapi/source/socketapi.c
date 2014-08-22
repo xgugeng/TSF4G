@@ -26,14 +26,20 @@ tlibc_error_code_t socketapi_open(socketapi_t *self)
 		goto errno_ret;
     }
 
-    if(setsockopt(socketfd, SOL_SOCKET, SO_SNDBUF, &self->sndbuf, sizeof(self->sndbuf)) == -1)
-	{	
-		goto close_socket;
+	if(self->sndbuf != 0)
+	{
+		if(setsockopt(socketfd, SOL_SOCKET, SO_SNDBUF, &self->sndbuf, sizeof(self->sndbuf)) == -1)
+		{	
+			goto close_socket;
+		}
 	}
 
-    if(setsockopt(socketfd, SOL_SOCKET, SO_RCVBUF, &self->rcvbuf, sizeof(self->rcvbuf)) == -1)
+	if(self->rcvbuf != 0)
 	{
-		goto close_socket;
+		if(setsockopt(socketfd, SOL_SOCKET, SO_RCVBUF, &self->rcvbuf, sizeof(self->rcvbuf)) == -1)
+		{
+			goto close_socket;
+		}
 	}
 	
     nb = 1;
@@ -119,6 +125,7 @@ tlibc_error_code_t socketapi_process(socketapi_t *self)
 	{
 		char *next;
 		uint16_t packet_size;
+		char* packet;
 		if(limit - iter < sizeof(uint16_t))
 		{
 			break;
@@ -128,13 +135,14 @@ tlibc_error_code_t socketapi_process(socketapi_t *self)
 #ifdef TSF4G_BIGENDIAN
 		packet_size = be16toh(packet_size);
 #endif//TSF4G_BIGENDIAN
-		next = iter + sizeof(uint16_t) + packet_size;
+		packet = iter + sizeof(uint16_t);
+		next = packet + packet_size;
 		if(next <= limit)
 		{
 			last = next;
 			if(self->on_recv)
 			{
-				self->on_recv(self, iter, (size_t)(last - iter));
+				self->on_recv(self, packet, packet_size);
 			}
 		}
 		iter = next;
@@ -153,8 +161,7 @@ done:
 tlibc_error_code_t socketapi_send(socketapi_t *self, char *packet, uint16_t packet_len)
 {
 	tlibc_error_code_t ret = E_TLIBC_NOERROR;
-	struct iovec iov[2];
-	uint16_t package_size = packet_len;
+	struct iovec iov[1];
 	ssize_t send_size;
 
 	if(self->socket_fd == -1)
@@ -165,17 +172,12 @@ tlibc_error_code_t socketapi_send(socketapi_t *self, char *packet, uint16_t pack
 			goto done;
 		}
 	}
-#ifdef TSF4G_BIGENDIAN
-	package_size = htobe16(package_size);
-#endif
-	iov[0].iov_base = &package_size;
-	iov[0].iov_len = sizeof(package_size);
-	iov[1].iov_base = (char*)packet;
-	iov[1].iov_len = packet_len;
+	iov[0].iov_base = (char*)packet;
+	iov[0].iov_len = packet_len;
 	
 	//可以加入缓存降低系统调用次数。
-    send_size = writev(self->socket_fd, iov, 2);
-	if(send_size != iov[0].iov_len + iov[1].iov_len)
+    send_size = writev(self->socket_fd, iov, 1);
+	if(send_size != iov[0].iov_len)
 	{
 		ret = E_TLIBC_ERRNO;
 		if((errno == EAGAIN) || (errno == EINTR))

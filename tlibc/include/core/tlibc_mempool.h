@@ -2,6 +2,12 @@
 #define _H_TLIBC_MEMPOOL_H
 
 #ifdef  __cplusplus
+/* 
+ * c++程序需要定义__STDC_LIMIT_MACROS才可以使用此文件！
+ */
+#ifndef __STDC_LIMIT_MACROS
+#error "Please define __STDC_LIMIT_MACROS before compile this file."
+#endif
 extern "C" {
 #endif
 
