@@ -306,9 +306,11 @@ tlibc_error_code_t tlibc_csv_reader_init(tlibc_csv_reader_t *self, const char *t
 	self->pre_u32 = 0;
 
 	self->super.read_vector_begin = tlibc_csv_read_vector_begin;
+	self->super.read_vector_end = tlibc_csv_read_vector_end;
 	self->super.read_vector_element_begin = tlibc_csv_read_vector_element_begin;
 	self->super.read_vector_element_end = tlibc_csv_read_vector_element_end;
 	self->super.read_field_begin = tlibc_csv_read_field_begin;	
+	self->super.read_field_end = tlibc_csv_read_field_end;	
 	self->super.read_enum_begin = tlibc_csv_read_enum_begin;
 
 	self->super.read_int8 = tlibc_csv_read_int8;
@@ -439,6 +441,12 @@ tlibc_error_code_t tlibc_csv_read_vector_begin(tlibc_abstract_reader_t *super, c
 		}
 	}
 
+	return E_TLIBC_NOERROR;
+}
+
+tlibc_error_code_t tlibc_csv_read_vector_end(tlibc_abstract_reader_t *super, const char* vec_name)
+{
+	tlibc_csv_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_csv_reader_t, super);
 	++self->col;
 	return E_TLIBC_NOERROR;
 }
@@ -460,7 +468,20 @@ tlibc_error_code_t tlibc_csv_read_field_begin(tlibc_abstract_reader_t *super, co
 	}
 	self->field = self->cur_line_fields[index];
 
-	++self->col;
+	return E_TLIBC_NOERROR;
+}
+
+tlibc_error_code_t tlibc_csv_read_field_end(tlibc_abstract_reader_t *super, const char *var_name)
+{
+	tlibc_csv_reader_t *self = TLIBC_CONTAINER_OF(super, tlibc_csv_reader_t, super);
+	if(self->pre_read_uint32)
+	{
+		self->pre_read_uint32 = false;
+	}
+	else
+	{
+		++self->col;
+	}
 	return E_TLIBC_NOERROR;
 }
 
@@ -657,7 +678,6 @@ tlibc_error_code_t tlibc_csv_read_uint32(tlibc_abstract_reader_t *super, uint32_
 	uint64_t ui64;
 	if(self->pre_read_uint32)
 	{
-		self->pre_read_uint32 = false;
 		*val = self->pre_u32;
 		goto done;
 	}
