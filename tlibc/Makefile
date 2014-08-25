@@ -1,7 +1,7 @@
 LIBRARY=lib/libtlibc.a
 TARGET= $(LIBRARY)
 HOME=../
-CINC=-Iinclude -I/usr/local/mysql/include/ -Isource
+CINC=-Iinclude -Isource
 
 TDRINC=-Itdr
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
@@ -12,9 +12,6 @@ CFILE=$(wildcard source/protocol/*.c)
 CFILE+=$(wildcard source/core/*.c)
 
 REFILE=$(wildcard source/protocol/*.re)
-
-CFLAGS?=-Wall -Wconversion -Wpointer-arith -Wredundant-decls -Wmissing-declarations -Werror --pipe -fno-common
-#由于MYBIND结构里面的指针缺少const， 所以取消-Wcast-qual编译选项
 
 include $(HOME)/build.mk
 

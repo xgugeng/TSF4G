@@ -15,7 +15,6 @@ The Service Framework For Game
 
 - 1.[TDR](http://github.com/randyliu/TDR)
 - 2.[RE2C](http://www.re2c.org)
-- 3.[MySQL](http://www.mysql.com)
 
 安装
 ====
