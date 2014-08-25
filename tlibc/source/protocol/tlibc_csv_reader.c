@@ -392,7 +392,7 @@ void tlibc_csv_reader_close(tlibc_csv_reader_t *self)
 static int get_field_index(tlibc_csv_reader_t *self, int32_t col)
 {
 	int32_t i;
-	if(col >= TLIBC_CSV_FIELD_NUM)
+	if((col < 0) || (col >= self->top_line_fields_num))
 	{
 		return -1;
 	}
@@ -421,7 +421,7 @@ tlibc_error_code_t tlibc_csv_read_vector_begin(tlibc_abstract_reader_t *super, c
 	index = get_field_index(self, self->col);
 	if((index < 0) || (index >= TLIBC_CSV_FIELD_NUM))
 	{
-		return E_TLIBC_ERROR;
+		return E_TLIBC_NOT_FOUND;
 	}
 	self->pre_read_uint32 = true;
 	self->field = self->cur_line_fields[index];
@@ -464,7 +464,7 @@ tlibc_error_code_t tlibc_csv_read_field_begin(tlibc_abstract_reader_t *super, co
 	index = get_field_index(self, self->col);
 	if((index < 0) || (index >= TLIBC_CSV_FIELD_NUM))
 	{
-		return E_TLIBC_ERROR;
+		return E_TLIBC_NOT_FOUND;
 	}
 	self->field = self->cur_line_fields[index];
 

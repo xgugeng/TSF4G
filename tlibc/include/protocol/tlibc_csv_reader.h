@@ -32,8 +32,8 @@ typedef struct tlibc_csv_reader_s
 
 
 
-#define tlibc_csv_get_col(self) ((self)->col)
-#define tlibc_csv_get_field_name(self) ((self)->super.name + 1)
+#define tlibc_csv_reader_get_cur_col(self) ((self)->col)
+#define tlibc_csv_reader_get_cur_name(self) ((self)->super.name + 1)
 
 
 tlibc_error_code_t tlibc_csv_reader_init(tlibc_csv_reader_t *self, const char *top_line, size_t top_line_size);
