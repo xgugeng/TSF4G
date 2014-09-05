@@ -5,7 +5,7 @@ TSF4G是一个服务器软件开发工具包
 特性
 ----
 - 使用C语言编写， 不链接任何第三方库， 专注于Linux平台下的服务器开发。
-- 使用[TDR](http://github.com/randyliu/TDR)对数据进行了严谨的描述。
+- 使用[TDR](http://github.com/randyliu/TDR)和[re2c](http://www.re2c.org/)对数据进行了严谨的描述。
 	
 
 功能
@@ -21,6 +21,7 @@ TSF4G是一个服务器软件开发工具包
 安装
 ----
 - 安装 [TDR](http://github.com/randyliu/TDR) 编译器
+- 安装 [re2c](http://www.re2c.org/) 编译器
 - 编译
 
 		make
