@@ -1,8 +1,5 @@
 The Service Framework For Game
 ==============================
-
-特性
-----
 	使用C语言编写， 不链接任何第三方库， 专注于Linux平台下的服务器开发。
 	使用[TDR](http://github.com/randyliu/TDR)对数据进行了严谨的描述。
 	
