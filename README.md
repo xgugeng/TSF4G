@@ -16,7 +16,8 @@ The Service Framework For Game
 	
 安装
 ----
-	1. 安装[TDR](http://github.com/randyliu/TDR)编译器
-	2. 编译
+- 安装 [TDR](http://github.com/randyliu/TDR) 编译器
+- 编译
+
 		make
 		make install
