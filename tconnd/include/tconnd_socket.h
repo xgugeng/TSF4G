@@ -6,8 +6,8 @@
 #include "sip.h"
 #include <sys/uio.h>
 #include <limits.h>
-#include "core/tlibc_list.h"
-#include "core/tlibc_mempool.h"
+#include "tlibc_list.h"
+#include "tlibc_mempool.h"
 #include "tconnd_epoll.h"
 
 #include <stdbool.h>

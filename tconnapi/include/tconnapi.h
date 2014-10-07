@@ -8,6 +8,7 @@ extern "C" {
 #include "tbusapi.h"
 #include "sip.h"
 #include "tlibcdef.h"
+#include "tutils_encode.h"
 
 typedef struct tconnapi_s tconnapi_t;
 

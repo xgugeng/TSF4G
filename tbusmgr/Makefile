@@ -1,7 +1,8 @@
 BINARY=bin/tbusmgr
+TLIBC=/usr/local/tlibc
 TARGET= $(BINARY)
 HOME=../
-CINC=-I$(HOME)/tlibc/include/ -Iinclude -I$(HOME)/tcommon/include -I$(HOME)/tcommon/tdr -I$(HOME)/tbus/include/
+CINC=-Iinclude -I$(HOME)/tbus/include/ -I$(TLIBC)/include
 DEPOFILE=$(HOME)/tbus/lib/libtbus.a
 
 CFILE=$(wildcard source/*.c)

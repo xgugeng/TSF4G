@@ -1,6 +1,6 @@
-#include "core/tlibc_hash.h"
-#include "core/tlibc_timer.h"
-#include "core/tlibc_mempool.h"
+#include "tlibc_hash.h"
+#include "tlibc_timer.h"
+#include "tlibc_mempool.h"
 #include "tlibcdef.h"
 
 #include <stdio.h>

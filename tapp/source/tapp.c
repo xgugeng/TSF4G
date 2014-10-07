@@ -1,8 +1,8 @@
 #include "tapp.h"
 #include "tlibc_error_code.h"
 #include "string.h"
-#include "protocol/tlibc_xml_reader.h"
-#include "core/tlibc_string.h"
+#include "tlibc_xml_reader.h"
+#include "tlibc_string.h"
 
 #include <stdio.h>
 #include <signal.h>

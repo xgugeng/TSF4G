@@ -1,5 +1,5 @@
 #include "tconnd_epoll.h"
-#include "core/tlibc_list.h"
+#include "tlibc_list.h"
 #include "tlibc_error_code.h"
 #include "tconnd_socket.h"
 #include "tconnd.h"

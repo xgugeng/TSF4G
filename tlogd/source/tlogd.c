@@ -11,7 +11,7 @@
 #include "tlog_message_types.h"
 #include "tlog_message_reader.h"
 
-#include "protocol/tlibc_binary_reader.h"
+#include "tlibc_binary_reader.h"
 
 #include <string.h>
 #include <stdio.h>

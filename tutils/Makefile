@@ -1,17 +1,15 @@
-LIBRARY=lib/libtlibc.a
+LIBRARY=lib/libtutils.a
+TLIBC=/usr/local/tlibc/
 TARGET= $(LIBRARY)
 HOME=../
-CINC=-Iinclude -Isource
+CINC=-Iinclude -Isource -I$(TLIBC)/include
 
 TDRINC=-Itdr
 TYPES_TDR_FILE=$(wildcard tdr/*.tdr)
 READER_TDR_FILE=$(wildcard tdr/*.tdr)
 WRITER_TDR_FILE=$(wildcard tdr/*.tdr)
 
-CFILE=$(wildcard source/protocol/*.c)
-CFILE+=$(wildcard source/core/*.c)
-
-REFILE=$(wildcard source/protocol/*.re)
+CFILE=$(wildcard source/*.c)
 
 include $(HOME)/build.mk
 

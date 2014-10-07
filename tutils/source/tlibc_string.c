@@ -1,4 +1,4 @@
-﻿#include "core/tlibc_string.h"
+﻿#include "tlibc_string.h"
 
 const char *tstrerror(tlibc_error_code_t terrno)
 {

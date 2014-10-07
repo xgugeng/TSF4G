@@ -1,7 +1,8 @@
 LIBRARY=lib/libtbusapi.a
+TLIBC=/usr/local/tlibc
 TARGET= $(LIBRARY)
 HOME=../
-CINC=-I$(HOME)/tlibc/include/ -I$(HOME)/tbus/include/ -Iinclude
+CINC=-Iinclude -I$(HOME)/tutils/include -I$(HOME)/tbus/include/ -I$(TLIBC)/include
 
 CFILE=$(wildcard source/*.c)
 

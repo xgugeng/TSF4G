@@ -1,5 +1,5 @@
-#include "core/tlibc_hash.h"
-#include "core/tlibc_list.h"
+#include "tlibc_hash.h"
+#include "tlibc_list.h"
 #include "tlibc_error_code.h"
 #include "tlibcdef.h"
 

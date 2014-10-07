@@ -1,8 +1,8 @@
 #include "tlog.h"
 #include "tlibc_error_code.h"
 
-#include "protocol/tlibc_xml_reader.h"
-#include "core/tlibc_string.h"
+#include "tlibc_xml_reader.h"
+#include "tlibc_string.h"
 
 #include "tlog_config_reader.h"
 #include "appender/tlog_appender_rolling_file.h"

@@ -1,3 +1,3 @@
-SUBMODS=tlibc tbus tconnd tlog
+SUBMODS=tutils tbus tconnd tlog
 
 include ../search.mk

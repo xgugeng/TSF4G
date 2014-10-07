@@ -1,5 +1,5 @@
 #include "tconnd_mempool.h"
-#include "core/tlibc_mempool.h"
+#include "tlibc_mempool.h"
 #include "tconnd_socket.h"
 #include "tconnd.h"
 #include "tlog_log.h"

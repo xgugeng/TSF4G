@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "protocol/tlibc_xml_reader.h"
+#include "tlibc_xml_reader.h"
 #include "tlibc_error_code.h"
 
 #include <stdbool.h>

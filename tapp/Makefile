@@ -1,7 +1,8 @@
 LIBRARY=lib/libtapp.a
+TLIBC=/usr/local/tlibc
 TARGET= $(LIBRARY)
 HOME=../
-CINC=-I$(HOME)/tlibc/include/ -Iinclude
+CINC=-I$(HOME)/tutils/include/ -Iinclude -I$(TLIBC)/include
 
 CFILE=$(wildcard source/*.c)
 
