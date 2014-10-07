@@ -1,7 +1,6 @@
 #include "core/tlibc_hash.h"
 #include "core/tlibc_timer.h"
 #include "core/tlibc_mempool.h"
-#include "core/tlibc_unzip.h"
 #include "tlibcdef.h"
 
 #include <stdio.h>
@@ -12,6 +11,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define HASH_KEY_LENGTH 128
 typedef struct _test_hash_data_t
@@ -251,26 +251,6 @@ static void test_mempool()
 	assert(total == mp.used_list_num);
 }
 
-static void test_unzip()
-{
-	void *buff;
-	uint32_t size_buf;
-	tlibc_error_code_t err;
-	tlibc_unzip_s uf;
-	err = tlibc_unzip_init(&uf, "d:/1.xlsx");
-	//unz64_s uf = unzOpen("d:/1.zip");
-
-	err = tlibc_unzip_locate(&uf, "xl/workbook.xml");
-	err = tlibc_unzip_open_current_file(&uf);
-	size_buf = uf.cur_file_info.uncompressed_size;
-	buff = malloc(size_buf);
-	err = tlibc_read_current_file(&uf,buff, &size_buf);
-	//buff里面装着xml， 解析下就好了……
-	free(buff);
-	err = tlibc_unzip_close_current_file (&uf);
-	tlibc_unzip_fini(&uf);
-}
-
 int main()
 {
 	test_hash();
@@ -278,8 +258,6 @@ int main()
 	test_timer();
 
 	test_mempool();
-
-	test_unzip();
 
 	return 0;
 }

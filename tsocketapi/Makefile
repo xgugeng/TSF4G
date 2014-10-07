@@ -1,4 +1,4 @@
-LIBRARY=lib/libsocketapi.a
+LIBRARY=lib/libtsocketapi.a
 TARGET= $(LIBRARY)
 HOME=../
 CINC=-I$(HOME)/tlibc/include -Iinclude
