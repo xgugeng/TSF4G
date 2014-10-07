@@ -7,7 +7,6 @@ extern "C" {
 
 #include "tlibc_error_code.h"
 #include "tbus.h"
-#include "tlibcdef.h"
 #include "tutils_encode.h"
 
 #include <sys/uio.h>

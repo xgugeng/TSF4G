@@ -4,7 +4,7 @@
 #include "tconnd.h"
 #include "tlog_log.h"
 #include "tconnd_timer.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <stdlib.h>
 #include <assert.h>

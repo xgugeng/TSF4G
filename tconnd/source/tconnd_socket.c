@@ -8,7 +8,7 @@
 #include "tconnd_listen.h"
 #include "tlog_log.h"
 #include "tlog_print.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <sys/ioctl.h>
 #include <sys/epoll.h>

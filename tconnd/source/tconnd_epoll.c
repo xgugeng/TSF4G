@@ -5,8 +5,8 @@
 #include "tconnd.h"
 #include "tlog_log.h"
 #include "tconnd_listen.h"
-#include "tlibcdef.h"
 #include "tconnd_timer.h"
+#include "tlibc_define.h"
 
 #include <unistd.h>
 #include <assert.h>

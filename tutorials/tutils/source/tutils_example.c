@@ -1,7 +1,7 @@
 #include "tlibc_hash.h"
 #include "tlibc_timer.h"
 #include "tlibc_mempool.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <stdio.h>
 #include <string.h>

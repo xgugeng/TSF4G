@@ -3,7 +3,7 @@
 #include "tconnd.h"
 #include "tconnd_epoll.h"
 #include "tconnd_socket.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 
 #include <sys/time.h>

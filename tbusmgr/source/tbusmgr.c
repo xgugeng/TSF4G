@@ -6,7 +6,7 @@
 #include <getopt.h>
 #include <sys/shm.h>
 
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 #include "tbus.h"
 
 static void version()

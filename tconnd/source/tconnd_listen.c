@@ -11,7 +11,7 @@
 #include "tconnd_timer.h"
 #include "tconnd_epoll.h"
 #include "tlog_log.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <sys/epoll.h>
 #include <sys/ioctl.h>

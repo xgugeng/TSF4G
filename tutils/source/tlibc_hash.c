@@ -1,7 +1,7 @@
 #include "tlibc_hash.h"
 #include "tlibc_list.h"
 #include "tlibc_error_code.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <memory.h>
 #include <assert.h>

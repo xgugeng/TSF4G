@@ -1,5 +1,4 @@
 #include "tbusapi.h"
-#include "tlibcdef.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>

@@ -1,6 +1,6 @@
 #include "tconnapi.h"
 #include "tbus.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <sys/shm.h>
 #include <string.h>

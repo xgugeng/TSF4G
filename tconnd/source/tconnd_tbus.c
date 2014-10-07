@@ -5,7 +5,7 @@
 #include "tconnd.h"
 #include "tlog_log.h"
 #include "tbus.h"
-#include "tlibcdef.h"
+#include "tlibc_define.h"
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
