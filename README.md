@@ -21,7 +21,6 @@ TSF4G是一个服务器软件开发工具包
 安装
 ----
 - 安装 [TDR](http://github.com/randyliu/TDR) 编译器
-- 安装 [re2c](http://www.re2c.org/) 编译器
 - 编译
 
 		make
